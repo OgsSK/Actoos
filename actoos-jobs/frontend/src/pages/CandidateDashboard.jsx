@@ -140,9 +140,10 @@ const CandidateDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [hiringDocuments, setHiringDocuments] = useState([]);
 
-  // --- Offres recommandées (calcul local) ---
+  // --- Offres recommandées ---
   const [recommendedJobs, setRecommendedJobs] = useState([]);
   const [loadingRecommended, setLoadingRecommended] = useState(true);
+  const [appliedStatuses, setAppliedStatuses] = useState({});
 
   const profileCompletion = useMemo(() => {
     if (!profile) return 0;
@@ -172,7 +173,7 @@ const CandidateDashboard = () => {
       try {
         const { data: jobs, error } = await supabase
           .from('jobs')
-          .select('id, title, salary_min, salary_max, salary_period, skills_required, is_remote, city_id, company:companies(name, logo_url), city:cities(name)')
+          .select('id, title, salary_min, salary_max, salary_period, skills_required, is_remote, city_id, contract_type, company:companies(name, logo_url), city:cities(name)')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(50);
@@ -211,6 +212,21 @@ const CandidateDashboard = () => {
           .slice(0, 6);
 
         setRecommendedJobs(scored);
+
+        // Récupérer les statuts de candidature pour ces offres
+        if (scored.length > 0) {
+          const jobIds = scored.map(j => j.id);
+          const { data: apps, error: appsErr } = await supabase
+            .from('applications')
+            .select('job_id, status')
+            .eq('candidate_id', user.id)
+            .in('job_id', jobIds);
+          if (!appsErr && apps) {
+            const map = {};
+            apps.forEach(app => { map[app.job_id] = app.status; });
+            setAppliedStatuses(map);
+          }
+        }
       } catch (err) {
         console.error(err);
         toast.error("Impossible de charger les recommandations.");
@@ -296,6 +312,7 @@ const CandidateDashboard = () => {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
           <div className="xl:col-span-2 space-y-6">
+            {/* Applications */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-2">
                 <div><CardTitle className="text-lg">{t('candidateDashboard.applications.title')}</CardTitle><CardDescription>{t('candidateDashboard.applications.description')}</CardDescription></div>
@@ -310,6 +327,7 @@ const CandidateDashboard = () => {
               </CardContent>
             </Card>
 
+            {/* Saved Jobs */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-2">
                 <div><CardTitle className="text-lg">{t('candidateDashboard.savedJobs.title')}</CardTitle><CardDescription>{t('candidateDashboard.savedJobs.description')}</CardDescription></div>
@@ -324,7 +342,7 @@ const CandidateDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* 🔥 Offres recommandées (personnalisées) */}
+            {/* 🔥 Offres recommandées (personnalisées) avec badge "Postulé" */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-2">
                 <div>
@@ -349,38 +367,68 @@ const CandidateDashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {recommendedJobs.map(job => (
-                      <Link to={`/emplois/${job.id}`} key={job.id} className="block p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-slate-900 line-clamp-1">{job.title}</h3>
-                            <p className="text-sm text-slate-500 line-clamp-1">{job.company?.name}</p>
+                    {recommendedJobs.map(job => {
+                      const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
+                      const isApplied = appliedStatuses[job.id] && appliedStatuses[job.id] !== 'rejected' && appliedStatuses[job.id] !== 'withdrawn';
+                      return (
+                        <Link to={`/emplois/${job.id}`} key={job.id} className="block p-4 bg-white rounded-xl border border-slate-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 group">
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors text-base truncate">{job.title}</h3>
+                                  <p className="text-sm text-slate-600 mt-1 line-clamp-1">{job.company?.name}</p>
+                                </div>
+                                <div className="flex-shrink-0">
+                                  <Badge className={job.matchScore >= 3 ? 'bg-green-100 text-green-700 border-0 flex items-center gap-1' : job.matchScore >= 2 ? 'bg-blue-100 text-blue-700 border-0 flex items-center gap-1' : 'bg-slate-100 text-slate-600 border-0 flex items-center gap-1'}>
+                                    {job.matchScore >= 3 && <><Star className="w-3 h-3" />{t('candidateDashboard.selected.excellent', 'Excellent')}</>}
+                                    {job.matchScore === 2 && <><ThumbsUp className="w-3 h-3" />{t('candidateDashboard.selected.good', 'Bon')}</>}
+                                    {job.matchScore === 1 && <><TrendingUp className="w-3 h-3" />{t('candidateDashboard.selected.partial', 'Potentiel')}</>}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 mt-3 text-sm text-slate-500">
+                                <span className="flex items-center gap-1 bg-slate-100 rounded-full px-3 py-1 text-xs">
+                                  <MapPin className="w-3 h-3" />
+                                  {job.city?.name || t('common.unspecified')}
+                                </span>
+                                <Badge className={`${contractInfo.color} border-0 text-xs`}>
+                                  {t(contractInfo.key)}
+                                </Badge>
+                                {job.salary_min && job.salary_max && (
+                                  <span className="flex items-center gap-1 bg-blue-50 text-blue-800 px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap">
+                                    <Banknote className="w-3 h-3 text-blue-600" />
+                                    {format(job.salary_min)} – {format(job.salary_max)}
+                                    <span className="text-[9px] text-blue-500 font-normal ml-0.5">
+                                      {formatSalaryPeriod(job.salary_period, t)}
+                                    </span>
+                                  </span>
+                                )}
+                                {isApplied && (
+                                  <Badge className="bg-emerald-50 text-emerald-700 text-[10px] font-medium rounded-full border border-emerald-200 shadow-sm px-2 py-0.5 flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3" />
+                                    {t('jobs.alreadyAppliedBadge')}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <Badge className={job.matchScore >= 3 ? 'bg-green-100 text-green-700 border-0' : job.matchScore >= 2 ? 'bg-blue-100 text-blue-700 border-0' : 'bg-slate-100 text-slate-600 border-0'}>
-                            {job.matchScore >= 3 && <><Star className="w-3 h-3 mr-1" />{t('candidateDashboard.selected.excellent', 'Excellent')}</>}
-                            {job.matchScore === 2 && <><ThumbsUp className="w-3 h-3 mr-1" />{t('candidateDashboard.selected.good', 'Bon')}</>}
-                            {job.matchScore === 1 && <><TrendingUp className="w-3 h-3 mr-1" />{t('candidateDashboard.selected.partial', 'Potentiel')}</>}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || t('common.unspecified')}</span>
-                          {job.salary_min && job.salary_max && (
-                            <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}{formatSalaryPeriod(job.salary_period, t)}</span>
-                          )}
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
 
+            {/* Admin Messages */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2"><Mail className="w-5 h-5 text-blue-600" />{t('candidateDashboard.adminMessages.title')}</CardTitle><CardDescription>{t('candidateDashboard.adminMessages.description')}</CardDescription></CardHeader>
               <CardContent className="p-4 sm:p-6"><UserMessages userId={user?.id} /></CardContent>
             </Card>
           </div>
 
+          {/* Sidebar */}
           <div className="space-y-6">
             <ProfileCompletionWidget completion={profileCompletion} />
             <Card className="border-slate-200 overflow-hidden">
@@ -388,7 +436,6 @@ const CandidateDashboard = () => {
               <CardContent className="space-y-2">
                 <Link to="/profil" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors min-h-[56px]"><div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0"><Upload className="w-5 h-5 text-blue-600" /></div><div className="min-w-0"><p className="font-medium text-slate-900">{t('candidateDashboard.quickActions.updateCV')}</p><p className="text-xs text-slate-500">{t('candidateDashboard.quickActions.updateCVDesc')}</p></div></Link>
                 <Link to="/alertes" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors min-h-[56px]"><div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0"><Bell className="w-5 h-5 text-green-600" /></div><div className="min-w-0"><p className="font-medium text-slate-900">{t('candidateDashboard.quickActions.createAlert')}</p><p className="text-xs text-slate-500">{t('candidateDashboard.quickActions.createAlertDesc')}</p></div></Link>
-                {/* Nouveau lien Mes suivis */}
                 <Link to="/dashboard/candidat/suivis" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors min-h-[56px]">
                   <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
                     <Bell className="w-5 h-5 text-blue-600" />
@@ -399,7 +446,6 @@ const CandidateDashboard = () => {
                   </div>
                 </Link>
                 <Link to="/parametres" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors min-h-[56px]"><div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shrink-0"><Settings className="w-5 h-5 text-slate-600" /></div><div className="min-w-0"><p className="font-medium text-slate-900">{t('candidateDashboard.quickActions.settings')}</p><p className="text-xs text-slate-500">{t('candidateDashboard.quickActions.settingsDesc')}</p></div></Link>
-                {/* Voir mon profil public */}
                 <Link to={`/candidat/${user.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors min-h-[56px]">
                   <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
                     <Eye className="w-5 h-5 text-purple-600" />
