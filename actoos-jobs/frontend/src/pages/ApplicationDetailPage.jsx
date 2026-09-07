@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { planHasFeature } from '../lib/planLimits';
+import { cn } from '../lib/utils';
 
 const getErrorMessage = (error, fallback = 'Une erreur est survenue') => {
   if (!error) return fallback;
@@ -237,6 +238,7 @@ const ApplicationDetailPage = () => {
         .single();
       if (!error && data) {
         setApplication(data);
+        // ✅ Récupération du profil candidat (inclut cover_url)
         const { data: cp } = await supabase
           .from('candidate_profiles')
           .select('*')
@@ -596,6 +598,8 @@ const ApplicationDetailPage = () => {
   const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
   const todayStr = new Date().toISOString().split('T')[0];
 
+  const hasCover = !!candidateProfile?.cover_url;
+
   return (
     <div className="min-h-0 bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -610,33 +614,47 @@ const ApplicationDetailPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
+            {/* ===== CARTE CANDIDAT AVEC COUVERTURE ===== */}
             <Card>
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex flex-col sm:flex-row items-start gap-6 mb-6">
-                  <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden shrink-0">
-                    {candidate?.avatar_url ? <img src={candidate.avatar_url} alt="Avatar" className="w-full h-full object-cover" /> : <User className="w-10 h-10 text-blue-600" />}
-                  </div>
-                  <div className="min-w-0">
-                    <h1 className="text-2xl font-bold text-slate-900">{candidate?.first_name} {candidate?.last_name}</h1>
-                    <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> <a href={`mailto:${candidate?.email}`} className="text-blue-600 hover:underline">{candidate?.email}</a></p>
-                    {candidate?.phone && (
-                      <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {telLink ? <a href={telLink} className="text-blue-600 hover:underline font-mono">{candidate.phone}</a> : <span className="font-mono">{candidate.phone}</span>}</p>
-                    )}
-                    {candidate?.city?.name && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {candidate.city.name}</p>}
-                    {candidate?.id && (
-                      <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm">
-                        <ExternalLink className="w-4 h-4" /> {t('applicationDetail.viewFullProfile')}
-                      </Link>
-                    )}
-                  </div>
-                </div>
-                {candidateProfile && (
-                  <div className="space-y-4 text-sm">
-                    {candidateProfile.title && <p className="font-medium text-slate-700">{candidateProfile.title}</p>}
-                    {candidateProfile.bio && <p className="text-slate-600">{candidateProfile.bio}</p>}
-                    {candidateProfile.skills?.length > 0 && <div className="flex flex-wrap gap-2">{candidateProfile.skills.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}</div>}
+              <CardContent className="p-0 overflow-hidden">
+                {/* Image de couverture */}
+                {hasCover && (
+                  <div className="relative w-full h-28 overflow-hidden">
+                    <img
+                      src={candidateProfile.cover_url}
+                      alt="Couverture"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
                   </div>
                 )}
+                <div className={cn("p-6 sm:p-8", hasCover && "pt-4")}>
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden shrink-0">
+                      {candidate?.avatar_url ? <img src={candidate.avatar_url} alt="Avatar" className="w-full h-full object-cover" /> : <User className="w-10 h-10 text-blue-600" />}
+                    </div>
+                    <div className="min-w-0">
+                      <h1 className="text-2xl font-bold text-slate-900">{candidate?.first_name} {candidate?.last_name}</h1>
+                      <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> <a href={`mailto:${candidate?.email}`} className="text-blue-600 hover:underline">{candidate?.email}</a></p>
+                      {candidate?.phone && (
+                        <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {telLink ? <a href={telLink} className="text-blue-600 hover:underline font-mono">{candidate.phone}</a> : <span className="font-mono">{candidate.phone}</span>}</p>
+                      )}
+                      {candidate?.city?.name && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {candidate.city.name}</p>}
+                      {candidate?.id && (
+                        <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm">
+                          <ExternalLink className="w-4 h-4" /> {t('applicationDetail.viewFullProfile')}
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  {candidateProfile && (
+                    <div className="space-y-4 text-sm mt-4">
+                      {candidateProfile.title && <p className="font-medium text-slate-700">{candidateProfile.title}</p>}
+                      {candidateProfile.bio && <p className="text-slate-600">{candidateProfile.bio}</p>}
+                      {candidateProfile.skills?.length > 0 && <div className="flex flex-wrap gap-2">{candidateProfile.skills.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}</div>}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 

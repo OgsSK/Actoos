@@ -35,7 +35,7 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
-// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+// Fonction de formatage des nombres (10K, 1.2M, etc.)
 const formatCount = (num) => {
   if (!num || num < 10000) return num?.toString() || '0';
   if (num >= 1000000) {
@@ -161,7 +161,7 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- JobCard --------------------
+// -------------------- JobCard (avec badges à droite) --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -170,6 +170,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const menuButtonRef = useRef(null);
   const isOwner = user?.id && job.company?.owner_id === user.id;
+  const hasCover = !!job.cover_url;
 
   const handleToggleStatus = async (newStatus) => {
     try {
@@ -291,8 +292,6 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
       )
     : null;
 
-  const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
-
   const getRemoteLabel = () => {
     if (!job.is_remote) return null;
     switch (job.remote_type) {
@@ -305,14 +304,36 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
 
   return (
     <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-xl border-slate-200 rounded-3xl">
-      {job.is_urgent && (
-        <div className="absolute -top-px inset-x-0 bg-red-500 text-white text-xs font-medium px-3 py-1 text-center rounded-t-2xl">
-          {t('jobs.urgent')}
+      {/* === EN-TÊTE AVEC COUVERTURE === */}
+      {hasCover && (
+        <div className="relative w-full h-36 overflow-hidden rounded-t-3xl">
+          <img
+            src={job.cover_url}
+            alt="Couverture"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+          {/* Badge Urgent à l'intérieur de l'image */}
+          {job.is_urgent && (
+            <div className="absolute top-3 left-3 z-10">
+              <span className="bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full shadow-lg">
+                {t('jobs.urgent')}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      {/* Badge Urgent en haut de la carte si pas de cover */}
+      {!hasCover && job.is_urgent && (
+        <div className="absolute -top-px inset-x-0 z-10">
+          <div className="bg-red-500 text-white text-xs font-medium px-3 py-1 text-center rounded-t-2xl">
+            {t('jobs.urgent')}
+          </div>
         </div>
       )}
 
       <Link to={`/emplois/${job.id}`} className="block">
-        <CardContent>
+        <CardContent className={cn(hasCover && "pt-4")}>
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
               {job.company?.logo_url ? (
@@ -381,7 +402,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
             </span>
           </div>
 
-          {/* ✅ Statistiques : vues et favoris formatés avec formatCount */}
+          {/* Statistiques */}
           <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
@@ -395,11 +416,12 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
         </CardContent>
       </Link>
 
+      {/* Bouton favori (si non propriétaire et non entreprise) */}
       {!isOwner && !isCompany && (
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave && onSave(job.id); }}
           className={cn(
-            'absolute top-3 right-3 p-2 rounded-xl transition',
+            'absolute top-3 right-3 p-2 rounded-xl transition z-20',
             isSaved ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:bg-red-50 hover:text-red-500'
           )}
         >
@@ -407,18 +429,31 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
         </button>
       )}
 
+      {/* === Badge "Postulé" – à droite, sous le bouton favori === */}
       {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-        <Badge className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
+        <Badge
+          className={cn(
+            "absolute right-3 z-20 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm",
+            hasCover ? "top-12" : "top-10"
+          )}
+        >
           {t('jobs.alreadyAppliedBadge', 'Postulé')}
         </Badge>
       )}
 
+      {/* === Badge "Votre offre" – à droite (pas de bouton favori) === */}
       {isOwner && (
         <>
-          <Badge className="absolute top-3 left-3 bg-blue-600 text-white text-xs rounded-full">
+          <Badge
+            className={cn(
+              "absolute right-3 z-20 bg-blue-600 text-white text-xs rounded-full",
+              hasCover ? "top-3" : "top-3"
+            )}
+          >
             {t('jobs.yourOffer')}
           </Badge>
-          <div className="absolute top-2 right-2 z-40">
+          {/* Menu à trois points décalé à droite pour ne pas chevaucher le badge */}
+          <div className="absolute top-2 right-12 z-40">
             <Button
               variant="ghost"
               size="icon"
@@ -676,6 +711,7 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
+  // ===== fetchJobs avec cover_url et fallback =====
   useEffect(() => {
     if (!countryLoaded) return;
 
@@ -702,10 +738,9 @@ const JobsPage = () => {
           query = query.eq('country_id', countryId);
         }
 
-        // Tentative avec views_count
+        // Tentative avec views_count ET cover_url
         let data;
         try {
-          // On clone la requête pour ajouter views_count
           const queryWithViews = query.select(`
             id, title, description, contract_type, experience_level, salary_min, salary_max,
             salary_period,
@@ -714,6 +749,7 @@ const JobsPage = () => {
             boosted_until,
             address,
             views_count,
+            cover_url,
             company:companies(name, logo_url, is_verified, owner_id, subscription_plan),
             city:cities(name)
           `);
@@ -724,17 +760,17 @@ const JobsPage = () => {
           if (jobsError) throw jobsError;
           data = jobsData;
         } catch (err) {
-          console.warn('views_count column may not exist, retrying without it', err);
-          // Retry sans views_count
+          console.warn('views_count or cover_url columns may not exist, retrying without them', err);
+          // Fallback : on garde la query de base (sans views_count ni cover_url)
           const { data: jobsData, error: jobsError } = await query
             .order('boosted_until', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false });
 
           if (jobsError) throw jobsError;
-          data = jobsData.map(job => ({ ...job, views_count: 0 }));
+          data = jobsData.map(job => ({ ...job, views_count: 0, cover_url: null }));
         }
 
-        // Récupération du nombre de favoris pour chaque job
+        // Récupération des favoris
         if (data && data.length > 0) {
           const jobIds = data.map(job => job.id);
           const { data: savedData, error: savedError } = await supabase
@@ -748,7 +784,6 @@ const JobsPage = () => {
               favoritesCountMap[item.job_id] = (favoritesCountMap[item.job_id] || 0) + 1;
             });
           }
-          // Enrichissement
           const enrichedJobs = data.map(job => ({
             ...job,
             favorites_count: favoritesCountMap[job.id] || 0,
@@ -769,6 +804,7 @@ const JobsPage = () => {
     fetchJobs();
   }, [countryId, countryLoaded, t]);
 
+  // --- Reste du code inchangé (useEffect pour appliedStatuses, savedJobs, etc.) ---
   useEffect(() => {
     if (!user || jobs.length === 0) {
       setAppliedStatuses({});
@@ -968,6 +1004,7 @@ const JobsPage = () => {
     setCurrentPage(page);
   };
 
+  // --- Rendu final (inchangé) ---
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30">

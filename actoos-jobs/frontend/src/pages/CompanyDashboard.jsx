@@ -66,7 +66,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   );
 };
 
-// ---------- CompanyJobCard ----------
+// ---------- CompanyJobCard (avec couverture) ----------
 const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForReview, onCancelSubmission, isCompanyVerified, isBusinessPlan, onFreeBoost, companyLogo }) => {
   const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -74,6 +74,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const { format } = useCurrencyFormatter();
+  const hasCover = !!job.cover_url;
 
   const now = new Date();
   const isExpired = job.status === 'active' && job.expires_at && new Date(job.expires_at) < now;
@@ -99,12 +100,10 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const openMenu = () => { if (!showMenu) updateMenuPosition(); setShowMenu(prev => !prev); };
   useEffect(() => { if (!showMenu) return; const close = () => setShowMenu(false); const reposition = () => updateMenuPosition(); window.addEventListener('resize', reposition); window.addEventListener('scroll', close, true); return () => { window.removeEventListener('resize', reposition); window.removeEventListener('scroll', close, true); }; }, [showMenu]);
 
-  // ✅ Menu avec "Modifier" toujours présent (comme dans CompanyJobsPage)
   const menu = showMenu ? createPortal(
     <>
       <div className="fixed inset-0 z-[9998]" onClick={() => setShowMenu(false)} />
       <div className="fixed z-[9999] w-[240px] max-w-[calc(100vw-24px)] bg-white rounded-xl shadow-2xl border border-slate-200 py-1" style={{ top: menuPos.top, left: menuPos.left }}>
-        {/* ✅ Modifier toujours présent (clé companyJobs.menu.edit) */}
         <button onClick={() => { onEdit(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50">
           <Edit className="w-4 h-4" />{t('companyJobs.menu.edit')}
         </button>
@@ -167,34 +166,64 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const formattedApplications = formatCount(job.applications_count || 0);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-slate-200">
-          {companyLogo ? (
-            <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
-          ) : (
-            <Building2 className="w-6 h-6 text-slate-400" />
+    <div className="relative bg-slate-50 rounded-2xl overflow-hidden shadow-sm hover:bg-slate-100 transition-colors">
+      {/* === IMAGE DE COUVERTURE === */}
+      {hasCover && (
+        <div className="relative w-full h-28 overflow-hidden">
+          <img
+            src={job.cover_url}
+            alt="Couverture"
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+          {job.is_urgent && (
+            <div className="absolute top-2 left-2 z-10">
+              <span className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-lg">
+                {t('jobs.urgent')}
+              </span>
+            </div>
           )}
         </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <Link to={`/emplois/${job.id}`} className="font-semibold text-slate-900 hover:text-blue-600 text-sm sm:text-base" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{job.title}</Link>
-            <Badge className={cn(statusColor, 'border-0 text-xs w-fit')}>{statusLabel}</Badge>
-          </div>
-          <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
-            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || t('companyDashboard.jobCard.unspecifiedLocation')}</span>
-            <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>{contractInfo.label}</Badge>
-            {job.salary_min && job.salary_max && (
-              <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}</span>
-            )}
-            <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{t('companyDashboard.jobCard.views', { count: formattedViews })}</span>
-            <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{t('companyDashboard.jobCard.applications', { count: formattedApplications })}</span>
+      )}
+      {/* Badge urgent en haut de la carte si pas de cover */}
+      {!hasCover && job.is_urgent && (
+        <div className="absolute -top-px inset-x-0 z-10">
+          <div className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 text-center">
+            {t('jobs.urgent')}
           </div>
         </div>
-        <div className="shrink-0"><Button ref={buttonRef} type="button" variant="ghost" size="icon" onClick={openMenu} className="h-9 w-9"><MoreVertical className="w-4 h-4" /></Button></div>
+      )}
+
+      {/* Contenu principal */}
+      <div className={cn("p-4", hasCover && "pt-4")}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-slate-200">
+            {companyLogo ? (
+              <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Building2 className="w-6 h-6 text-slate-400" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <Link to={`/emplois/${job.id}`} className="font-semibold text-slate-900 hover:text-blue-600 text-sm sm:text-base" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{job.title}</Link>
+              <Badge className={cn(statusColor, 'border-0 text-xs w-fit')}>{statusLabel}</Badge>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
+              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || t('companyDashboard.jobCard.unspecifiedLocation')}</span>
+              <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>{contractInfo.label}</Badge>
+              {job.salary_min && job.salary_max && (
+                <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}</span>
+              )}
+              <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{t('companyDashboard.jobCard.views', { count: formattedViews })}</span>
+              <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{t('companyDashboard.jobCard.applications', { count: formattedApplications })}</span>
+            </div>
+          </div>
+          <div className="shrink-0"><Button ref={buttonRef} type="button" variant="ghost" size="icon" onClick={openMenu} className="h-9 w-9"><MoreVertical className="w-4 h-4" /></Button></div>
+        </div>
+        <div className="text-xs text-slate-400 mt-2">{formatRelative(job.created_at)}</div>
       </div>
-      <div className="text-xs text-slate-400">{formatRelative(job.created_at)}</div>
       {menu}
     </div>
   );
@@ -275,7 +304,7 @@ const CompanyDashboard = () => {
   const [pendingDocsCount, setPendingDocsCount] = useState(0);
   const hasLoaded = useRef(false);
 
-  // ✅ primaryCompanyId stocké en base, plus de localStorage
+  // primaryCompanyId stocké en base, plus de localStorage
   const [primaryCompanyId, setPrimaryCompanyId] = useState(null);
 
   const [followersSummary, setFollowersSummary] = useState({ total: 0, followers: [] });
@@ -307,7 +336,7 @@ const CompanyDashboard = () => {
     fetchCompanyData(companyId);
   };
 
-  // ✅ Nouvelle gestion de primaryCompanyId avec Supabase
+  // Nouvelle gestion de primaryCompanyId avec Supabase
   const handleSetPrimaryCompany = async () => {
     if (!activeCompanyId || !user) return;
 
@@ -322,7 +351,6 @@ const CompanyDashboard = () => {
 
       setPrimaryCompanyId(newPrimaryId);
       toast.success(newPrimaryId ? t('companyDashboard.primaryCompanySet') : t('companyDashboard.primaryCompanyRemoved'));
-      // Rafraîchir le profil pour mettre à jour le contexte si nécessaire
       await refreshProfile();
     } catch (err) {
       toast.error(err.message);
@@ -336,7 +364,6 @@ const CompanyDashboard = () => {
       
       const now = new Date().toISOString();
       
-      // Chargement parallèle des données
       const [compResult, jobsResult] = await Promise.all([
         supabase.from('companies').select('*').eq('id', companyId).single(),
         supabase.from('jobs').select('*, city:cities(name)').eq('company_id', companyId).order('created_at', { ascending: false }).limit(10),
@@ -349,7 +376,6 @@ const CompanyDashboard = () => {
       const jobsData = jobsResult.data || [];
       setJobs(jobsData);
 
-      // Stats en parallèle
       const [activeCountResult, appsResult, docsResult] = await Promise.all([
         supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', comp.id).eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`),
         jobsData.length ? supabase.from('applications').select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`).in('job_id', jobsData.map(j => j.id)).order('created_at', { ascending: false }).limit(10) : Promise.resolve({ data: [] }),
@@ -384,7 +410,6 @@ const CompanyDashboard = () => {
         return;
       }
 
-      // ✅ Récupérer primary_company_id depuis la table users
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('primary_company_id')
@@ -397,26 +422,18 @@ const CompanyDashboard = () => {
       }
       setPrimaryCompanyId(primaryId);
 
-      // ------------------------------------------------------------
-      // ✅ NOUVELLE LOGIQUE : garder la dernière entreprise active
-      // ------------------------------------------------------------
-      let targetId = activeCompanyId; // valeur stockée dans localStorage via le contexte
-
-      // Vérifier si l'entreprise stockée existe toujours dans la liste de l'utilisateur
+      let targetId = activeCompanyId;
       const companyExists = targetId && userCompanies.find(c => c.id === targetId);
       if (!companyExists) {
-        // Fallback : entreprise principale, sinon la première
         targetId = (primaryId && userCompanies.find(c => c.id === primaryId))
           ? primaryId
           : userCompanies[0]?.id;
       }
 
-      // Mettre à jour le contexte uniquement si nécessaire (évite un re-render inutile)
       if (targetId && targetId !== activeCompanyId) {
         setActiveCompanyId(targetId);
       }
 
-      // Charger les données pour l'entreprise cible
       if (targetId) {
         await fetchCompanyData(targetId);
       }
@@ -434,7 +451,6 @@ const CompanyDashboard = () => {
   const isBusinessPlan = plan === 'business' || plan === 'enterprise';
   const showFollowersWidget = plan === 'pro' || isBusinessPlan;
 
-  // ✅ Chargement des followers via Supabase direct
   const fetchFollowersSummary = useCallback(async () => {
     if (!company || !showFollowersWidget) return;
     setLoadingFollowers(true);
@@ -504,7 +520,6 @@ const CompanyDashboard = () => {
       await supabase.from('jobs').update({ status: 'pending' }).eq('id', job.id);
       setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, status: 'pending' } : j)));
       toast.success(t('companyDashboard.toasts.submittedForValidation'));
-      // Notification admin non bloquante
       setTimeout(() => {
         fetch(`${BASE_URL}/api/notify-admin-new-job`, {
           method: 'POST',
@@ -730,7 +745,6 @@ const CompanyDashboard = () => {
                   {company?.email && <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-blue-600 hover:underline break-all"><Mail className="w-4 h-4 shrink-0" />{company.email}</a>}
                   {company?.phone && <a href={`tel:${company.phone}`} className="flex items-center gap-2 text-slate-600 hover:text-blue-600 break-all"><Phone className="w-4 h-4 text-slate-400 shrink-0" />{company.phone}</a>}
                   {company?.founded_year && <p className="flex items-center gap-2 text-slate-600"><Calendar className="w-4 h-4 text-slate-400" />{t('companyDashboard.companyProfileCard.founded', { year: company.founded_year })}</p>}
-                  {/* Adresse cliquable */}
                   {company?.address && (
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.address)}`}

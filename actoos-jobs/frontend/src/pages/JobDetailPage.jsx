@@ -255,7 +255,7 @@ const JobDetailPage = () => {
     setLoading(true);
     try {
       let jobData;
-      // Tentative avec views_count
+      // Tentative avec views_count et cover_url
       try {
         const { data, error } = await supabase
           .from('jobs')
@@ -263,6 +263,7 @@ const JobDetailPage = () => {
             *,
             address,
             views_count,
+            cover_url,
             company:companies(*),
             city:cities(name),
             posted_by_user:users(email, first_name, last_name)
@@ -272,7 +273,7 @@ const JobDetailPage = () => {
         if (error) throw error;
         jobData = data;
       } catch (err) {
-        console.warn('views_count column may not exist, retrying without it', err);
+        console.warn('views_count or cover_url column may not exist, retrying without them', err);
         const { data, error } = await supabase
           .from('jobs')
           .select(`
@@ -285,7 +286,7 @@ const JobDetailPage = () => {
           .eq('id', id)
           .single();
         if (error) throw error;
-        jobData = { ...data, views_count: 0 };
+        jobData = { ...data, views_count: 0, cover_url: null };
       }
 
       // Compter les favoris
@@ -487,6 +488,7 @@ const JobDetailPage = () => {
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
+  const hasCover = !!job.cover_url;
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -498,6 +500,18 @@ const JobDetailPage = () => {
 
         {/* Carte principale */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+          {/* === IMAGE DE COUVERTURE === */}
+          {hasCover && (
+            <div className="relative w-full h-48 sm:h-56 md:h-64 overflow-hidden">
+              <img
+                src={job.cover_url}
+                alt="Couverture"
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+            </div>
+          )}
+
           <div className="p-6 sm:p-8 border-b border-slate-100">
             <div className="flex flex-col sm:flex-row items-start gap-5">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">

@@ -28,7 +28,7 @@ import {
   RefreshCw,
   Banknote,
 } from 'lucide-react';
-import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
+import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod, cn } from '../lib/utils';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 const statusIcons = {
@@ -78,6 +78,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const menuButtonRef = useRef(null);
+  const hasCover = !!job.cover_url;
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
 
@@ -195,116 +196,145 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
     : null;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-blue-200 transition-colors overflow-visible">
-      <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
-          {companyLogo ? (
-            <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
-          ) : (
-            <Building2 className="w-6 h-6 text-slate-400" />
+    <div className="relative bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-blue-200 transition-colors">
+      {/* === IMAGE DE COUVERTURE === */}
+      {hasCover && (
+        <div className="relative w-full h-28 overflow-hidden">
+          <img
+            src={job.cover_url}
+            alt="Couverture"
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+          {/* Badge Urgent dans l'image */}
+          {job.is_urgent && (
+            <div className="absolute top-2 left-2 z-10">
+              <span className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-lg">
+                {t('jobs.urgent')}
+              </span>
+            </div>
           )}
         </div>
+      )}
+      {/* Badge Urgent en haut de carte si pas de cover */}
+      {!hasCover && job.is_urgent && (
+        <div className="absolute -top-px inset-x-0 z-10">
+          <div className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 text-center">
+            {t('jobs.urgent')}
+          </div>
+        </div>
+      )}
 
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <Link
-              to={`/emplois/${job.id}`}
-              className="font-semibold text-slate-900 hover:text-blue-600 text-sm sm:text-base"
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
+      <div className={cn("p-4", hasCover && "pt-4")}>
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+            {companyLogo ? (
+              <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Building2 className="w-6 h-6 text-slate-400" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <Link
+                to={`/emplois/${job.id}`}
+                className="font-semibold text-slate-900 hover:text-blue-600 text-sm sm:text-base"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {job.title}
+              </Link>
+
+              <Badge className={`${statusColors[effectiveStatus] || ''} border-0 text-xs flex items-center gap-1`}>
+                <StatusIcon className="w-3 h-3" />
+                {statusLabel}
+              </Badge>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-slate-500">
+              {job.city && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {job.city.name}
+                </span>
+              )}
+
+              <Badge className={`${contractInfo.color} border-0 text-xs`}>
+                {contractInfo.label}
+              </Badge>
+
+              {job.salary_min && job.salary_max && (
+                <span className="flex items-center gap-1">
+                  <Banknote className="w-3 h-3" />
+                  {format(job.salary_min)} – {format(job.salary_max)}
+                  {formatSalaryPeriod(job.salary_period, t)}
+                </span>
+              )}
+
+              <span className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                {t('companyJobs.views', { count: job.views_count || 0 })}
+              </span>
+
+              <span className="flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                {t('companyJobs.applications', { count: job.applications_count || 0 })}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-400 mt-2">
+              {formatRelative(job.created_at)}
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            <Button
+              ref={menuButtonRef}
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={openMenu}
             >
-              {job.title}
-            </Link>
-
-            <Badge className={`${statusColors[effectiveStatus] || ''} border-0 text-xs flex items-center gap-1`}>
-              <StatusIcon className="w-3 h-3" />
-              {statusLabel}
-            </Badge>
+              <MoreVertical className="w-4 h-4" />
+            </Button>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-slate-500">
-            {job.city && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {job.city.name}
-              </span>
-            )}
-
-            <Badge className={`${contractInfo.color} border-0 text-xs`}>
-              {contractInfo.label}
-            </Badge>
-
-            {/* ✅ Affichage du salaire avec période */}
-            {job.salary_min && job.salary_max && (
-              <span className="flex items-center gap-1">
-                <Banknote className="w-3 h-3" />
-                {format(job.salary_min)} – {format(job.salary_max)}
-                {formatSalaryPeriod(job.salary_period, t)}
-              </span>
-            )}
-
-            <span className="flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              {t('companyJobs.views', { count: job.views_count || 0 })}
-            </span>
-
-            <span className="flex items-center gap-1">
-              <FileText className="w-3 h-3" />
-              {t('companyJobs.applications', { count: job.applications_count || 0 })}
-            </span>
-          </div>
-
-          <p className="text-xs text-slate-400 mt-2">
-            {formatRelative(job.created_at)}
-          </p>
         </div>
 
-        <div className="shrink-0">
+        <div className="flex flex-col sm:flex-row gap-2 mt-4">
+          {effectiveStatus === 'expired' ? (
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto min-h-[44px] text-green-600 border-green-300 hover:bg-green-50"
+              onClick={() => onToggleStatus(job, 'active')}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t('companyJobs.menu.reactivate', 'Réactiver')}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto min-h-[44px]"
+              onClick={() => onEdit(job)}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              {t('companyJobs.menu.edit')}
+            </Button>
+          )}
+
           <Button
-            ref={menuButtonRef}
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={openMenu}
+            variant="outline"
+            className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]"
+            onClick={() => onDelete(job)}
           >
-            <MoreVertical className="w-4 h-4" />
+            <Trash2 className="w-4 h-4 mr-2" />
+            {t('companyJobs.menu.delete')}
           </Button>
         </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-2 mt-4">
-        {effectiveStatus === 'expired' ? (
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto min-h-[44px] text-green-600 border-green-300 hover:bg-green-50"
-            onClick={() => onToggleStatus(job, 'active')}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            {t('companyJobs.menu.reactivate', 'Réactiver')}
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto min-h-[44px]"
-            onClick={() => onEdit(job)}
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            {t('companyJobs.menu.edit')}
-          </Button>
-        )}
-
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]"
-          onClick={() => onDelete(job)}
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          {t('companyJobs.menu.delete')}
-        </Button>
       </div>
 
       {menu}
@@ -321,7 +351,7 @@ const CompanyJobsPage = () => {
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
 
-  // ✅ Chargement combiné entreprise + jobs avec salary_period
+  // ✅ Chargement combiné entreprise + jobs avec cover_url
   useEffect(() => {
     if (!user || !activeCompanyId) {
       setJobs([]);
@@ -335,7 +365,10 @@ const CompanyJobsPage = () => {
         // Charger l'entreprise et les jobs en parallèle
         const [companyResult, jobsResult] = await Promise.all([
           supabase.from('companies').select('subscription_plan, logo_url').eq('id', activeCompanyId).single(),
-          supabase.from('jobs').select('*, city:cities(name)').eq('company_id', activeCompanyId).order('created_at', { ascending: false }),
+          supabase.from('jobs').select(`
+            *,
+            city:cities(name)
+          `).eq('company_id', activeCompanyId).order('created_at', { ascending: false }),
         ]);
 
         if (companyResult.data) setCompany(companyResult.data);
@@ -450,7 +483,10 @@ const CompanyJobsPage = () => {
       // Rafraîchir les jobs
       const { data: refreshedJobs } = await supabase
         .from('jobs')
-        .select('*, city:cities(name)')
+        .select(`
+          *,
+          city:cities(name)
+        `)
         .eq('company_id', activeCompanyId)
         .order('created_at', { ascending: false });
       setJobs(refreshedJobs || []);

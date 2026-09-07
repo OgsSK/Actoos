@@ -2756,6 +2756,10 @@
       }
     },
     "companyProfile": {
+      "coverUpload": "تحميل غلاف",
+      "uploadingCover": "جارٍ التحميل...",
+      "deleteCover": "حذف",
+      "deleteCoverConfirm": "هل تريد حقاً حذف صورة الغلاف هذه؟",
       "deleteLogo": "حذف الشعار",
     "deleteLogoConfirm": "هل تريد بالتأكيد حذف الشعار الحالي؟",
       "back": "رجوع",
@@ -2765,7 +2769,8 @@
       "uploading": "جارٍ التحميل…",
       "submit": "حفظ التغييرات",
       "deleteConfirm": "هل تريد حذف شركتك نهائياً؟ ستفقد جميع العروض والبيانات المرتبطة بها.",
-      "labels": {
+      "labels": { 
+         "cover": "صورة الغلاف",
         "name": "اسم الشركة",
         "description": "الوصف",
         "industry": "القطاع",
@@ -2779,6 +2784,7 @@
         "address": "العنوان"
       },
       "placeholders": {
+        "cover": "رابط صورة الغلاف",
         "name": "اسم شركتك",
         "description": "قم بوصف شركتك ورسالتها وقيمها…",
         "website": "https://www.mysite.com",
@@ -2800,6 +2806,9 @@
         "500+": "أكثر من 500 موظف"
       },
       "toasts": {
+         "coverUploaded": "تم تحميل صورة الغلاف",
+        "coverDeleted": "تم حذف صورة الغلاف",
+        "coverUploadError": "خطأ أثناء التحميل",
         "imageRequired": "يرجى اختيار صورة.",
         "imageTooBig": "يجب ألا يتجاوز حجم الصورة 2 ميغابايت.",
         "logoUploaded": "تم تحديث الشعار.",
@@ -3679,6 +3688,20 @@
         "roleRequestError": "خطأ في إرسال الطلب.",
         "profileUpdated": "تم تحديث معلوماتك.",
         "saveError": "خطأ أثناء الحفظ."
+      }
+    },
+     "job": {
+      "labels": {
+        "cover": "صورة الغلاف"
+      },
+      "coverUpload": "تحميل غلاف",
+      "uploadingCover": "جارٍ التحميل...",
+      "deleteCover": "حذف",
+      "deleteCoverConfirm": "هل تريد حقاً حذف صورة الغلاف هذه؟",
+      "toasts": {
+        "coverUploaded": "تم تحميل صورة الغلاف",
+        "coverDeleted": "تم حذف صورة الغلاف",
+        "coverUploadError": "خطأ أثناء التحميل"
       }
     }
 

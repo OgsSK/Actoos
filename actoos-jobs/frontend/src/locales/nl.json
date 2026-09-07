@@ -2828,6 +2828,10 @@
       }
     },
     "companyProfile": {
+      "coverUpload": "Omslag uploaden",
+      "uploadingCover": "Uploaden...",
+      "deleteCover": "Verwijderen",
+      "deleteCoverConfirm": "Weet u zeker dat u deze omslagafbeelding wilt verwijderen?",
       "deleteLogo": "Logo verwijderen",
     "deleteLogoConfirm": "Weet u zeker dat u het huidige logo wilt verwijderen?",
       "back": "Terug",
@@ -2838,6 +2842,7 @@
       "submit": "Wijzigingen opslaan",
       "deleteConfirm": "Uw bedrijf permanent verwijderen? Alle vacatures en bijbehorende gegevens gaan verloren.",
       "labels": {
+        "cover": "Omslagafbeelding",
         "name": "Bedrijfsnaam",
         "description": "Beschrijving",
         "industry": "Sector",
@@ -2851,6 +2856,7 @@
         "address": "Adres"
       },
       "placeholders": {
+         "cover": "URL van de omslagafbeelding",
         "name": "Naam van uw bedrijf",
         "description": "Beschrijf uw bedrijf, missie, waarden…",
         "website": "https://www.mijnbedrijf.nl",
@@ -2872,6 +2878,9 @@
         "500+": "Meer dan 500 medewerkers"
       },
       "toasts": {
+         "coverUploaded": "Omslagafbeelding geüpload",
+        "coverDeleted": "Omslagafbeelding verwijderd",
+        "coverUploadError": "Fout bij uploaden",
         "imageRequired": "Selecteer een afbeelding.",
         "imageTooBig": "Afbeelding mag niet groter zijn dan 2 MB.",
         "logoUploaded": "Logo bijgewerkt.",
@@ -3670,6 +3679,20 @@
       "copiedShort": "Gekopieerd",
       "copied": "Link naar klembord gekopieerd!",
       "copyError": "Kan de link niet kopiëren."
+    },
+    "job": {
+      "labels": {
+        "cover": "Omslagafbeelding"
+      },
+      "coverUpload": "Omslag uploaden",
+      "uploadingCover": "Uploaden...",
+      "deleteCover": "Verwijderen",
+      "deleteCoverConfirm": "Weet u zeker dat u deze omslagafbeelding wilt verwijderen?",
+      "toasts": {
+        "coverUploaded": "Omslagafbeelding geüpload",
+        "coverDeleted": "Omslagafbeelding verwijderd",
+        "coverUploadError": "Fout bij uploaden"
+      }
     }
  
 

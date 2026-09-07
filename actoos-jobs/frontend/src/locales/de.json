@@ -2867,6 +2867,10 @@
       }
     },
     "companyProfile": {
+      "coverUpload": "Titelbild hochladen",
+      "uploadingCover": "Wird hochgeladen...",
+      "deleteCover": "Löschen",
+      "deleteCoverConfirm": "Möchten Sie dieses Titelbild wirklich löschen?",
        "deleteLogo": "Logo löschen",
     "deleteLogoConfirm": "Möchten Sie das aktuelle Logo wirklich löschen?",
       "back": "Zurück",
@@ -2877,6 +2881,7 @@
       "submit": "Änderungen speichern",
       "deleteConfirm": "Ihr Unternehmen endgültig löschen? Alle Angebote und zugehörigen Daten gehen verloren.",
       "labels": {
+         "cover": "Titelbild",
         "name": "Unternehmensname",
         "description": "Beschreibung",
         "industry": "Branche",
@@ -2890,6 +2895,7 @@
         "address": "Adresse"
       },
       "placeholders": {
+        "cover": "URL des Titelbildes",
         "name": "Name Ihres Unternehmens",
         "description": "Beschreiben Sie Ihr Unternehmen, seine Mission, Werte…",
         "website": "https://www.meinunternehmen.de",
@@ -2911,6 +2917,9 @@
         "500+": "Mehr als 500 Mitarbeiter"
       },
       "toasts": {
+        "coverUploaded": "Titelbild hochgeladen",
+        "coverDeleted": "Titelbild gelöscht",
+        "coverUploadError": "Fehler beim Hochladen",
         "imageRequired": "Bitte wählen Sie ein Bild aus.",
         "imageTooBig": "Das Bild darf 2 MB nicht überschreiten.",
         "logoUploaded": "Logo aktualisiert.",
@@ -3709,6 +3718,20 @@
       "copiedShort": "Kopiert",
       "copied": "Link in die Zwischenablage kopiert!",
       "copyError": "Link konnte nicht kopiert werden."
+    },
+    "job": {
+      "labels": {
+        "cover": "Titelbild"
+      },
+      "coverUpload": "Titelbild hochladen",
+      "uploadingCover": "Wird hochgeladen...",
+      "deleteCover": "Löschen",
+      "deleteCoverConfirm": "Möchten Sie dieses Titelbild wirklich löschen?",
+      "toasts": {
+        "coverUploaded": "Titelbild hochgeladen",
+        "coverDeleted": "Titelbild gelöscht",
+        "coverUploadError": "Fehler beim Hochladen"
+      }
     }
 
 

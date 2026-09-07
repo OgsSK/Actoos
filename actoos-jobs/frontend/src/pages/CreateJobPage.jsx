@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,7 +13,7 @@ import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Users,
   Plus, X, Save, Loader2, ChevronLeft, Send,
-  GraduationCap, ArrowRight, Building2, Globe
+  GraduationCap, ArrowRight, Building2, Globe, Image, Trash2
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
@@ -68,11 +68,16 @@ const CreateJobPage = () => {
     is_urgent: false,
     status: 'draft',
     required_languages: [],
+    cover_url: '', // ✅ AJOUT
   });
 
   const [newSkill, setNewSkill] = useState('');
   const [newRequiredLanguage, setNewRequiredLanguage] = useState('');
   const [newRequiredLanguageLevel, setNewRequiredLanguageLevel] = useState('intermediate');
+
+  // ✅ États pour l'upload de couverture
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef(null);
 
   useEffect(() => {
     if (!user?.id || !activeCompanyId) return;
@@ -150,6 +155,7 @@ const CreateJobPage = () => {
         is_urgent: data.is_urgent || false,
         status: data.status || 'draft',
         required_languages: requiredLanguages,
+        cover_url: data.cover_url || '', // ✅ AJOUT
       });
     } catch (error) {
       console.error('Error fetching job:', error);
@@ -201,6 +207,43 @@ const CreateJobPage = () => {
         l.code === code ? { ...l, level } : l
       )
     });
+  };
+
+  // ✅ Fonctions pour l'upload de couverture
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('job.toasts.imageRequired'));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t('job.toasts.imageTooBig'));
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/job-cover-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('job-covers')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('job-covers').getPublicUrl(fileName);
+      setForm(prev => ({ ...prev, cover_url: urlData.publicUrl }));
+      toast.success(t('job.toasts.coverUploaded'));
+    } catch (error) {
+      console.error(error);
+      toast.error(t('job.toasts.coverUploadError'));
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const handleDeleteCover = () => {
+    if (!window.confirm(t('job.deleteCoverConfirm'))) return;
+    setForm(prev => ({ ...prev, cover_url: '' }));
+    toast.success(t('job.toasts.coverDeleted'));
   };
 
   // Sauvegarde / Publication
@@ -300,6 +343,7 @@ const CreateJobPage = () => {
         is_urgent: form.is_urgent,
         status: finalStatus,
         eligibility_criteria: eligibilityCriteria,
+        cover_url: form.cover_url || null, // ✅ AJOUT
       };
 
       let newJobId = id;
@@ -534,6 +578,59 @@ const CreateJobPage = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.benefits')}</label>
                 <textarea value={form.benefits} onChange={(e) => setForm({ ...form, benefits: e.target.value })} rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder={t('createJob.placeholders.benefits')} data-testid="job-benefits-textarea" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ✅ Image de couverture de l'offre */}
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="mt-6 border-t border-slate-200 pt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  {t('job.labels.cover')}
+                </label>
+                <div className="flex flex-col items-center gap-3">
+                  <div
+                    className="w-full h-48 bg-slate-100 rounded-xl overflow-hidden border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-center relative group"
+                    onClick={() => coverInputRef.current?.click()}
+                  >
+                    {uploadingCover ? (
+                      <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                    ) : form.cover_url ? (
+                      <img src={form.cover_url} alt="Cover" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center text-slate-400">
+                        <Image className="w-12 h-12 mx-auto mb-2" />
+                        <span className="text-sm">{t('job.coverUpload')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => coverInputRef.current?.click()}
+                      disabled={uploadingCover}
+                      className="min-h-[44px]"
+                    >
+                      {uploadingCover ? t('job.uploadingCover') : t('job.coverUpload')}
+                    </Button>
+                    {form.cover_url && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteCover}
+                        className="min-h-[44px] text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {t('job.deleteCover')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
               </div>
             </CardContent>
           </Card>

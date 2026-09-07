@@ -18,7 +18,7 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
 import { toast } from 'sonner';
 
-// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+// Fonction de formatage des nombres (10K, 1.2M, etc.)
 const formatCount = (num) => {
   if (!num || num < 10000) return num?.toString() || '0';
   if (num >= 1000000) {
@@ -29,7 +29,7 @@ const formatCount = (num) => {
   return `${val}K`;
 };
 
-// ✅ Skeleton pour une carte d'offre
+// Skeleton pour une carte d'offre
 const JobCardSkeleton = () => (
   <div className="bg-white border border-slate-200 rounded-2xl p-5 animate-pulse">
     <div className="flex items-start gap-4">
@@ -243,7 +243,7 @@ const CategoriesStrip = ({ categories = [] }) => {
 };
 
 /* ===================================================================
-   Offres récentes - avec la même logique que JobsPage
+   Offres récentes - avec cover_url et badges repositionnés
    =================================================================== */
 const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   const { t } = useTranslation();
@@ -294,7 +294,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
 
         if (countryId) query = query.eq('country_id', countryId);
 
-        // ✅ Tentative de récupération de views_count
+        // Tentative avec views_count ET cover_url
         let data;
         try {
           const queryWithViews = query.select(`
@@ -302,6 +302,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
             created_at, is_urgent, is_remote, remote_type, address,
             boosted_until,
             views_count,
+            cover_url,
             company:companies(name, logo_url, owner_id),
             city:cities(name)
           `);
@@ -309,14 +310,13 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           if (jobsError) throw jobsError;
           data = jobsData;
         } catch (err) {
-          console.warn('views_count column may not exist, retrying without it', err);
-          // Fallback : on relance sans views_count
+          console.warn('views_count or cover_url column may not exist, retrying without them', err);
           const { data: jobsData, error: jobsError } = await query;
           if (jobsError) throw jobsError;
-          data = jobsData.map(job => ({ ...job, views_count: 0 }));
+          data = jobsData.map(job => ({ ...job, views_count: 0, cover_url: null }));
         }
 
-        // ✅ Comptage des favoris
+        // Comptage des favoris
         let favoritesCountMap = {};
         if (data && data.length > 0) {
           const jobIds = data.map(job => job.id);
@@ -409,7 +409,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
 };
 
 /* ===================================================================
-   Carte d'offre - affichage des statistiques formatées
+   Carte d'offre - avec cover et badges repositionnés à droite
    =================================================================== */
 const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   const { t } = useTranslation();
@@ -417,71 +417,127 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const isOwner = user?.id && job.owner_id === user.id;
   const isCompany = user?.user_metadata?.role === 'company' || user?.app_metadata?.role === 'company';
+  const hasCover = !!job.cover_url;
 
   return (
     <Link to={`/emplois/${job.id}`} className="block group">
-      <div className="relative bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg hover:border-blue-200 transition-all duration-200">
-        {job.is_urgent && <div className="absolute -top-px inset-x-0 bg-red-500 text-white text-xs font-medium px-3 py-1 text-center rounded-t-2xl">{t('home.jobs.urgent')}</div>}
-        <div className="flex items-start gap-4 mt-1">
-          <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
-            {job.company_logo ? <img src={job.company_logo} alt="" className="w-full h-full object-cover" /> : <Building2 className="w-7 h-7 text-slate-400" />}
-          </div>
-          <div className={`flex-1 min-w-0 ${!isOwner && !isCompany ? 'pr-12' : ''}`}>
-            <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug">{job.title}</h3>
-            <p className="text-sm text-slate-600 mt-1">{job.company_name}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-slate-500">
-          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-3 py-1">
-            <MapPin className="w-3 h-3" />{job.location}
-          </span>
-          {job.address && (
-            <span className="inline-flex items-center gap-1 text-slate-500 text-xs">
-              <MapPin className="w-3 h-3 text-slate-400" />
-              {job.address}
-            </span>
-          )}
-          <Badge className={`${contractInfo.color} border-0 text-xs rounded-full`}>{t(contractInfo.key)}</Badge>
-          {job.is_remote && <Badge className="bg-green-50 text-green-600 border-0 text-xs rounded-full">{t('home.jobs.remote')}</Badge>}
-        </div>
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-          <div className="text-sm">
-            {job.salary_min && job.salary_max ? (
-              <span className="font-semibold text-slate-800">
-                {format(job.salary_min)} – {format(job.salary_max)}
-                {formatSalaryPeriod(job.salary_period, t)}
-              </span>
-            ) : (
-              <span className="text-slate-500 text-sm">{t('home.jobs.unspecified')}</span>
+      <div className="relative bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-blue-200 transition-all duration-200">
+        {/* === IMAGE DE COUVERTURE === */}
+        {hasCover ? (
+          <div className="relative w-full h-36 overflow-hidden">
+            <img
+              src={job.cover_url}
+              alt="Couverture"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+            {/* Badge Urgent dans l'image */}
+            {job.is_urgent && (
+              <div className="absolute top-3 left-3 z-10">
+                <span className="bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full shadow-lg">
+                  {t('home.jobs.urgent')}
+                </span>
+              </div>
             )}
           </div>
-          <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
-        </div>
-
-        {/* ✅ Statistiques : vues & favoris formatés avec formatCount */}
-        <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
-          <span className="flex items-center gap-1">
-            <Eye className="w-3.5 h-3.5" />
-            {formatCount(job.views_count)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5" />
-            {formatCount(job.favorites_count)}
-          </span>
-        </div>
-
-        {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-          <Badge className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
-            {t('home.jobs.alreadyAppliedBadge')}
-          </Badge>
+        ) : (
+          /* Badge Urgent en haut de carte si pas de cover */
+          job.is_urgent && (
+            <div className="absolute -top-px inset-x-0 z-10">
+              <div className="bg-red-500 text-white text-xs font-medium px-3 py-1 text-center rounded-t-2xl">
+                {t('home.jobs.urgent')}
+              </div>
+            </div>
+          )
         )}
 
+        {/* Contenu */}
+        <div className={cn("p-5", hasCover && "pt-4")}>
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+              {job.company_logo ? <img src={job.company_logo} alt="" className="w-full h-full object-cover" /> : <Building2 className="w-7 h-7 text-slate-400" />}
+            </div>
+            <div className={`flex-1 min-w-0 ${!isOwner && !isCompany ? 'pr-12' : ''}`}>
+              <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug">{job.title}</h3>
+              <p className="text-sm text-slate-600 mt-1">{job.company_name}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-3 py-1">
+              <MapPin className="w-3 h-3" />{job.location}
+            </span>
+            {job.address && (
+              <span className="inline-flex items-center gap-1 text-slate-500 text-xs">
+                <MapPin className="w-3 h-3 text-slate-400" />
+                {job.address}
+              </span>
+            )}
+            <Badge className={`${contractInfo.color} border-0 text-xs rounded-full`}>{t(contractInfo.key)}</Badge>
+            {job.is_remote && <Badge className="bg-green-50 text-green-600 border-0 text-xs rounded-full">{t('home.jobs.remote')}</Badge>}
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+            <div className="text-sm">
+              {job.salary_min && job.salary_max ? (
+                <span className="font-semibold text-slate-800">
+                  {format(job.salary_min)} – {format(job.salary_max)}
+                  {formatSalaryPeriod(job.salary_period, t)}
+                </span>
+              ) : (
+                <span className="text-slate-500 text-sm">{t('home.jobs.unspecified')}</span>
+              )}
+            </div>
+            <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
+          </div>
+
+          {/* Statistiques : vues & favoris */}
+          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
+            <span className="flex items-center gap-1">
+              <Eye className="w-3.5 h-3.5" />
+              {formatCount(job.views_count)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="w-3.5 h-3.5" />
+              {formatCount(job.favorites_count)}
+            </span>
+          </div>
+        </div>
+
+        {/* Badges flottants : repositionnés à droite */}
         {!isOwner && !isCompany && (
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave(job.id); }} className={cn('absolute top-3 right-3 p-2 rounded-xl transition', isSaved ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:bg-red-50 hover:text-red-500')}>
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave(job.id); }}
+            className={cn(
+              'absolute top-3 right-3 p-2 rounded-xl transition z-20',
+              isSaved ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:bg-red-50 hover:text-red-500'
+            )}
+          >
             <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />
           </button>
         )}
-        {isOwner && <Badge className="absolute top-3 left-3 bg-blue-600 text-white text-xs rounded-full">{t('home.jobs.yourJob')}</Badge>}
+
+        {/* Badge "Postulé" – à droite, décalé si cover et bouton favori présent */}
+        {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
+          <div className={cn(
+            "absolute right-3 z-20",
+            hasCover ? "top-12" : "top-3"
+          )}>
+            <Badge className="bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
+              {t('home.jobs.alreadyAppliedBadge')}
+            </Badge>
+          </div>
+        )}
+
+        {/* Badge "Votre offre" – à droite, pas de conflit avec bouton favori (propriétaire) */}
+        {isOwner && (
+          <div className={cn(
+            "absolute right-3 z-20",
+            hasCover ? "top-3" : "top-3"
+          )}>
+            <Badge className="bg-blue-600 text-white text-xs rounded-full">
+              {t('home.jobs.yourJob')}
+            </Badge>
+          </div>
+        )}
       </div>
     </Link>
   );

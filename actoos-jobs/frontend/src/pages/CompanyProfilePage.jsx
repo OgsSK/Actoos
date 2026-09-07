@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
-import useAllowedCountries from '../hooks/useAllowedCountries'; // 👈 NOUVEAU
+import useAllowedCountries from '../hooks/useAllowedCountries';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -96,13 +96,14 @@ const CompanyProfilePage = () => {
   const { prefs } = usePreferencesContext();
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
+  const coverInputRef = useRef(null); // ✅ Réf pour l'upload de couverture
 
-  // 👇 Récupération des pays autorisés
   const { allowed, isRestricted } = useAllowedCountries();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false); // ✅ État upload couverture
   const [noCompany, setNoCompany] = useState(false);
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(prefs.country);
@@ -122,6 +123,7 @@ const CompanyProfilePage = () => {
     address: '',
     founded_year: '',
     logo_url: '',
+    cover_url: '',
   });
 
   // ---------- Actualités ----------
@@ -175,6 +177,7 @@ const CompanyProfilePage = () => {
           address: companyData.address || '',
           founded_year: companyData.founded_year ? String(companyData.founded_year) : '',
           logo_url: companyData.logo_url || '',
+          cover_url: companyData.cover_url || '',
         });
 
         if (companyData.country_id) {
@@ -228,6 +231,43 @@ const CompanyProfilePage = () => {
     if (!window.confirm(t('companyProfile.deleteLogoConfirm'))) return;
     setForm(prev => ({ ...prev, logo_url: '' }));
     toast.success(t('companyProfile.toasts.logoDeleted'));
+  };
+
+  // ---------- Couverture ----------
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('companyProfile.toasts.imageRequired'));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t('companyProfile.toasts.imageTooBig'));
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/cover-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-covers')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('company-covers').getPublicUrl(fileName);
+      setForm(prev => ({ ...prev, cover_url: urlData.publicUrl }));
+      toast.success(t('companyProfile.toasts.coverUploaded'));
+    } catch (error) {
+      console.error(error);
+      toast.error(t('companyProfile.toasts.coverUploadError'));
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const handleDeleteCover = () => {
+    if (!window.confirm(t('companyProfile.deleteCoverConfirm'))) return;
+    setForm(prev => ({ ...prev, cover_url: '' }));
+    toast.success(t('companyProfile.toasts.coverDeleted'));
   };
 
   // ---------- Actualités ----------
@@ -318,6 +358,7 @@ const CompanyProfilePage = () => {
         address: form.address || null,
         founded_year: form.founded_year ? parseInt(form.founded_year) : null,
         logo_url: form.logo_url || null,
+        cover_url: form.cover_url || null,
       };
 
       const { error } = await supabase
@@ -444,6 +485,55 @@ const CompanyProfilePage = () => {
                 <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
               </div>
 
+              {/* ✅ Image de couverture (upload) */}
+              <div className="border-t border-slate-200 pt-6">
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  {t('companyProfile.labels.cover')}
+                </label>
+                <div className="flex flex-col items-center gap-3">
+                  <div
+                    className="w-full h-48 bg-slate-100 rounded-xl overflow-hidden border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-center relative group"
+                    onClick={() => coverInputRef.current?.click()}
+                  >
+                    {uploadingCover ? (
+                      <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                    ) : form.cover_url ? (
+                      <img src={form.cover_url} alt="Cover" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center text-slate-400">
+                        <Image className="w-12 h-12 mx-auto mb-2" />
+                        <span className="text-sm">{t('companyProfile.coverUpload')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => coverInputRef.current?.click()}
+                      disabled={uploadingCover}
+                      className="min-h-[44px]"
+                    >
+                      {uploadingCover ? t('companyProfile.uploadingCover') : t('companyProfile.coverUpload')}
+                    </Button>
+                    {form.cover_url && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteCover}
+                        className="min-h-[44px] text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {t('companyProfile.deleteCover')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+              </div>
+
               {/* Champs entreprise */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.name')}</label>
@@ -497,7 +587,6 @@ const CompanyProfilePage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1"><MapPin className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.country')}</label>
-                  {/* ✅ SÉLECTEUR PAYS CORRIGÉ */}
                   <select
                     value={selectedCountry}
                     onChange={(e) => setSelectedCountry(e.target.value)}
@@ -523,7 +612,7 @@ const CompanyProfilePage = () => {
                 </div>
               </div>
 
-              {/* 🗺️ Champ Adresse avec bouton Carte (icône uniquement) */}
+              {/* Adresse */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.address')}</label>
                 <div className="flex gap-2">

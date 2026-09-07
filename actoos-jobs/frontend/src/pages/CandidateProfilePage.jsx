@@ -743,6 +743,10 @@ const CandidateProfilePage = () => {
 
   const [previewDoc, setPreviewDoc] = useState(null);
 
+  // ✅ AJOUT : État pour la couverture
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef(null);
+
   // --------------------- fetchPosts (actualités) ---------------------
   const fetchPosts = async () => {
     if (!user) return;
@@ -844,17 +848,18 @@ const CandidateProfilePage = () => {
 
       const cp = profile.candidate_profile || {};
       setCandidateInfo({
-        title: cp.title || '',
-        bio: cp.bio || '',
-        experience_level: cp.experience_level || '',
-        years_of_experience: cp.years_of_experience || 0,
-        is_available: cp.is_available ?? true,
-        is_open_to_remote: cp.is_open_to_remote || false,
-        desired_salary_min: cp.desired_salary_min ? fromXOF(cp.desired_salary_min) : '',
-        desired_salary_max: cp.desired_salary_max ? fromXOF(cp.desired_salary_max) : '',
-        desired_salary_period: cp.desired_salary_period || 'monthly',
-        is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
-      });
+  title: cp.title || '',
+  bio: cp.bio || '',
+  experience_level: cp.experience_level || '',
+  years_of_experience: cp.years_of_experience || 0,
+  is_available: cp.is_available ?? true,
+  is_open_to_remote: cp.is_open_to_remote || false,
+  desired_salary_min: cp.desired_salary_min ? fromXOF(cp.desired_salary_min) : '',
+  desired_salary_max: cp.desired_salary_max ? fromXOF(cp.desired_salary_max) : '',
+  desired_salary_period: cp.desired_salary_period || 'monthly',
+  is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
+  cover_url: cp.cover_url || '', // ✅ AJOUT
+});
 
       setCustomCity(cp.city || '');
 
@@ -935,6 +940,45 @@ const CandidateProfilePage = () => {
     }
   };
 
+  // ✅ Fonctions pour la couverture
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('companyProfile.toasts.imageRequired'));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t('companyProfile.toasts.imageTooBig'));
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/cover-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      // On stocke l'URL dans candidateInfo (ou dans un état dédié)
+      setCandidateInfo(prev => ({ ...prev, cover_url: urlData.publicUrl }));
+      toast.success(t('companyProfile.toasts.coverUploaded'));
+    } catch (error) {
+      console.error(error);
+      toast.error(t('companyProfile.toasts.coverUploadError'));
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const handleDeleteCover = () => {
+    if (!window.confirm(t('companyProfile.deleteCoverConfirm'))) return;
+    setCandidateInfo(prev => ({ ...prev, cover_url: '' }));
+    toast.success(t('companyProfile.toasts.coverDeleted'));
+  };
+
+  // handleCVUpload, handleDeleteCV, handleDocumentUpload, handleDeleteDocument restent inchangés
   const handleCVUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1137,6 +1181,7 @@ const CandidateProfilePage = () => {
         links,
         is_visible_in_cv_bank: candidateInfo.is_visible_in_cv_bank,
         city: customCity,
+        cover_url: candidateInfo.cover_url || null, // ✅ AJOUT
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
@@ -1217,6 +1262,59 @@ const CandidateProfilePage = () => {
                 </div>
               </div>
               <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+            </CardContent>
+          </Card>
+
+          {/* ✅ COUVERTURE (bannière) */}
+          <Card>
+            <CardContent className="p-6">
+              <SectionHeader
+                icon={Image}
+                title={t('companyProfile.labels.cover', 'Image de couverture')}
+                description={t('companyProfile.coverDescription', 'Ajoutez une bannière pour personnaliser votre profil')}
+              />
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className="w-full h-48 bg-slate-100 rounded-xl overflow-hidden border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-center relative group"
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  {uploadingCover ? (
+                    <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                  ) : candidateInfo.cover_url ? (
+                    <img src={candidateInfo.cover_url} alt="Cover" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center text-slate-400">
+                      <Image className="w-12 h-12 mx-auto mb-2" />
+                      <span className="text-sm">{t('companyProfile.coverUpload')}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 flex-wrap justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => coverInputRef.current?.click()}
+                    disabled={uploadingCover}
+                    className="min-h-[44px]"
+                  >
+                    {uploadingCover ? t('companyProfile.uploadingCover') : t('companyProfile.coverUpload')}
+                  </Button>
+                  {candidateInfo.cover_url && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDeleteCover}
+                      className="min-h-[44px] text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {t('companyProfile.deleteCover')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
             </CardContent>
           </Card>
 

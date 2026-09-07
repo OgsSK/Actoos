@@ -2762,6 +2762,10 @@
       }
     },
     "companyProfile": {
+      "coverUpload": "Carica una copertina",
+      "uploadingCover": "Caricamento...",
+      "deleteCover": "Elimina",
+      "deleteCoverConfirm": "Vuoi davvero eliminare questa immagine di copertina?",
       "deleteLogo": "Elimina il logo",
     "deleteLogoConfirm": "Vuoi davvero eliminare il logo attuale?",
       "back": "Indietro",
@@ -2772,6 +2776,7 @@
       "submit": "Salva modifiche",
       "deleteConfirm": "Eliminare definitivamente la tua azienda? Tutte le offerte e i dati associati andranno persi.",
       "labels": {
+        "cover": "Immagine di copertina",
         "name": "Nome azienda",
         "description": "Descrizione",
         "industry": "Settore",
@@ -2785,6 +2790,7 @@
         "address": "Indirizzo"
       },
       "placeholders": {
+         "cover": "URL dell'immagine di copertina",
         "name": "Nome della tua azienda",
         "description": "Descrivi la tua azienda, la sua missione, i suoi valori…",
         "website": "https://www.miaazienda.it",
@@ -2806,6 +2812,9 @@
         "500+": "Più di 500 dipendenti"
       },
       "toasts": {
+        "coverUploaded": "Immagine di copertina caricata",
+        "coverDeleted": "Immagine di copertina eliminata",
+        "coverUploadError": "Errore durante il caricamento",
         "imageRequired": "Seleziona un'immagine.",
         "imageTooBig": "L'immagine non deve superare 2 MB.",
         "logoUploaded": "Logo aggiornato.",
@@ -3605,6 +3614,20 @@
       "copiedShort": "Copiato",
       "copied": "Link copiato negli appunti!",
       "copyError": "Impossibile copiare il link."
+    },
+    "job": {
+      "labels": {
+        "cover": "Immagine di copertina"
+      },
+      "coverUpload": "Carica una copertina",
+      "uploadingCover": "Caricamento...",
+      "deleteCover": "Elimina",
+      "deleteCoverConfirm": "Vuoi davvero eliminare questa immagine di copertina?",
+      "toasts": {
+        "coverUploaded": "Immagine di copertina caricata",
+        "coverDeleted": "Immagine di copertina eliminata",
+        "coverUploadError": "Errore durante il caricamento"
+      }
     }
  
 

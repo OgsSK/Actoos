@@ -144,6 +144,7 @@ const CandidatePublicProfilePage = () => {
           links: candidateData.links || [],
           languages: candidateData.languages || [],
           preferred_contract_types: candidateData.preferred_contract_types || [],
+          cover_url: candidateData.cover_url || null, // ✅ AJOUT
         });
       } catch (err) {
         console.error(err);
@@ -266,10 +267,20 @@ const CandidatePublicProfilePage = () => {
         </button>
 
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-          {/* Bannière */}
+          {/* Bannière avec cover_url */}
           {isLoading ? <ProfileHeaderSkeleton /> : (
-            <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 p-6 sm:p-10 text-white">
-              <div className="flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
+            <div 
+              className="relative p-6 sm:p-10 text-white overflow-hidden"
+              style={{ 
+                backgroundImage: profile.cover_url ? `url(${profile.cover_url})` : 'linear-gradient(to right, #2563eb, #1d4ed8, #4338ca)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
+              {/* Overlay pour la lisibilité du texte */}
+              <div className="absolute inset-0 bg-black/40" />
+              
+              <div className="relative z-10 flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
                 <div className="relative shrink-0">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full ring-4 ring-white/30 overflow-hidden bg-white">
                     {profile.avatar_url ? <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" /> : <User className="w-14 h-14 m-auto text-blue-200 mt-5" />}
@@ -277,8 +288,8 @@ const CandidatePublicProfilePage = () => {
                   {profile.is_available && <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-1.5 ring-2 ring-white"><Star className="w-4 h-4 fill-current" /></div>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight break-words">{profile.first_name} {profile.last_name}</h1>
-                  {profile.title && <p className="text-white/80 text-base sm:text-lg mt-1">{profile.title}</p>}
+                  <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight break-words text-white drop-shadow-lg">{profile.first_name} {profile.last_name}</h1>
+                  {profile.title && <p className="text-white/90 text-base sm:text-lg mt-1 drop-shadow">{profile.title}</p>}
                   <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
                     {profile.is_available && <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm"><Star className="w-3 h-3 mr-1 fill-current" /> {t('common.available')}</Badge>}
                     {profile.is_open_to_remote && <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">{t('candidateProfilePage.professionalProfile.openToRemote')}</Badge>}
@@ -286,9 +297,9 @@ const CandidatePublicProfilePage = () => {
                     {profile.years_of_experience > 0 && <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm"><Clock className="w-3 h-3 mr-1" />{profile.years_of_experience} {t('candidateProfilePage.professionalProfile.years', 'ans')}</Badge>}
                   </div>
                   <div className="flex flex-wrap gap-2 mt-4">
-                    <ContactRow icon={<Mail className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80"><a href={`mailto:${profile.email}`} className="hover:underline font-medium">{profile.email}</a></ContactRow>
-                    {profile.phone && <ContactRow icon={<Phone className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80">{telLink ? <a href={telLink} className="hover:underline font-mono font-medium">{profile.phone}</a> : <span className="font-mono">{profile.phone}</span>}</ContactRow>}
-                    {profile.city && <ContactRow icon={<MapPin className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80"><span>{profile.city}</span></ContactRow>}
+                    <ContactRow icon={<Mail className="w-4 h-4" />} bg="bg-white/20" textColor="text-white"><a href={`mailto:${profile.email}`} className="hover:underline font-medium">{profile.email}</a></ContactRow>
+                    {profile.phone && <ContactRow icon={<Phone className="w-4 h-4" />} bg="bg-white/20" textColor="text-white">{telLink ? <a href={telLink} className="hover:underline font-mono font-medium">{profile.phone}</a> : <span className="font-mono">{profile.phone}</span>}</ContactRow>}
+                    {profile.city && <ContactRow icon={<MapPin className="w-4 h-4" />} bg="bg-white/20" textColor="text-white"><span>{profile.city}</span></ContactRow>}
                   </div>
                   <div className="flex flex-wrap gap-2 mt-4">
                     {showContactButton && <Button size="sm" className="bg-white text-blue-700 hover:bg-blue-50" onClick={() => setContactModalOpen(true)}><Send className="w-4 h-4 mr-2" />{t('companyFollowers.contact', 'Contacter')}</Button>}

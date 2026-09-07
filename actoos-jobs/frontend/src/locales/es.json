@@ -2760,6 +2760,10 @@
       }
     },
     "companyProfile": {
+      "coverUpload": "Subir una portada",
+      "uploadingCover": "Subiendo...",
+      "deleteCover": "Eliminar",
+      "deleteCoverConfirm": "¿Seguro que quieres eliminar esta imagen de portada?",
       "deleteLogo": "Eliminar el logo",
     "deleteLogoConfirm": "¿Está seguro de que desea eliminar el logo actual?",
       "back": "Volver",
@@ -2770,6 +2774,7 @@
       "submit": "Guardar cambios",
       "deleteConfirm": "¿Eliminar permanentemente tu empresa? Se perderán todas las ofertas y datos asociados.",
       "labels": {
+        "cover": "Imagen de portada",
         "name": "Nombre de la empresa",
         "description": "Descripción",
         "industry": "Sector",
@@ -2783,6 +2788,7 @@
         "address": "Dirección"
       },
       "placeholders": {
+        "cover": "URL de la imagen de portada",
         "name": "Nombre de tu empresa",
         "description": "Describe tu empresa, su misión, sus valores…",
         "website": "https://www.miempresa.com",
@@ -2804,6 +2810,9 @@
         "500+": "Más de 500 empleados"
       },
       "toasts": {
+        "coverUploaded": "Imagen de portada subida",
+        "coverDeleted": "Imagen de portada eliminada",
+        "coverUploadError": "Error al subir",
         "imageRequired": "Por favor, selecciona una imagen.",
         "imageTooBig": "La imagen no debe superar los 2 MB.",
         "logoUploaded": "Logo actualizado.",
@@ -3603,6 +3612,20 @@
       "copiedShort": "Copiado",
       "copied": "¡Enlace copiado al portapapeles!",
       "copyError": "No se pudo copiar el enlace."
+    },
+    "job": {
+      "labels": {
+        "cover": "Imagen de portada"
+      },
+      "coverUpload": "Subir una portada",
+      "uploadingCover": "Subiendo...",
+      "deleteCover": "Eliminar",
+      "deleteCoverConfirm": "¿Seguro que quieres eliminar esta imagen de portada?",
+      "toasts": {
+        "coverUploaded": "Imagen de portada subida",
+        "coverDeleted": "Imagen de portada eliminada",
+        "coverUploadError": "Error al subir"
+      }
     }
 
 }

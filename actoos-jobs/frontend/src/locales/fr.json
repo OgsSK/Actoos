@@ -2503,6 +2503,11 @@
     }
   },
   "companyProfile": {
+    
+    "coverUpload": "Télécharger une couverture",
+    "uploadingCover": "Téléchargement...",
+    "deleteCover": "Supprimer",
+    "deleteCoverConfirm": "Voulez-vous vraiment supprimer cette image de couverture ?",
     "deleteLogo": "Supprimer le logo",
 "deleteLogoConfirm": "Voulez-vous vraiment supprimer le logo actuel ?",
     "back": "Retour",
@@ -2513,6 +2518,7 @@
     "submit": "Enregistrer les modifications",
     "deleteConfirm": "Supprimer définitivement votre entreprise ? Toutes les offres et données associées seront perdues.",
     "labels": {
+      "cover": "Image de couverture",
       "name": "Nom de l'entreprise",
       "description": "Description",
       "industry": "Secteur d'activité",
@@ -2526,6 +2532,7 @@
       "address": "Adresse"
     },
     "placeholders": {
+       "cover": "URL de l'image de couverture",
       "name": "Nom de votre entreprise",
       "description": "Décrivez votre entreprise, sa mission, ses valeurs…",
       "website": "https://www.monentreprise.com",
@@ -2547,6 +2554,9 @@
       "500+": "Plus de 500 employés"
     },
     "toasts": {
+      "coverUploaded": "Image de couverture téléchargée",
+      "coverDeleted": "Image de couverture supprimée",
+      "coverUploadError": "Erreur lors du téléchargement",
       "imageRequired": "Veuillez sélectionner une image.",
       "imageTooBig": "L'image ne doit pas dépasser 2 Mo.",
       "logoUploaded": "Logo mis à jour.",
@@ -3574,7 +3584,23 @@
     "copiedShort": "Copié",
     "copied": "Lien copié dans le presse-papier !",
     "copyError": "Impossible de copier le lien."
+  },
+  "job": {
+  "labels": {
+    "cover": "Image de couverture"
+  },
+  "coverUpload": "Cliquez pour ajouter une image de couverture",
+  "uploadingCover": "Téléchargement…",
+  "deleteCover": "Supprimer",
+  "deleteCoverConfirm": "Voulez-vous vraiment supprimer l'image de couverture ?",
+  "toasts": {
+    "imageRequired": "Veuillez sélectionner une image valide",
+    "imageTooBig": "L'image ne doit pas dépasser 5 Mo",
+    "coverUploaded": "Image de couverture téléchargée avec succès",
+    "coverUploadError": "Erreur lors du téléchargement de la couverture",
+    "coverDeleted": "Image de couverture supprimée"
   }
+}
   
 
 

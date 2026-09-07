@@ -2602,6 +2602,10 @@
       }
     },
     "companyProfile": {
+      "coverUpload": "Upload a cover",
+      "uploadingCover": "Uploading...",
+      "deleteCover": "Delete",
+      "deleteCoverConfirm": "Are you sure you want to delete this cover image?",
       "deleteLogo": "Delete logo",
 "deleteLogoConfirm": "Are you sure you want to delete the current logo?",
       "back": "Back",
@@ -2612,6 +2616,7 @@
       "submit": "Save changes",
       "deleteConfirm": "Permanently delete your company? All offers and associated data will be lost.",
       "labels": {
+         "cover": "Cover image",
         "name": "Company name",
         "description": "Description",
         "industry": "Industry",
@@ -2625,6 +2630,7 @@
         "address": "Address"
       },
       "placeholders": {
+        "cover": "Cover image URL",
         "name": "Your company name",
         "description": "Describe your company, its mission, values…",
         "website": "https://www.mycompany.com",
@@ -2646,6 +2652,9 @@
         "500+": "More than 500 employees"
       },
       "toasts": {
+        "coverUploaded": "Cover image uploaded",
+        "coverDeleted": "Cover image deleted",
+        "coverUploadError": "Upload error",
         "imageRequired": "Please select an image.",
         "imageTooBig": "Image must not exceed 2 MB.",
         "logoUploaded": "Logo updated.",
@@ -3677,6 +3686,20 @@
         "roleRequestError": "Error sending request.",
         "profileUpdated": "Your information has been updated.",
         "saveError": "Error while saving."
+      }
+    },
+    "job": {
+      "labels": {
+        "cover": "Cover image"
+      },
+      "coverUpload": "Upload a cover",
+      "uploadingCover": "Uploading...",
+      "deleteCover": "Delete",
+      "deleteCoverConfirm": "Are you sure you want to delete this cover image?",
+      "toasts": {
+        "coverUploaded": "Cover image uploaded",
+        "coverDeleted": "Cover image deleted",
+        "coverUploadError": "Upload error"
       }
     }
 

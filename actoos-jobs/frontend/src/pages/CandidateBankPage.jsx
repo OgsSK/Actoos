@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import { formatSalaryPeriod, CONTRACT_TYPES } from '../lib/utils';
+import { cn } from '../lib/utils';
 
 const PAGE_SIZE = 12;
 
@@ -48,9 +49,10 @@ const currencyNames = {
   MGA: 'Ariary',
 };
 
-// ---- Squelette pour une carte candidat ----
+// ---- Squelette pour une carte candidat (avec espace pour cover) ----
 const CandidateCardSkeleton = () => (
   <Card className="h-full flex flex-col overflow-hidden bg-white/90 backdrop-blur-sm border border-slate-200/70 rounded-3xl shadow-md shadow-slate-200/50">
+    <div className="w-full h-24 bg-slate-100 animate-pulse" />
     <CardContent className="p-6 flex-1 flex flex-col min-w-0">
       <div className="flex items-start gap-4 mb-5 min-w-0">
         <div className="w-14 h-14 rounded-2xl bg-slate-100 shrink-0" />
@@ -207,6 +209,7 @@ const CandidateBankPage = () => {
     fetchFilterOptions();
   }, [companyPlan]);
 
+  // ===== FETCH CANDIDATS AVEC cover_url =====
   const fetchCandidates = useCallback(async (isFirstLoad = false) => {
     if (!user || companyPlan !== 'business') return;
 
@@ -232,9 +235,13 @@ const CandidateBankPage = () => {
     }, 8000);
 
     try {
+      // ✅ Sélection incluant cover_url
       let query = supabase
         .from('candidate_profiles')
-        .select(`*, user:users(id, first_name, last_name, phone, avatar_url, email, city_id, city:cities(name))`, { count: 'exact' })
+        .select(`
+          *,
+          user:users(id, first_name, last_name, phone, avatar_url, email, city_id, city:cities(name))
+        `, { count: 'exact' })
         .eq('is_visible_in_cv_bank', true)
         .order(sortBy === 'name' ? 'user(first_name)' : 'updated_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
@@ -260,7 +267,7 @@ const CandidateBankPage = () => {
         if (xof !== null) query = query.gte('desired_salary_min', xof);
       }
 
-      // ===== RECHERCHE INSENSIBLE AUX ACCENTS VIA RPC =====
+      // Recherche insensible aux accents via RPC
       if (search) {
         const { data: matchingIds, error: rpcError } = await supabase
           .rpc('search_candidate_profiles', { search_term: search });
@@ -297,6 +304,7 @@ const CandidateBankPage = () => {
         experience: c.experience || [],
         education: c.education || [],
         cv_url: c.cv_url,
+        cover_url: c.cover_url || null, // ✅ AJOUT
         user: c.user ? {
           first_name: c.user.first_name,
           last_name: c.user.last_name,
@@ -327,14 +335,14 @@ const CandidateBankPage = () => {
     }
   }, [user, companyPlan, search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page]);
 
-  // ✅ Premier chargement avec initialLoading
+  // Premier chargement avec initialLoading
   useEffect(() => {
     if (!planLoading && companyPlan === 'business') {
       fetchCandidates(true);
     }
   }, [planLoading, companyPlan]);
 
-  // ✅ Chargements suivants avec loading (sans squelette)
+  // Chargements suivants avec loading (sans squelette)
   useEffect(() => {
     if (!planLoading && companyPlan === 'business' && !initialLoading) {
       const timer = setTimeout(() => fetchCandidates(false), 300);
@@ -458,7 +466,7 @@ const CandidateBankPage = () => {
                   </select>
                 </div>
 
-                {/* ✅ Squelette UNIQUEMENT au premier chargement */}
+                {/* Squelette UNIQUEMENT au premier chargement */}
                 {initialLoading ? (
                   <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
                     {Array.from({ length: PAGE_SIZE }).map((_, i) => <CandidateCardSkeleton key={i} />)}
@@ -477,7 +485,7 @@ const CandidateBankPage = () => {
                   </div>
                 ) : (
                   <>
-                    {/* ✅ Mini-loader discret pour les changements de page/filtre */}
+                    {/* Mini-loader discret pour les changements de page/filtre */}
                     {loading && (
                       <div className="flex justify-center py-2 mb-2">
                         <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
@@ -490,12 +498,24 @@ const CandidateBankPage = () => {
                         const lastEducation = c.education?.length > 0 ? c.education[0] : null;
                         const phone = c.user?.phone;
                         const telLink = phone ? `tel:${phone.replace(/\s/g, '')}` : null;
+                        const hasCover = !!c.cover_url;
 
                         return (
-                          // ✅ Lien vers la route frontend /candidat/:id
                           <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group min-w-0">
                             <Card className="hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col overflow-hidden bg-white/90 backdrop-blur-sm border border-slate-200/70 rounded-3xl shadow-md shadow-slate-200/50">
-                              <CardContent className="p-6 flex-1 flex flex-col min-w-0">
+                              {/* === IMAGE DE COUVERTURE === */}
+                              {hasCover && (
+                                <div className="relative w-full h-24 overflow-hidden">
+                                  <img
+                                    src={c.cover_url}
+                                    alt="Couverture"
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+                                </div>
+                              )}
+
+                              <CardContent className={cn("p-6 flex-1 flex flex-col min-w-0", hasCover && "pt-4")}>
                                 <div className="flex items-start gap-4 mb-5 min-w-0">
                                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                                     {c.user?.avatar_url ? <img src={c.user.avatar_url} alt={fullName} className="w-full h-full object-cover" /> : <Briefcase className="w-7 h-7 text-blue-600" />}
@@ -518,7 +538,7 @@ const CandidateBankPage = () => {
                                   </div>
                                 )}
 
-                                {/* ✅ Langues */}
+                                {/* Langues */}
                                 {c.languages?.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mb-3">
                                     {c.languages.slice(0, 3).map(lang => (
@@ -531,7 +551,7 @@ const CandidateBankPage = () => {
                                   </div>
                                 )}
 
-                                {/* ✅ Contrats préférés */}
+                                {/* Contrats préférés */}
                                 {c.preferred_contract_types?.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mb-5">
                                     {c.preferred_contract_types.slice(0, 3).map(contractType => (

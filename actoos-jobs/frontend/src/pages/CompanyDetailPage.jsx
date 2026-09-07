@@ -17,8 +17,9 @@ import {
   MessageSquare, ExternalLink, FileText, Eye, Heart, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
+import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod, cn } from '../lib/utils';
 
+// Fonction de formatage des nombres (10K, 1.2M, etc.)
 const formatCount = (num) => {
   if (!num || num < 10000) return num?.toString() || '0';
   if (num >= 1000000) {
@@ -120,13 +121,15 @@ const CompanyDetailPage = () => {
 
         const now = new Date().toISOString();
 
+        // --- Récupération des offres avec cover_url ---
         let jobsData;
         try {
           const { data, error } = await supabase
             .from('jobs')
             .select(`
               id, title, contract_type, salary_min, salary_max, salary_period,
-              created_at, address, views_count, category_id,
+              created_at, address, views_count, category_id, is_urgent,
+              cover_url,
               city:cities(name)
             `)
             .eq('company_id', id)
@@ -136,12 +139,12 @@ const CompanyDetailPage = () => {
           if (error) throw error;
           jobsData = data;
         } catch (err) {
-          console.warn('views_count column may not exist, retrying without it', err);
+          console.warn('views_count or cover_url column may not exist, retrying without them', err);
           const { data, error } = await supabase
             .from('jobs')
             .select(`
               id, title, contract_type, salary_min, salary_max, salary_period,
-              created_at, address, category_id,
+              created_at, address, category_id, is_urgent,
               city:cities(name)
             `)
             .eq('company_id', id)
@@ -149,9 +152,10 @@ const CompanyDetailPage = () => {
             .or(`expires_at.is.null,expires_at.gte.${now}`)
             .order('created_at', { ascending: false });
           if (error) throw error;
-          jobsData = data.map(job => ({ ...job, views_count: 0 }));
+          jobsData = data.map(job => ({ ...job, views_count: 0, cover_url: null }));
         }
 
+        // Récupération du nombre de favoris
         let favoritesCountMap = {};
         if (jobsData && jobsData.length > 0) {
           const jobIds = jobsData.map(job => job.id);
@@ -172,6 +176,7 @@ const CompanyDetailPage = () => {
         }));
         setJobs(enrichedJobs);
 
+        // Posts de l'entreprise
         const { data: postsData } = await supabase
           .from('company_posts')
           .select('*')
@@ -200,6 +205,7 @@ const CompanyDetailPage = () => {
     loadAll();
   }, [id, user]);
 
+  // Suivi (follow)
   useEffect(() => {
     if (!user || !id) {
       setLoadingFollow(false);
@@ -219,6 +225,7 @@ const CompanyDetailPage = () => {
       .catch(() => setLoadingFollow(false));
   }, [user, id]);
 
+  // Entreprises similaires
   useEffect(() => {
     if (!company) return;
     setSimilarLoading(true);
@@ -265,6 +272,7 @@ const CompanyDetailPage = () => {
     fetchSimilar();
   }, [company]);
 
+  // Follow / Unfollow
   const handleFollow = async () => {
     if (!user) { toast.error(t('common.loginRequired')); return; }
     setFollowLoading(true);
@@ -489,48 +497,98 @@ const CompanyDetailPage = () => {
                     {filteredJobs.map(job => {
                       const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
                       const applicationStatus = appliedStatuses[job.id];
+                      const isOwnerJob = user?.id && company?.owner_id === user.id;
+                      const hasCover = !!job.cover_url;
+
                       return (
-                        <Link key={job.id} to={`/emplois/${job.id}`} className="block bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md hover:border-blue-200 transition-all">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-slate-900 text-lg">{job.title}</h3>
-                              <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-slate-500">
-                                {job.city && <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{job.city.name}</span>}
-                                {job.address && (
-                                  <span className="flex items-center gap-1 text-xs text-slate-400">
-                                    <MapPin className="w-3 h-3" />
-                                    {job.address}
+                        <Link key={job.id} to={`/emplois/${job.id}`} className="block bg-white rounded-2xl border border-slate-100 hover:shadow-md hover:border-blue-200 transition-all overflow-hidden relative group">
+                          {/* ===== AFFICHAGE COUVERTURE ===== */}
+                          {hasCover && (
+                            <div className="relative w-full h-28 overflow-hidden">
+                              <img
+                                src={job.cover_url}
+                                alt="Couverture"
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+                              {/* Badge Urgent dans l'image */}
+                              {job.is_urgent && (
+                                <div className="absolute top-2 left-2 z-10">
+                                  <span className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-lg">
+                                    {t('jobs.urgent')}
                                   </span>
-                                )}
-                                <Badge className={`${contractInfo.color} border-0`}>{t(contractInfo.key)}</Badge>
-                                {job.salary_min && job.salary_max && (
-                                  <span className="flex items-center gap-1">
-                                    <Banknote className="w-4 h-4" />
-                                    {format(job.salary_min)} – {format(job.salary_max)}
-                                    {formatSalaryPeriod(job.salary_period, t)}
-                                  </span>
-                                )}
-                                {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-                                  <Badge className="bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200 shadow-sm px-3 py-1 flex items-center gap-1">
-                                    <CheckCircle className="w-3 h-3" />
-                                    {t('jobs.alreadyAppliedBadge')}
-                                  </Badge>
-                                )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Badge Urgent en haut de carte si pas de cover */}
+                          {!hasCover && job.is_urgent && (
+                            <div className="absolute -top-px inset-x-0 z-10">
+                              <div className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 text-center">
+                                {t('jobs.urgent')}
                               </div>
                             </div>
-                            <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
+                          )}
+
+                          <div className="p-5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-slate-900 text-lg">{job.title}</h3>
+                                <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-slate-500">
+                                  {job.city && <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{job.city.name}</span>}
+                                  {job.address && (
+                                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                                      <MapPin className="w-3 h-3" />
+                                      {job.address}
+                                    </span>
+                                  )}
+                                  <Badge className={`${contractInfo.color} border-0`}>{t(contractInfo.key)}</Badge>
+                                  {job.salary_min && job.salary_max && (
+                                    <span className="flex items-center gap-1">
+                                      <Banknote className="w-4 h-4" />
+                                      {format(job.salary_min)} – {format(job.salary_max)}
+                                      {formatSalaryPeriod(job.salary_period, t)}
+                                    </span>
+                                  )}
+                                  {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
+                                    <Badge className="bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200 shadow-sm px-3 py-1 flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3" />
+                                      {t('jobs.alreadyAppliedBadge')}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
+                            </div>
+
+                            {/* Statistiques formatées */}
+                            <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3.5 h-3.5" />
+                                {formatCount(job.views_count)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Heart className="w-3.5 h-3.5" />
+                                {formatCount(job.favorites_count)}
+                              </span>
+                            </div>
                           </div>
-                          {/* ✅ Statistiques formatées avec formatCount */}
-                          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
-                            <span className="flex items-center gap-1">
-                              <Eye className="w-3.5 h-3.5" />
-                              {formatCount(job.views_count)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Heart className="w-3.5 h-3.5" />
-                              {formatCount(job.favorites_count)}
-                            </span>
-                          </div>
+
+                          {/* ✅ Badges en haut à droite */}
+                          {(isOwnerJob || (applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn')) && (
+                            <div className="absolute top-2 right-2 z-20 flex flex-col gap-1 items-end">
+                              {isOwnerJob && (
+                                <Badge className="bg-blue-600 text-white text-xs rounded-full">
+                                  {t('jobs.yourOffer')}
+                                </Badge>
+                              )}
+                              {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
+                                <Badge className="bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
+                                  {t('jobs.alreadyAppliedBadge')}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
                         </Link>
                       );
                     })}
@@ -607,6 +665,7 @@ const CompanyDetailPage = () => {
   );
 };
 
+// Composants auxiliaires
 const InfoCard = ({ icon, label, value }) => (
   <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center hover:shadow-md transition-all">
     <div className="text-blue-600 mb-2 flex justify-center">{icon}</div>
