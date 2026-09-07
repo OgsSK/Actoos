@@ -21,6 +21,17 @@ const BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8001'
   : 'https://actoos-jobs-api.onrender.com';
 
+// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+const formatCount = (num) => {
+  if (!num || num < 10000) return num?.toString() || '0';
+  if (num >= 1000000) {
+    const val = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+    return `${val}M`;
+  }
+  const val = (num / 1000).toFixed(1).replace(/\.0$/, '');
+  return `${val}K`;
+};
+
 // Skeleton pour l'en-tête
 const JobHeaderSkeleton = () => (
   <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 animate-pulse">
@@ -564,15 +575,15 @@ const JobDetailPage = () => {
               </div>
             </div>
 
-            {/* ✅ Statistiques : uniquement les icônes + chiffres (sans texte) */}
+            {/* ✅ Statistiques : uniquement les icônes + chiffres formatés */}
             <div className="flex items-center gap-4 mt-4 text-sm text-slate-500 border-t border-slate-100 pt-4">
               <span className="flex items-center gap-1">
                 <Eye className="w-4 h-4" />
-                {job.views_count || 0}
+                {formatCount(job.views_count)}
               </span>
               <span className="flex items-center gap-1">
                 <Heart className="w-4 h-4" />
-                {job.favorites_count || 0}
+                {formatCount(job.favorites_count)}
               </span>
             </div>
 

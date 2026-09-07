@@ -14,7 +14,7 @@ import {
   Loader2, MapPin, Globe, Mail, Phone, Users, ChevronLeft,
   Building2, Briefcase, Clock, Banknote, AlertTriangle,
   CheckCircle, Calendar, MapPinned, UserPlus, UserCheck,
-  MessageSquare, ExternalLink, FileText, Eye, Heart, ChevronDown, // ✅ ajout ChevronDown
+  MessageSquare, ExternalLink, FileText, Eye, Heart, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
@@ -74,7 +74,6 @@ const CompanyDetailPage = () => {
   const [appliedStatuses, setAppliedStatuses] = useState({});
   const [companyPosts, setCompanyPosts] = useState([]);
 
-  // ✅ État du filtre par catégorie
   const [filterCategory, setFilterCategory] = useState(null);
 
   const handleBack = () => {
@@ -121,7 +120,6 @@ const CompanyDetailPage = () => {
 
         const now = new Date().toISOString();
 
-        // ---------- JOBS avec vues et favoris ----------
         let jobsData;
         try {
           const { data, error } = await supabase
@@ -154,7 +152,6 @@ const CompanyDetailPage = () => {
           jobsData = data.map(job => ({ ...job, views_count: 0 }));
         }
 
-        // Comptage des favoris
         let favoritesCountMap = {};
         if (jobsData && jobsData.length > 0) {
           const jobIds = jobsData.map(job => job.id);
@@ -309,14 +306,12 @@ const CompanyDetailPage = () => {
 
   const isOwner = user?.id && company?.owner_id === user.id;
 
-  // ✅ Catégories disponibles pour l'entreprise
   const companyCategories = useMemo(() => {
     if (!categories || jobs.length === 0) return [];
     const usedCategoryIds = new Set(jobs.map(j => j.category_id).filter(Boolean));
     return categories.filter(cat => usedCategoryIds.has(cat.id));
   }, [categories, jobs]);
 
-  // ✅ Offres filtrées par catégorie
   const filteredJobs = useMemo(() => {
     if (!filterCategory) return jobs;
     return jobs.filter(job => job.category_id === filterCategory);
@@ -466,7 +461,6 @@ const CompanyDetailPage = () => {
                   <h2 className="text-xl font-bold text-slate-900">
                     {t('companyDetail.jobs')} ({formattedJobsCount})
                   </h2>
-                  {/* ✅ Filtre par catégorie - SELECT stylisé */}
                   {companyCategories.length > 1 && (
                     <div className="relative w-full sm:w-56">
                       <select
@@ -526,15 +520,15 @@ const CompanyDetailPage = () => {
                             </div>
                             <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
                           </div>
-                          {/* Statistiques : uniquement icônes + chiffres */}
+                          {/* ✅ Statistiques formatées avec formatCount */}
                           <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
                             <span className="flex items-center gap-1">
                               <Eye className="w-3.5 h-3.5" />
-                              {job.views_count || 0}
+                              {formatCount(job.views_count)}
                             </span>
                             <span className="flex items-center gap-1">
                               <Heart className="w-3.5 h-3.5" />
-                              {job.favorites_count || 0}
+                              {formatCount(job.favorites_count)}
                             </span>
                           </div>
                         </Link>

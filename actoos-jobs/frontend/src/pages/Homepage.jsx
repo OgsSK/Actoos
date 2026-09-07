@@ -18,6 +18,17 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
 import { toast } from 'sonner';
 
+// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+const formatCount = (num) => {
+  if (!num || num < 10000) return num?.toString() || '0';
+  if (num >= 1000000) {
+    const val = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+    return `${val}M`;
+  }
+  const val = (num / 1000).toFixed(1).replace(/\.0$/, '');
+  return `${val}K`;
+};
+
 // ✅ Skeleton pour une carte d'offre
 const JobCardSkeleton = () => (
   <div className="bg-white border border-slate-200 rounded-2xl p-5 animate-pulse">
@@ -398,7 +409,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
 };
 
 /* ===================================================================
-   Carte d'offre - affichage des statistiques (comme dans JobsPage)
+   Carte d'offre - affichage des statistiques formatées
    =================================================================== */
 const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   const { t } = useTranslation();
@@ -447,15 +458,15 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
           <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
         </div>
 
-        {/* ✅ Statistiques : vues & favoris (comme dans JobsPage) */}
+        {/* ✅ Statistiques : vues & favoris formatés avec formatCount */}
         <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
           <span className="flex items-center gap-1">
             <Eye className="w-3.5 h-3.5" />
-            {job.views_count || 0}
+            {formatCount(job.views_count)}
           </span>
           <span className="flex items-center gap-1">
             <Heart className="w-3.5 h-3.5" />
-            {job.favorites_count || 0}
+            {formatCount(job.favorites_count)}
           </span>
         </div>
 

@@ -35,6 +35,17 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
+// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+const formatCount = (num) => {
+  if (!num || num < 10000) return num?.toString() || '0';
+  if (num >= 1000000) {
+    const val = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+    return `${val}M`;
+  }
+  const val = (num / 1000).toFixed(1).replace(/\.0$/, '');
+  return `${val}K`;
+};
+
 // ----------------------------------------------------------------------
 // Taux de conversion vers XOF
 // ----------------------------------------------------------------------
@@ -370,15 +381,15 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
             </span>
           </div>
 
-          {/* ✅ Statistiques : vues et favoris */}
+          {/* ✅ Statistiques : vues et favoris formatés avec formatCount */}
           <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
-              {job.views_count || 0}
+              {formatCount(job.views_count)}
             </span>
             <span className="flex items-center gap-1">
               <Heart className="w-3.5 h-3.5" />
-              {job.favorites_count || 0}
+              {formatCount(job.favorites_count)}
             </span>
           </div>
         </CardContent>
