@@ -128,7 +128,6 @@ const JobDetailPage = () => {
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarApplications, setSimilarApplications] = useState({});
 
-  // ✅ Ref pour éviter les doubles incréments (StrictMode)
   const hasRecordedView = useRef(false);
 
   const isCompany = user?.user_metadata?.role === 'company' || user?.app_metadata?.role === 'company' || user?.user_metadata?.account_type === 'company';
@@ -141,11 +140,10 @@ const JobDetailPage = () => {
     setLoading(true);
     setSimilarJobs([]);
     fetchJob();
-    // Réinitialiser le flag pour une nouvelle offre
     hasRecordedView.current = false;
   }, [id]);
 
-  // ✅ Incrémentation des vues – version PRO avec retour du compteur
+  // Incrémentation des vues
   useEffect(() => {
     if (!job || isOwner) return;
     if (hasRecordedView.current) {
@@ -158,7 +156,6 @@ const JobDetailPage = () => {
       let newCount = null;
 
       if (user) {
-        // Utilisateur connecté : utiliser la table job_views
         try {
           console.log('📊 Tentative d\'incrément via RPC pour', job.title);
           const { data, error } = await supabase.rpc('increment_view_if_not_exists', {
@@ -166,21 +163,17 @@ const JobDetailPage = () => {
             p_user_id: user.id
           });
           if (error) throw error;
-          // Si la RPC retourne le nouveau compteur (nombre)
           if (typeof data === 'number') {
             incremented = true;
             newCount = data;
             console.log('✅ Vue enregistrée via RPC, nouveau compteur :', newCount);
           } else if (data === true) {
-            // Fallback si la RPC retourne un booléen (ancienne version)
             incremented = true;
-            // Dans ce cas, on devra récupérer le compteur après
           } else {
             console.log('⏳ Vue déjà existante (RPC) pour', job.title);
           }
         } catch (err) {
           console.error('Erreur RPC:', err);
-          // Fallback localStorage
           const viewedJobs = JSON.parse(localStorage.getItem('viewedJobs') || '[]');
           if (!viewedJobs.includes(job.id)) {
             try {
@@ -196,7 +189,6 @@ const JobDetailPage = () => {
           }
         }
       } else {
-        // Utilisateur non connecté : localStorage
         const viewedJobs = JSON.parse(localStorage.getItem('viewedJobs') || '[]');
         if (!viewedJobs.includes(job.id)) {
           try {
@@ -212,14 +204,11 @@ const JobDetailPage = () => {
         }
       }
 
-      // ✅ Mise à jour de l'affichage si une vue a été comptée
       if (incremented) {
         if (newCount !== null) {
-          // On a déjà le nouveau compteur via la RPC
           setJob(prev => ({ ...prev, views_count: newCount }));
           console.log('🔄 Compteur mis à jour directement :', newCount);
         } else {
-          // Sinon, on le récupère en base (fallback ou ancienne RPC)
           try {
             const { data, error } = await supabase
               .from('jobs')
@@ -238,11 +227,9 @@ const JobDetailPage = () => {
     };
 
     recordView();
-    hasRecordedView.current = true; // on marque comme compté pour cette offre
-
+    hasRecordedView.current = true;
   }, [job, isOwner, user]);
 
-  // Vérification des candidatures et favoris
   useEffect(() => {
     if (user && job) {
       checkExistingApplication();
@@ -255,7 +242,6 @@ const JobDetailPage = () => {
     setLoading(true);
     try {
       let jobData;
-      // Tentative avec views_count et cover_url
       try {
         const { data, error } = await supabase
           .from('jobs')
@@ -289,7 +275,6 @@ const JobDetailPage = () => {
         jobData = { ...data, views_count: 0, cover_url: null };
       }
 
-      // Compter les favoris
       let favoritesCount = 0;
       if (jobData) {
         const { count, error: countError } = await supabase
@@ -308,7 +293,6 @@ const JobDetailPage = () => {
     }
   };
 
-  // ---------- Vérification candidature existante ----------
   const checkExistingApplication = async () => {
     if (!user) return;
     setLoadingApplication(true);
@@ -324,7 +308,6 @@ const JobDetailPage = () => {
     setLoadingApplication(false);
   };
 
-  // ---------- Vérification si l'offre est en favoris ----------
   const checkIfSaved = async () => {
     const { data } = await supabase
       .from('saved_jobs')
@@ -335,7 +318,6 @@ const JobDetailPage = () => {
     setIsSaved(!!data);
   };
 
-  // ---------- Chargement des offres similaires ----------
   useEffect(() => {
     if (!job) return;
     setSimilarLoading(true);
@@ -384,7 +366,6 @@ const JobDetailPage = () => {
     fetchSimilar();
   }, [job, user]);
 
-  // ---------- Utilitaires d'authentification ----------
   const requireAuth = () => {
     if (!user) {
       toast.error(t('jobDetail.pleaseLogin'));
@@ -394,7 +375,6 @@ const JobDetailPage = () => {
     return true;
   };
 
-  // ---------- Gestion de la candidature ----------
   const handleApply = async () => {
     if (!requireAuth()) return;
     if (isCompany) {
@@ -420,7 +400,6 @@ const JobDetailPage = () => {
       setApplicationStatus('pending');
       toast.success(t('jobDetail.applicationSent'));
 
-      // Envoi d'une notification au recruteur (asynchrone)
       setTimeout(async () => {
         const recruiterEmail = job.posted_by_user?.email || job.company?.owner?.email;
         const recruiterName = job.posted_by_user?.first_name
@@ -453,7 +432,6 @@ const JobDetailPage = () => {
     }
   };
 
-  // ---------- Gestion des favoris ----------
   const handleToggleSave = async () => {
     if (!requireAuth()) return;
     if (isCompany) {
@@ -482,7 +460,6 @@ const JobDetailPage = () => {
     }
   };
 
-  // États de chargement et d'absence d'offre
   if (loading) return <JobHeaderSkeleton />;
   if (!job) return <div className="pt-20 text-center">{t('jobDetail.notFoundMessage')}</div>;
 
@@ -500,73 +477,68 @@ const JobDetailPage = () => {
 
         {/* Carte principale */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-          {/* === IMAGE DE COUVERTURE === */}
-          {hasCover && (
-            <div className="relative w-full h-48 sm:h-56 md:h-64 overflow-hidden">
+          {/* === HERO COVER === */}
+          {hasCover ? (
+            <div className="relative w-full h-64 sm:h-80 md:h-96 overflow-hidden">
               <img
                 src={job.cover_url}
                 alt="Couverture"
-                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-            </div>
-          )}
-
-          <div className="p-6 sm:p-8 border-b border-slate-100">
-            <div className="flex flex-col sm:flex-row items-start gap-5">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                {job.company?.logo_url ? (
-                  <img src={job.company.logo_url} alt={job.company.name} className="w-full h-full object-cover" />
-                ) : (
-                  <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">{job.title}</h1>
-                <div className="flex flex-wrap items-center gap-2 text-slate-600 text-lg">
-                  <Link to={`/entreprises/${job.company?.id}`} className="font-medium hover:text-blue-600 transition-colors">
-                    {job.company?.name}
-                  </Link>
-                  {job.company?.is_verified && <CheckCircle className="w-4 h-4 text-green-500" />}
+              {/* Overlay dégradé pour la lisibilité */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              
+              {/* Logo + titre superposé */}
+              <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center overflow-hidden shadow-lg">
+                  {job.company?.logo_url ? (
+                    <img src={job.company.logo_url} alt={job.company.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-white/80" />
+                  )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Badge className="bg-slate-100 text-slate-700 border-0">
-                    <MapPin className="w-3.5 h-3.5 mr-1" />{job.city?.name || t('jobDetail.unspecified')}
-                  </Badge>
-                  {job.address && (
-                    <Badge className="bg-slate-50 text-slate-600 border border-slate-200">
-                      <MapPin className="w-3.5 h-3.5 mr-1" />
-                      {job.address}
+                <div>
+                  <h1 className="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-lg">{job.title}</h1>
+                  <div className="flex items-center gap-2 text-white/90 text-base sm:text-lg">
+                    <Link to={`/entreprises/${job.company?.id}`} className="font-medium hover:text-white transition-colors">
+                      {job.company?.name}
+                    </Link>
+                    {job.company?.is_verified && <CheckCircle className="w-4 h-4 text-green-400" />}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
+                      <MapPin className="w-3.5 h-3.5 mr-1" />{job.city?.name || t('jobDetail.unspecified')}
                     </Badge>
-                  )}
-                  <Badge className={`${contractInfo.color} border-0`}>{t(contractInfo.key)}</Badge>
-                  {job.salary_min && job.salary_max && (
-                    <Badge variant="outline" className="border-slate-200 text-slate-700">
-                      <Banknote className="w-3.5 h-3.5 mr-1" />
-                      {format(job.salary_min)} – {format(job.salary_max)}
-                      {formatSalaryPeriod(job.salary_period, t)}
-                    </Badge>
-                  )}
-                  {isBoosted && <Badge className="bg-purple-100 text-purple-700 border-purple-200">🚀 {t('jobDetail.boosted')}</Badge>}
+                    <Badge className={`${contractInfo.color} border-0 backdrop-blur-sm`}>{t(contractInfo.key)}</Badge>
+                    {job.salary_min && job.salary_max && (
+                      <Badge variant="outline" className="border-white/30 text-white backdrop-blur-sm bg-black/10">
+                        <Banknote className="w-3.5 h-3.5 mr-1" />
+                        {format(job.salary_min)} – {format(job.salary_max)}
+                        {formatSalaryPeriod(job.salary_period, t)}
+                      </Badge>
+                    )}
+                    {isBoosted && <Badge className="bg-purple-500/80 text-white border-0 backdrop-blur-sm">🚀 {t('jobDetail.boosted')}</Badge>}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+              {/* Boutons d'action en overlay */}
+              <div className="absolute top-4 right-4 flex flex-wrap items-center gap-2">
                 {!isOwner && !isCompany && !isAdmin && (
                   <>
                     {user && loadingApplication ? (
                       <div className="flex items-center justify-center w-28 h-9">
-                        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
                       </div>
                     ) : applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' ? (
-                      <Badge className="bg-emerald-50 text-emerald-700 whitespace-nowrap px-3 py-1 text-xs font-medium rounded-full border border-emerald-200 shadow-sm">
+                      <Badge className="bg-emerald-500/80 text-white border-0 backdrop-blur-sm">
                         <CheckCircle className="w-3 h-3 mr-1 inline" />
                         {t('jobDetail.alreadyApplied')}
                       </Badge>
                     ) : (
                       <Button
                         onClick={handleApply}
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200 rounded-xl"
+                        className="bg-white text-blue-700 hover:bg-blue-50 shadow-lg rounded-xl"
                         size="sm"
                       >
                         <Send className="w-4 h-4 mr-1.5" />
@@ -577,31 +549,107 @@ const JobDetailPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={handleToggleSave}
-                      className={isSaved ? 'bg-red-50 text-red-600 border-red-200' : ''}
-                      aria-label={isSaved ? t('jobDetail.saved', 'Sauvegardé') : t('jobDetail.save', 'Sauvegarder')}
+                      className={isSaved ? 'bg-red-500/80 text-white border-red-300' : 'bg-white/20 text-white border-white/30 hover:bg-white/30'}
                     >
-                      <Heart className={`w-4 h-4 ${isSaved ? 'fill-current text-red-500' : ''}`} />
+                      <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
                     </Button>
                   </>
                 )}
-                {isOwner && <Badge variant="outline" className="text-sm whitespace-nowrap">{t('jobDetail.yourOffer')}</Badge>}
-                {!isOwner && user && !isAdmin && <ReportButton itemType="job" itemId={job.id} reporterId={user.id} />}
+                {isOwner && <Badge variant="outline" className="bg-white/20 text-white border-white/30">{t('jobDetail.yourOffer')}</Badge>}
+                {!isOwner && user && !isAdmin && <ReportButton itemType="job" itemId={job.id} reporterId={user.id} className="bg-white/20 text-white hover:bg-white/30" />}
               </div>
             </div>
+          ) : (
+            // Header classique sans cover
+            <div className="p-6 sm:p-8 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row items-start gap-5">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                  {job.company?.logo_url ? (
+                    <img src={job.company.logo_url} alt={job.company.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">{job.title}</h1>
+                  <div className="flex flex-wrap items-center gap-2 text-slate-600 text-lg">
+                    <Link to={`/entreprises/${job.company?.id}`} className="font-medium hover:text-blue-600 transition-colors">
+                      {job.company?.name}
+                    </Link>
+                    {job.company?.is_verified && <CheckCircle className="w-4 h-4 text-green-500" />}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <Badge className="bg-slate-100 text-slate-700 border-0">
+                      <MapPin className="w-3.5 h-3.5 mr-1" />{job.city?.name || t('jobDetail.unspecified')}
+                    </Badge>
+                    {job.address && (
+                      <Badge className="bg-slate-50 text-slate-600 border border-slate-200">
+                        <MapPin className="w-3.5 h-3.5 mr-1" />
+                        {job.address}
+                      </Badge>
+                    )}
+                    <Badge className={`${contractInfo.color} border-0`}>{t(contractInfo.key)}</Badge>
+                    {job.salary_min && job.salary_max && (
+                      <Badge variant="outline" className="border-slate-200 text-slate-700">
+                        <Banknote className="w-3.5 h-3.5 mr-1" />
+                        {format(job.salary_min)} – {format(job.salary_max)}
+                        {formatSalaryPeriod(job.salary_period, t)}
+                      </Badge>
+                    )}
+                    {isBoosted && <Badge className="bg-purple-100 text-purple-700 border-purple-200">🚀 {t('jobDetail.boosted')}</Badge>}
+                  </div>
+                </div>
 
-            {/* ✅ Statistiques : uniquement les icônes + chiffres formatés */}
-            <div className="flex items-center gap-4 mt-4 text-sm text-slate-500 border-t border-slate-100 pt-4">
-              <span className="flex items-center gap-1">
-                <Eye className="w-4 h-4" />
-                {formatCount(job.views_count)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Heart className="w-4 h-4" />
-                {formatCount(job.favorites_count)}
-              </span>
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                  {!isOwner && !isCompany && !isAdmin && (
+                    <>
+                      {user && loadingApplication ? (
+                        <div className="flex items-center justify-center w-28 h-9">
+                          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                        </div>
+                      ) : applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' ? (
+                        <Badge className="bg-emerald-50 text-emerald-700 whitespace-nowrap px-3 py-1 text-xs font-medium rounded-full border border-emerald-200 shadow-sm">
+                          <CheckCircle className="w-3 h-3 mr-1 inline" />
+                          {t('jobDetail.alreadyApplied')}
+                        </Badge>
+                      ) : (
+                        <Button
+                          onClick={handleApply}
+                          className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200 rounded-xl"
+                          size="sm"
+                        >
+                          <Send className="w-4 h-4 mr-1.5" />
+                          {applicationStatus ? t('jobDetail.reapply', 'Repostuler') : t('jobDetail.apply', 'Postuler')}
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleToggleSave}
+                        className={isSaved ? 'bg-red-50 text-red-600 border-red-200' : ''}
+                      >
+                        <Heart className={`w-4 h-4 ${isSaved ? 'fill-current text-red-500' : ''}`} />
+                      </Button>
+                    </>
+                  )}
+                  {isOwner && <Badge variant="outline" className="text-sm whitespace-nowrap">{t('jobDetail.yourOffer')}</Badge>}
+                  {!isOwner && user && !isAdmin && <ReportButton itemType="job" itemId={job.id} reporterId={user.id} />}
+                </div>
+              </div>
             </div>
+          )}
 
-            <div className="mt-4 pt-4 border-t border-slate-100">
+          {/* Statistiques (communes aux deux versions) */}
+          <div className="px-6 sm:px-8 pt-4 pb-2 flex items-center gap-4 text-sm text-slate-500 border-b border-slate-100">
+            <span className="flex items-center gap-1">
+              <Eye className="w-4 h-4" />
+              {formatCount(job.views_count)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="w-4 h-4" />
+              {formatCount(job.favorites_count)}
+            </span>
+            <div className="ml-auto">
               <ShareButton
                 url={window.location.origin + `/emplois/${job.id}`}
                 title={job.title}
@@ -610,6 +658,7 @@ const JobDetailPage = () => {
             </div>
           </div>
 
+          {/* Description et contenu */}
           <div className="p-6 sm:p-8 space-y-8">
             <div className="prose prose-slate max-w-none">
               <h2 className="text-xl font-semibold text-slate-900">{t('jobDetail.descriptionTitle')}</h2>

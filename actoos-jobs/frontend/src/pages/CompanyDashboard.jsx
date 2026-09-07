@@ -376,11 +376,19 @@ const CompanyDashboard = () => {
       const jobsData = jobsResult.data || [];
       setJobs(jobsData);
 
-      const [activeCountResult, appsResult, docsResult] = await Promise.all([
-        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', comp.id).eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`),
-        jobsData.length ? supabase.from('applications').select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`).in('job_id', jobsData.map(j => j.id)).order('created_at', { ascending: false }).limit(10) : Promise.resolve({ data: [] }),
-        supabase.from('hiring_documents').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'uploaded'),
-      ]);
+      // Dans fetchCompanyData, vers la ligne ~115
+const [activeCountResult, appsResult, docsResult] = await Promise.all([
+  supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', comp.id).eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`),
+  
+  jobsData.length ? supabase.from('applications')
+    .select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`)
+    .in('job_id', jobsData.map(j => j.id))
+    .neq('status', 'withdrawn') // ✅ Filtre ajouté
+    .order('created_at', { ascending: false })
+    .limit(10) : Promise.resolve({ data: [] }),
+  
+  supabase.from('hiring_documents').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'uploaded'),
+]);
 
       setApplications(appsResult.data || []);
       setPendingDocsCount(docsResult.count || 0);

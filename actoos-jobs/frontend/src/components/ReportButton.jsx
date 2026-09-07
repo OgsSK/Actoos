@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Flag, Loader2 } from 'lucide-react';
+import { Flag, Loader2, X } from 'lucide-react'; // ✅ Ajout de X
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -106,9 +106,24 @@ const ReportButton = ({ itemType, itemId, reporterId, className }) => {
       </button>
 
       {showModal && (
-        // ✅ Ajout de text-slate-900 pour réinitialiser la couleur du texte
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-slate-900">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-slate-900"
+          onClick={() => setShowModal(false)} // ✅ Fermeture en cliquant à l’extérieur
+        >
+          <div 
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl relative"
+            onClick={(e) => e.stopPropagation()} // ✅ Empêcher la fermeture à l’intérieur
+          >
+            {/* ✅ Bouton de fermeture (X) */}
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label="Fermer"
+              type="button"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
             <div className="flex items-center gap-3 mb-4">
               <Flag className="w-5 h-5 text-red-500" />
               <h3 className="text-lg font-semibold text-slate-900">

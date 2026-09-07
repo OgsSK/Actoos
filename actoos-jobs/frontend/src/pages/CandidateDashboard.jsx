@@ -242,21 +242,44 @@ const CandidateDashboard = () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const { data: appsData } = await supabase.from('applications').select('*, job:jobs(id, title, contract_type, company:companies(name, logo_url), city:cities(name))').eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(5);
+      // ✅ Filtrer les candidatures retirées pour le dashboard
+      const { data: appsData } = await supabase
+        .from('applications')
+        .select('*, job:jobs(id, title, contract_type, company:companies(name, logo_url), city:cities(name))')
+        .eq('candidate_id', user.id)
+        .neq('status', 'withdrawn') // ← AJOUT : exclure les retirées
+        .order('created_at', { ascending: false })
+        .limit(5);
       setApplications(appsData || []);
 
-      const { data: savedData } = await supabase.from('saved_jobs').select('*, job:jobs(id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name))').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
+      const { data: savedData } = await supabase
+        .from('saved_jobs')
+        .select('*, job:jobs(id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name))')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
       setSavedJobs(savedData?.map(s => s.job).filter(Boolean) || []);
 
-      const { count } = await supabase.from('job_alerts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_active', true);
+      const { count } = await supabase
+        .from('job_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
       setAlertsCount(count || 0);
 
-      const { data: docsData, error: docsError } = await supabase.from('hiring_documents').select('id, document_type, status, file_url, application_id, created_at').eq('candidate_id', user.id).order('created_at', { ascending: false });
+      const { data: docsData, error: docsError } = await supabase
+        .from('hiring_documents')
+        .select('id, document_type, status, file_url, application_id, created_at')
+        .eq('candidate_id', user.id)
+        .order('created_at', { ascending: false });
       if (!docsError) {
         const appIds = docsData.map(d => d.application_id).filter(Boolean);
         let jobsMap = {};
         if (appIds.length > 0) {
-          const { data: apps } = await supabase.from('applications').select('id, job:jobs(title)').in('id', appIds);
+          const { data: apps } = await supabase
+            .from('applications')
+            .select('id, job:jobs(title)')
+            .in('id', appIds);
           apps?.forEach(app => { jobsMap[app.id] = app.job?.title || 'Offre inconnue'; });
         }
         setHiringDocuments(docsData.map(doc => ({ ...doc, jobTitle: jobsMap[doc.application_id] || 'Offre inconnue' })));
