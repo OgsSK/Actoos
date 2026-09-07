@@ -308,24 +308,26 @@ const CompanyDashboard = () => {
   };
 
   // ✅ Nouvelle gestion de primaryCompanyId avec Supabase
- const handleSetPrimaryCompany = async () => {
-  if (!activeCompanyId || !user) return;
+  const handleSetPrimaryCompany = async () => {
+    if (!activeCompanyId || !user) return;
 
-  const newPrimaryId = (primaryCompanyId === activeCompanyId) ? null : activeCompanyId;
+    const newPrimaryId = (primaryCompanyId === activeCompanyId) ? null : activeCompanyId;
 
-  try {
-    const { error } = await supabase
-      .from('users')
-      .update({ primary_company_id: newPrimaryId })
-      .eq('id', user.id);
-    if (error) throw error;
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ primary_company_id: newPrimaryId })
+        .eq('id', user.id);
+      if (error) throw error;
 
-    setPrimaryCompanyId(newPrimaryId);
-    toast.success(newPrimaryId ? t('companyDashboard.primaryCompanySet') : t('companyDashboard.primaryCompanyRemoved'));
-  } catch (err) {
-    toast.error(err.message);
-  }
-};
+      setPrimaryCompanyId(newPrimaryId);
+      toast.success(newPrimaryId ? t('companyDashboard.primaryCompanySet') : t('companyDashboard.primaryCompanyRemoved'));
+      // Rafraîchir le profil pour mettre à jour le contexte si nécessaire
+      await refreshProfile();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   const fetchCompanyData = async (companyId) => {
     setLoading(true);
@@ -377,7 +379,10 @@ const CompanyDashboard = () => {
     const load = async () => {
       const userCompanies = await fetchUserCompanies();
       setCompanies(userCompanies);
-      if (userCompanies.length === 0) { setLoading(false); return; }
+      if (userCompanies.length === 0) {
+        setLoading(false);
+        return;
+      }
 
       // ✅ Récupérer primary_company_id depuis la table users
       const { data: userProfile, error: profileError } = await supabase
@@ -392,15 +397,29 @@ const CompanyDashboard = () => {
       }
       setPrimaryCompanyId(primaryId);
 
-      // Déterminer l'entreprise active
-      const targetId = primaryId && userCompanies.find(c => c.id === primaryId)
-        ? primaryId
-        : activeCompanyId && userCompanies.find(c => c.id === activeCompanyId)
-          ? activeCompanyId
-          : userCompanies[0].id;
+      // ------------------------------------------------------------
+      // ✅ NOUVELLE LOGIQUE : garder la dernière entreprise active
+      // ------------------------------------------------------------
+      let targetId = activeCompanyId; // valeur stockée dans localStorage via le contexte
 
-      setActiveCompanyId(targetId);
-      await fetchCompanyData(targetId);
+      // Vérifier si l'entreprise stockée existe toujours dans la liste de l'utilisateur
+      const companyExists = targetId && userCompanies.find(c => c.id === targetId);
+      if (!companyExists) {
+        // Fallback : entreprise principale, sinon la première
+        targetId = (primaryId && userCompanies.find(c => c.id === primaryId))
+          ? primaryId
+          : userCompanies[0]?.id;
+      }
+
+      // Mettre à jour le contexte uniquement si nécessaire (évite un re-render inutile)
+      if (targetId && targetId !== activeCompanyId) {
+        setActiveCompanyId(targetId);
+      }
+
+      // Charger les données pour l'entreprise cible
+      if (targetId) {
+        await fetchCompanyData(targetId);
+      }
     };
     load();
   }, [user]);
