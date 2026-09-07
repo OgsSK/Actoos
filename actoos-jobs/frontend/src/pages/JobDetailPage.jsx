@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
@@ -12,8 +12,8 @@ import ShareButton from '../components/ShareButton';
 import { toast } from 'sonner';
 import {
   MapPin, Building2, Banknote, Heart, Loader2, ChevronLeft,
-  Briefcase, CheckCircle, Clock, ExternalLink, Send, Share2,
-  Users, GraduationCap, Globe
+  Briefcase, CheckCircle, Clock, Send,
+  Users, GraduationCap, Globe, Eye
 } from 'lucide-react';
 import { CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod } from '../lib/utils';
 
@@ -51,7 +51,7 @@ const JobHeaderSkeleton = () => (
   </div>
 );
 
-/* ---------- Carte offre similaire – avec salaire formaté ---------- */
+/* ---------- Carte offre similaire ---------- */
 const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   return (
@@ -112,28 +112,126 @@ const JobDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState(null);
-  const [loadingApplication, setLoadingApplication] = useState(false); // ✅ Nouvel état
+  const [loadingApplication, setLoadingApplication] = useState(false);
   const [similarJobs, setSimilarJobs] = useState([]);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarApplications, setSimilarApplications] = useState({});
 
+  // ✅ Ref pour éviter les doubles incréments (StrictMode)
+  const hasRecordedView = useRef(false);
+
   const isCompany = user?.user_metadata?.role === 'company' || user?.app_metadata?.role === 'company' || user?.user_metadata?.account_type === 'company';
   const isOwner = user?.id && job?.company?.owner_id === user.id;
 
+  // Chargement initial
   useEffect(() => {
     window.scrollTo(0, 0);
-    setJob(null); setLoading(true); setSimilarJobs([]);
+    setJob(null);
+    setLoading(true);
+    setSimilarJobs([]);
     fetchJob();
+    // Réinitialiser le flag pour une nouvelle offre
+    hasRecordedView.current = false;
   }, [id]);
 
+  // ✅ Incrémentation des vues – version PRO avec retour du compteur
   useEffect(() => {
-    if (job && !isOwner) {
-      supabase.rpc('increment_views_count', { row_id: job.id }).then(({ error }) => {
-        if (error) console.error('Error incrementing views:', error);
-      });
+    if (!job || isOwner) return;
+    if (hasRecordedView.current) {
+      console.log('⏳ Vue déjà comptée pour', job.title);
+      return;
     }
-  }, [job, isOwner]);
 
+    const recordView = async () => {
+      let incremented = false;
+      let newCount = null;
+
+      if (user) {
+        // Utilisateur connecté : utiliser la table job_views
+        try {
+          console.log('📊 Tentative d\'incrément via RPC pour', job.title);
+          const { data, error } = await supabase.rpc('increment_view_if_not_exists', {
+            p_job_id: job.id,
+            p_user_id: user.id
+          });
+          if (error) throw error;
+          // Si la RPC retourne le nouveau compteur (nombre)
+          if (typeof data === 'number') {
+            incremented = true;
+            newCount = data;
+            console.log('✅ Vue enregistrée via RPC, nouveau compteur :', newCount);
+          } else if (data === true) {
+            // Fallback si la RPC retourne un booléen (ancienne version)
+            incremented = true;
+            // Dans ce cas, on devra récupérer le compteur après
+          } else {
+            console.log('⏳ Vue déjà existante (RPC) pour', job.title);
+          }
+        } catch (err) {
+          console.error('Erreur RPC:', err);
+          // Fallback localStorage
+          const viewedJobs = JSON.parse(localStorage.getItem('viewedJobs') || '[]');
+          if (!viewedJobs.includes(job.id)) {
+            try {
+              const { error } = await supabase.rpc('increment_views_count', { row_id: job.id });
+              if (error) throw error;
+              viewedJobs.push(job.id);
+              localStorage.setItem('viewedJobs', JSON.stringify(viewedJobs));
+              incremented = true;
+              console.log('✅ Vue enregistrée en local (fallback) pour', job.title);
+            } catch (err2) {
+              console.error('Erreur fallback:', err2);
+            }
+          }
+        }
+      } else {
+        // Utilisateur non connecté : localStorage
+        const viewedJobs = JSON.parse(localStorage.getItem('viewedJobs') || '[]');
+        if (!viewedJobs.includes(job.id)) {
+          try {
+            const { error } = await supabase.rpc('increment_views_count', { row_id: job.id });
+            if (error) throw error;
+            viewedJobs.push(job.id);
+            localStorage.setItem('viewedJobs', JSON.stringify(viewedJobs));
+            incremented = true;
+            console.log('✅ Vue enregistrée en local pour', job.title);
+          } catch (err) {
+            console.error('Erreur incrément views (localStorage):', err);
+          }
+        }
+      }
+
+      // ✅ Mise à jour de l'affichage si une vue a été comptée
+      if (incremented) {
+        if (newCount !== null) {
+          // On a déjà le nouveau compteur via la RPC
+          setJob(prev => ({ ...prev, views_count: newCount }));
+          console.log('🔄 Compteur mis à jour directement :', newCount);
+        } else {
+          // Sinon, on le récupère en base (fallback ou ancienne RPC)
+          try {
+            const { data, error } = await supabase
+              .from('jobs')
+              .select('views_count')
+              .eq('id', job.id)
+              .single();
+            if (!error && data) {
+              setJob(prev => ({ ...prev, views_count: data.views_count }));
+              console.log('🔄 Compteur mis à jour après requête :', data.views_count);
+            }
+          } catch (err) {
+            console.error('Erreur lors du rafraîchissement du compteur:', err);
+          }
+        }
+      }
+    };
+
+    recordView();
+    hasRecordedView.current = true; // on marque comme compté pour cette offre
+
+  }, [job, isOwner, user]);
+
+  // Vérification des candidatures et favoris
   useEffect(() => {
     if (user && job) {
       checkExistingApplication();
@@ -141,22 +239,67 @@ const JobDetailPage = () => {
     }
   }, [user, job]);
 
+  // ---------- REQUÊTE pour récupérer l'offre ----------
   const fetchJob = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select(`*, address, company:companies(*, owner:users(email)), city:cities(name), posted_by_user:users(email, first_name, last_name)`)
-        .eq('id', id).single();
-      if (error) throw error;
-      setJob(data);
-    } catch (err) { console.error(err); toast.error(t('jobDetail.notFound')); }
-    finally { setLoading(false); }
+      let jobData;
+      // Tentative avec views_count
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select(`
+            *,
+            address,
+            views_count,
+            company:companies(*),
+            city:cities(name),
+            posted_by_user:users(email, first_name, last_name)
+          `)
+          .eq('id', id)
+          .single();
+        if (error) throw error;
+        jobData = data;
+      } catch (err) {
+        console.warn('views_count column may not exist, retrying without it', err);
+        const { data, error } = await supabase
+          .from('jobs')
+          .select(`
+            *,
+            address,
+            company:companies(*),
+            city:cities(name),
+            posted_by_user:users(email, first_name, last_name)
+          `)
+          .eq('id', id)
+          .single();
+        if (error) throw error;
+        jobData = { ...data, views_count: 0 };
+      }
+
+      // Compter les favoris
+      let favoritesCount = 0;
+      if (jobData) {
+        const { count, error: countError } = await supabase
+          .from('saved_jobs')
+          .select('id', { count: 'exact', head: true })
+          .eq('job_id', jobData.id);
+        if (!countError) favoritesCount = count || 0;
+      }
+
+      setJob({ ...jobData, favorites_count: favoritesCount });
+    } catch (err) {
+      console.error(err);
+      toast.error(t('jobDetail.notFound'));
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // ---------- Vérification candidature existante ----------
   const checkExistingApplication = async () => {
     if (!user) return;
-    setLoadingApplication(true); // ✅ On démarre le chargement
+    setLoadingApplication(true);
     const { data } = await supabase
       .from('applications')
       .select('status')
@@ -166,91 +309,168 @@ const JobDetailPage = () => {
       .limit(1)
       .maybeSingle();
     setApplicationStatus(data ? data.status : null);
-    setLoadingApplication(false); // ✅ Terminé
+    setLoadingApplication(false);
   };
 
+  // ---------- Vérification si l'offre est en favoris ----------
   const checkIfSaved = async () => {
-    const { data } = await supabase.from('saved_jobs').select('id').eq('user_id', user.id).eq('job_id', job.id).maybeSingle();
+    const { data } = await supabase
+      .from('saved_jobs')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('job_id', job.id)
+      .maybeSingle();
     setIsSaved(!!data);
   };
 
+  // ---------- Chargement des offres similaires ----------
   useEffect(() => {
     if (!job) return;
     setSimilarLoading(true);
     const fetchSimilar = async () => {
       try {
-        const skills = job.skills_required || [], categoryId = job.category_id, contractType = job.contract_type;
-        let query = supabase.from('jobs').select('id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name)')
-          .eq('status', 'active').neq('id', job.id)
+        const skills = job.skills_required || [],
+              categoryId = job.category_id,
+              contractType = job.contract_type;
+        let query = supabase
+          .from('jobs')
+          .select('id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name)')
+          .eq('status', 'active')
+          .neq('id', job.id)
           .order('boosted_until', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false }).limit(6);
+          .order('created_at', { ascending: false })
+          .limit(6);
+
         const conditions = [];
         if (categoryId) conditions.push(`category_id.eq.${categoryId}`);
         if (skills.length > 0) conditions.push(`skills_required.ov.{${skills.join(',')}}`);
         if (contractType) conditions.push(`contract_type.eq.${contractType}`);
         if (conditions.length > 0) query = query.or(conditions.join(','));
+
         const { data, error } = await query;
         if (error) throw error;
         setSimilarJobs(data || []);
+
         if (user && data?.length) {
-          const { data: apps } = await supabase.from('applications').select('job_id, status').eq('candidate_id', user.id).in('job_id', data.map(j => j.id));
-          const map = {}; (apps || []).forEach(a => map[a.job_id] = a.status);
+          const { data: apps } = await supabase
+            .from('applications')
+            .select('job_id, status')
+            .eq('candidate_id', user.id)
+            .in('job_id', data.map(j => j.id));
+          const map = {};
+          (apps || []).forEach(a => map[a.job_id] = a.status);
           setSimilarApplications(map);
-        } else setSimilarApplications({});
-      } catch (err) { console.error(err); }
-      finally { setSimilarLoading(false); }
+        } else {
+          setSimilarApplications({});
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setSimilarLoading(false);
+      }
     };
     fetchSimilar();
   }, [job, user]);
 
+  // ---------- Utilitaires d'authentification ----------
   const requireAuth = () => {
-    if (!user) { toast.error(t('jobDetail.pleaseLogin')); window.location.href = '/connexion'; return false; }
+    if (!user) {
+      toast.error(t('jobDetail.pleaseLogin'));
+      window.location.href = '/connexion';
+      return false;
+    }
     return true;
   };
 
+  // ---------- Gestion de la candidature ----------
   const handleApply = async () => {
     if (!requireAuth()) return;
-    if (isCompany) { toast.error(t('jobDetail.companyCannotApply')); return; }
-    if (applicationStatus === 'accepted' || applicationStatus === 'completed') { toast.info(t('jobDetail.alreadyAppliedMessage')); return; }
+    if (isCompany) {
+      toast.error(t('jobDetail.companyCannotApply'));
+      return;
+    }
+    if (applicationStatus === 'accepted' || applicationStatus === 'completed') {
+      toast.info(t('jobDetail.alreadyAppliedMessage'));
+      return;
+    }
     try {
       if (applicationStatus === 'rejected' || applicationStatus === 'withdrawn') {
-        await supabase.from('applications').update({ status: 'pending' }).eq('job_id', job.id).eq('candidate_id', user.id);
+        await supabase
+          .from('applications')
+          .update({ status: 'pending' })
+          .eq('job_id', job.id)
+          .eq('candidate_id', user.id);
       } else {
-        await supabase.from('applications').insert({ job_id: job.id, candidate_id: user.id, status: 'pending' });
+        await supabase
+          .from('applications')
+          .insert({ job_id: job.id, candidate_id: user.id, status: 'pending' });
       }
       setApplicationStatus('pending');
       toast.success(t('jobDetail.applicationSent'));
+
+      // Envoi d'une notification au recruteur (asynchrone)
       setTimeout(async () => {
         const recruiterEmail = job.posted_by_user?.email || job.company?.owner?.email;
-        const recruiterName = job.posted_by_user?.first_name ? `${job.posted_by_user.first_name} ${job.posted_by_user.last_name || ''}` : 'Recruteur';
-        const candidateName = user.user_metadata?.first_name ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}` : 'Un candidat';
+        const recruiterName = job.posted_by_user?.first_name
+          ? `${job.posted_by_user.first_name} ${job.posted_by_user.last_name || ''}`
+          : 'Recruteur';
+        const candidateName = user.user_metadata?.first_name
+          ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`
+          : 'Un candidat';
         if (recruiterEmail) {
           try {
             await fetch(`${BASE_URL}/api/notify-new-application`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ recruiter_email: recruiterEmail, recruiter_name: recruiterName, candidate_name: candidateName, job_title: job.title, company_name: job.company?.name || '' })
+              body: JSON.stringify({
+                recruiter_email: recruiterEmail,
+                recruiter_name: recruiterName,
+                candidate_name: candidateName,
+                job_title: job.title,
+                company_name: job.company?.name || ''
+              })
             });
-          } catch (err) { console.warn('Notification échouée:', err); }
+          } catch (err) {
+            console.warn('Notification échouée:', err);
+          }
         }
       }, 100);
-    } catch (err) { console.error(err); toast.error(t('jobDetail.applicationError')); }
+    } catch (err) {
+      console.error(err);
+      toast.error(t('jobDetail.applicationError'));
+    }
   };
 
+  // ---------- Gestion des favoris ----------
   const handleToggleSave = async () => {
     if (!requireAuth()) return;
-    if (isCompany) { toast.error(t('jobDetail.companyCannotSaveFavorites')); return; }
+    if (isCompany) {
+      toast.error(t('jobDetail.companyCannotSaveFavorites'));
+      return;
+    }
     try {
       if (isSaved) {
-        await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', job.id);
-        setIsSaved(false); toast.success(t('jobDetail.removedFromFavorites'));
+        await supabase
+          .from('saved_jobs')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('job_id', job.id);
+        setIsSaved(false);
+        toast.success(t('jobDetail.removedFromFavorites'));
       } else {
-        await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: job.id });
-        setIsSaved(true); toast.success(t('jobDetail.savedToFavorites'));
+        await supabase
+          .from('saved_jobs')
+          .insert({ user_id: user.id, job_id: job.id });
+        setIsSaved(true);
+        toast.success(t('jobDetail.savedToFavorites'));
       }
-    } catch (err) { console.error(err); toast.error(t('jobDetail.errorSaving')); }
+    } catch (err) {
+      console.error(err);
+      toast.error(t('jobDetail.errorSaving'));
+    }
   };
 
+  // États de chargement et d'absence d'offre
   if (loading) return <JobHeaderSkeleton />;
   if (!job) return <div className="pt-20 text-center">{t('jobDetail.notFoundMessage')}</div>;
 
@@ -309,7 +529,6 @@ const JobDetailPage = () => {
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
                 {!isOwner && !isCompany && !isAdmin && (
                   <>
-                    {/* ✅ Affichage conditionnel : loader, badge ou bouton */}
                     {user && loadingApplication ? (
                       <div className="flex items-center justify-center w-28 h-9">
                         <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
@@ -320,9 +539,9 @@ const JobDetailPage = () => {
                         {t('jobDetail.alreadyApplied')}
                       </Badge>
                     ) : (
-                      <Button 
-                        onClick={handleApply} 
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200 rounded-xl" 
+                      <Button
+                        onClick={handleApply}
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200 rounded-xl"
                         size="sm"
                       >
                         <Send className="w-4 h-4 mr-1.5" />
@@ -345,8 +564,24 @@ const JobDetailPage = () => {
               </div>
             </div>
 
+            {/* ✅ Statistiques : uniquement les icônes + chiffres (sans texte) */}
+            <div className="flex items-center gap-4 mt-4 text-sm text-slate-500 border-t border-slate-100 pt-4">
+              <span className="flex items-center gap-1">
+                <Eye className="w-4 h-4" />
+                {job.views_count || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Heart className="w-4 h-4" />
+                {job.favorites_count || 0}
+              </span>
+            </div>
+
             <div className="mt-4 pt-4 border-t border-slate-100">
-              <ShareButton url={window.location.origin + `/emplois/${job.id}`} title={job.title} text={t('jobDetail.shareText', { title: job.title, company: job.company?.name })} />
+              <ShareButton
+                url={window.location.origin + `/emplois/${job.id}`}
+                title={job.title}
+                text={t('jobDetail.shareText', { title: job.title, company: job.company?.name })}
+              />
             </div>
           </div>
 
@@ -441,7 +676,13 @@ const JobDetailPage = () => {
             <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('jobDetail.similarJobs', 'Offres similaires')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {similarJobs.map(simJob => (
-                <SimpleJobCard key={simJob.id} job={simJob} t={t} format={format} applicationStatus={similarApplications[simJob.id] || null} />
+                <SimpleJobCard
+                  key={simJob.id}
+                  job={simJob}
+                  t={t}
+                  format={format}
+                  applicationStatus={similarApplications[simJob.id] || null}
+                />
               ))}
             </div>
           </div>

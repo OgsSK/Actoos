@@ -30,6 +30,7 @@ import {
   Send,
   ChevronLeft,
   ChevronRight,
+  Eye,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
@@ -149,7 +150,7 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- JobCard – version finale avec badge "Postulé" modernisé --------------------
+// -------------------- JobCard --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -368,6 +369,18 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
               {formatRelative(job.created_at)}
             </span>
           </div>
+
+          {/* ✅ Statistiques : vues et favoris */}
+          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
+            <span className="flex items-center gap-1">
+              <Eye className="w-3.5 h-3.5" />
+              {job.views_count || 0}
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="w-3.5 h-3.5" />
+              {job.favorites_count || 0}
+            </span>
+          </div>
         </CardContent>
       </Link>
 
@@ -383,7 +396,6 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
         </button>
       )}
 
-      {/* ✅ Badge "Postulé" modernisé – sans emoji, look professionnel */}
       {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
         <Badge className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
           {t('jobs.alreadyAppliedBadge', 'Postulé')}
@@ -417,7 +429,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
   );
 };
 
-// -------------------- Filters Sidebar (inchangé) --------------------
+// -------------------- FiltersSidebar (inchangé) --------------------
 const FiltersSidebar = ({
   filters,
   onChange,
@@ -679,21 +691,72 @@ const JobsPage = () => {
           query = query.eq('country_id', countryId);
         }
 
-        const { data, error } = await query
-          .order('boosted_until', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false });
+        // Tentative avec views_count
+        let data;
+        try {
+          // On clone la requête pour ajouter views_count
+          const queryWithViews = query.select(`
+            id, title, description, contract_type, experience_level, salary_min, salary_max,
+            salary_period,
+            is_remote, remote_type, is_urgent, is_featured, skills_required, created_at, status,
+            city_id, category_id,
+            boosted_until,
+            address,
+            views_count,
+            company:companies(name, logo_url, is_verified, owner_id, subscription_plan),
+            city:cities(name)
+          `);
+          const { data: jobsData, error: jobsError } = await queryWithViews
+            .order('boosted_until', { ascending: false, nullsFirst: false })
+            .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        setJobs(data || []);
+          if (jobsError) throw jobsError;
+          data = jobsData;
+        } catch (err) {
+          console.warn('views_count column may not exist, retrying without it', err);
+          // Retry sans views_count
+          const { data: jobsData, error: jobsError } = await query
+            .order('boosted_until', { ascending: false, nullsFirst: false })
+            .order('created_at', { ascending: false });
+
+          if (jobsError) throw jobsError;
+          data = jobsData.map(job => ({ ...job, views_count: 0 }));
+        }
+
+        // Récupération du nombre de favoris pour chaque job
+        if (data && data.length > 0) {
+          const jobIds = data.map(job => job.id);
+          const { data: savedData, error: savedError } = await supabase
+            .from('saved_jobs')
+            .select('job_id')
+            .in('job_id', jobIds);
+
+          const favoritesCountMap = {};
+          if (!savedError && savedData) {
+            savedData.forEach(item => {
+              favoritesCountMap[item.job_id] = (favoritesCountMap[item.job_id] || 0) + 1;
+            });
+          }
+          // Enrichissement
+          const enrichedJobs = data.map(job => ({
+            ...job,
+            favorites_count: favoritesCountMap[job.id] || 0,
+          }));
+          setJobs(enrichedJobs);
+        } else {
+          setJobs([]);
+        }
       } catch (error) {
         console.error('Error fetching jobs:', error);
+        setJobs([]);
+        toast.error(t('jobs.loadError', 'Erreur lors du chargement des offres'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchJobs();
-  }, [countryId, countryLoaded]);
+  }, [countryId, countryLoaded, t]);
 
   useEffect(() => {
     if (!user || jobs.length === 0) {

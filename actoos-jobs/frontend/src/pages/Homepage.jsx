@@ -13,7 +13,7 @@ import { Badge } from '../components/ui/badge';
 import {
   Search, MapPin, Briefcase, Building2, ChevronRight,
   ArrowRight, Sparkles, Heart, Loader2, Clock, Plus,
-  Shield, TrendingUp,
+  Shield, TrendingUp, Eye,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
 import { toast } from 'sonner';
@@ -232,7 +232,7 @@ const CategoriesStrip = ({ categories = [] }) => {
 };
 
 /* ===================================================================
-   Offres récentes
+   Offres récentes - avec la même logique que JobsPage
    =================================================================== */
 const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   const { t } = useTranslation();
@@ -265,31 +265,90 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
       setLoading(true);
       try {
         const now = new Date().toISOString();
-        let query = supabase.from('jobs').select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, is_urgent, is_remote, remote_type, address, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
-          .eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`).in('company_id', activeCompanyIds)
-          .order('boosted_until', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(6);
+        let query = supabase
+          .from('jobs')
+          .select(`
+            id, title, contract_type, salary_min, salary_max, salary_period,
+            created_at, is_urgent, is_remote, remote_type, address,
+            boosted_until,
+            company:companies(name, logo_url, owner_id),
+            city:cities(name)
+          `)
+          .eq('status', 'active')
+          .or(`expires_at.is.null,expires_at.gte.${now}`)
+          .in('company_id', activeCompanyIds)
+          .order('boosted_until', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .limit(6);
+
         if (countryId) query = query.eq('country_id', countryId);
-        const { data, error } = await query;
-        if (error) throw error;
-        const finalJobs = (data || []).map(job => ({
-          ...job,
-          location: job.city?.name || t('home.jobs.unknownLocation'),
-          company_name: job.company?.name || t('home.jobs.unknownCompany'),
-          company_logo: job.company?.logo_url,
-          owner_id: job.company?.owner_id,
-          address: job.address,
-        }));
-        setJobs(finalJobs);
-        if (user && finalJobs.length > 0) {
-          const { data: apps } = await supabase.from('applications').select('job_id, status').eq('candidate_id', user.id).in('job_id', finalJobs.map(j => j.id));
-          const map = {}; (apps || []).forEach(app => { map[app.job_id] = app.status; });
-          setAppliedStatuses(map);
+
+        // ✅ Tentative de récupération de views_count
+        let data;
+        try {
+          const queryWithViews = query.select(`
+            id, title, contract_type, salary_min, salary_max, salary_period,
+            created_at, is_urgent, is_remote, remote_type, address,
+            boosted_until,
+            views_count,
+            company:companies(name, logo_url, owner_id),
+            city:cities(name)
+          `);
+          const { data: jobsData, error: jobsError } = await queryWithViews;
+          if (jobsError) throw jobsError;
+          data = jobsData;
+        } catch (err) {
+          console.warn('views_count column may not exist, retrying without it', err);
+          // Fallback : on relance sans views_count
+          const { data: jobsData, error: jobsError } = await query;
+          if (jobsError) throw jobsError;
+          data = jobsData.map(job => ({ ...job, views_count: 0 }));
         }
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
+
+        // ✅ Comptage des favoris
+        let favoritesCountMap = {};
+        if (data && data.length > 0) {
+          const jobIds = data.map(job => job.id);
+          const { data: savedData, error: savedError } = await supabase
+            .from('saved_jobs')
+            .select('job_id')
+            .in('job_id', jobIds);
+
+          if (!savedError && savedData) {
+            savedData.forEach(item => {
+              favoritesCountMap[item.job_id] = (favoritesCountMap[item.job_id] || 0) + 1;
+            });
+          }
+
+          const finalJobs = data.map(job => ({
+            ...job,
+            location: job.city?.name || t('home.jobs.unknownLocation'),
+            company_name: job.company?.name || t('home.jobs.unknownCompany'),
+            company_logo: job.company?.logo_url,
+            owner_id: job.company?.owner_id,
+            address: job.address,
+            favorites_count: favoritesCountMap[job.id] || 0,
+          }));
+
+          setJobs(finalJobs);
+
+          if (user && finalJobs.length > 0) {
+            const { data: apps } = await supabase.from('applications').select('job_id, status').eq('candidate_id', user.id).in('job_id', finalJobs.map(j => j.id));
+            const map = {}; (apps || []).forEach(app => { map[app.job_id] = app.status; });
+            setAppliedStatuses(map);
+          }
+        } else {
+          setJobs([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setJobs([]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchJobs();
-  }, [countryId, activeCompanyIds, user]);
+  }, [countryId, activeCompanyIds, user, t]);
 
   return (
     <section className="py-16 bg-slate-50">
@@ -298,7 +357,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           <div><h2 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('home.jobs.title')}</h2><p className="text-slate-600 mt-1">{t('home.jobs.subtitle')}</p></div>
           <Link to="/emplois" className="hidden sm:inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">{t('home.jobs.viewAll')} <ArrowRight className="w-4 h-4 ml-1" /></Link>
         </div>
-        
+
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3, 4, 5, 6].map(i => (
@@ -320,7 +379,16 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {jobs.map((job) => (<JobCard key={job.id} job={job} user={user} onSave={handleSaveJob} isSaved={savedJobs.includes(job.id)} applicationStatus={appliedStatuses[job.id] || null} />))}
+            {jobs.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                user={user}
+                onSave={handleSaveJob}
+                isSaved={savedJobs.includes(job.id)}
+                applicationStatus={appliedStatuses[job.id] || null}
+              />
+            ))}
           </div>
         )}
         <div className="mt-8 text-center sm:hidden"><Link to="/emplois" className="inline-flex items-center text-blue-600 font-medium">{t('home.jobs.viewAll')} <ArrowRight className="w-4 h-4 ml-1" /></Link></div>
@@ -330,7 +398,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
 };
 
 /* ===================================================================
-   Carte d'offre modernisée avec padding conditionnel
+   Carte d'offre - affichage des statistiques (comme dans JobsPage)
    =================================================================== */
 const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   const { t } = useTranslation();
@@ -378,14 +446,25 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
           </div>
           <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
         </div>
-        
-        {/* ✅ Badge "Postulé" modernisé */}
+
+        {/* ✅ Statistiques : vues & favoris (comme dans JobsPage) */}
+        <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
+          <span className="flex items-center gap-1">
+            <Eye className="w-3.5 h-3.5" />
+            {job.views_count || 0}
+          </span>
+          <span className="flex items-center gap-1">
+            <Heart className="w-3.5 h-3.5" />
+            {job.favorites_count || 0}
+          </span>
+        </div>
+
         {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
           <Badge className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
             {t('home.jobs.alreadyAppliedBadge')}
           </Badge>
         )}
-        
+
         {!isOwner && !isCompany && (
           <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave(job.id); }} className={cn('absolute top-3 right-3 p-2 rounded-xl transition', isSaved ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:bg-red-50 hover:text-red-500')}>
             <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />

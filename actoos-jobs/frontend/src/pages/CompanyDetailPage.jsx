@@ -9,11 +9,12 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import ReportButton from '../components/ReportButton';
 import ShareButton from '../components/ShareButton';
+import useCachedData from '../hooks/useCachedData';
 import {
   Loader2, MapPin, Globe, Mail, Phone, Users, ChevronLeft,
   Building2, Briefcase, Clock, Banknote, AlertTriangle,
   CheckCircle, Calendar, MapPinned, UserPlus, UserCheck,
-  MessageSquare, ExternalLink, FileText
+  MessageSquare, ExternalLink, FileText, Eye, Heart, ChevronDown, // ✅ ajout ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
@@ -55,6 +56,8 @@ const CompanyDetailPage = () => {
   const navigate = useNavigate();
   const { format } = useCurrencyFormatter();
 
+  const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
+
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,12 +68,14 @@ const CompanyDetailPage = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
-  const [loadingFollow, setLoadingFollow] = useState(true); // ✅ Nouvel état
+  const [loadingFollow, setLoadingFollow] = useState(true);
 
   const [activeTab, setActiveTab] = useState('about');
   const [appliedStatuses, setAppliedStatuses] = useState({});
-
   const [companyPosts, setCompanyPosts] = useState([]);
+
+  // ✅ État du filtre par catégorie
+  const [filterCategory, setFilterCategory] = useState(null);
 
   const handleBack = () => {
     if (from === 'company-dashboard') navigate('/dashboard/entreprise');
@@ -95,6 +100,7 @@ const CompanyDetailPage = () => {
     setLoading(true);
     setCompany(null);
     setJobs([]);
+    setFilterCategory(null);
 
     const loadAll = async () => {
       try {
@@ -114,14 +120,60 @@ const CompanyDetailPage = () => {
         }
 
         const now = new Date().toISOString();
-        const { data: jobsData } = await supabase
-          .from('jobs')
-          .select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, address, city:cities(name)`)
-          .eq('company_id', id)
-          .eq('status', 'active')
-          .or(`expires_at.is.null,expires_at.gte.${now}`)
-          .order('created_at', { ascending: false });
-        setJobs(jobsData || []);
+
+        // ---------- JOBS avec vues et favoris ----------
+        let jobsData;
+        try {
+          const { data, error } = await supabase
+            .from('jobs')
+            .select(`
+              id, title, contract_type, salary_min, salary_max, salary_period,
+              created_at, address, views_count, category_id,
+              city:cities(name)
+            `)
+            .eq('company_id', id)
+            .eq('status', 'active')
+            .or(`expires_at.is.null,expires_at.gte.${now}`)
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          jobsData = data;
+        } catch (err) {
+          console.warn('views_count column may not exist, retrying without it', err);
+          const { data, error } = await supabase
+            .from('jobs')
+            .select(`
+              id, title, contract_type, salary_min, salary_max, salary_period,
+              created_at, address, category_id,
+              city:cities(name)
+            `)
+            .eq('company_id', id)
+            .eq('status', 'active')
+            .or(`expires_at.is.null,expires_at.gte.${now}`)
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          jobsData = data.map(job => ({ ...job, views_count: 0 }));
+        }
+
+        // Comptage des favoris
+        let favoritesCountMap = {};
+        if (jobsData && jobsData.length > 0) {
+          const jobIds = jobsData.map(job => job.id);
+          const { data: savedData, error: savedError } = await supabase
+            .from('saved_jobs')
+            .select('job_id')
+            .in('job_id', jobIds);
+          if (!savedError && savedData) {
+            savedData.forEach(item => {
+              favoritesCountMap[item.job_id] = (favoritesCountMap[item.job_id] || 0) + 1;
+            });
+          }
+        }
+
+        const enrichedJobs = (jobsData || []).map(job => ({
+          ...job,
+          favorites_count: favoritesCountMap[job.id] || 0,
+        }));
+        setJobs(enrichedJobs);
 
         const { data: postsData } = await supabase
           .from('company_posts')
@@ -130,15 +182,12 @@ const CompanyDetailPage = () => {
           .order('created_at', { ascending: false });
         setCompanyPosts(postsData || []);
 
-        // ✅ Le suivi est maintenant géré par un useEffect séparé
-        // On ne le fait plus ici
-
-        if (user && jobsData?.length) {
+        if (user && enrichedJobs?.length) {
           const { data: apps } = await supabase
             .from('applications')
             .select('job_id, status')
             .eq('candidate_id', user.id)
-            .in('job_id', jobsData.map(j => j.id));
+            .in('job_id', enrichedJobs.map(j => j.id));
           const map = {};
           (apps || []).forEach(app => { map[app.job_id] = app.status; });
           setAppliedStatuses(map);
@@ -154,7 +203,6 @@ const CompanyDetailPage = () => {
     loadAll();
   }, [id, user]);
 
-  // ✅ Récupération du statut de suivi (déclenché dès que user et id sont disponibles)
   useEffect(() => {
     if (!user || !id) {
       setLoadingFollow(false);
@@ -221,45 +269,58 @@ const CompanyDetailPage = () => {
   }, [company]);
 
   const handleFollow = async () => {
-  if (!user) { toast.error(t('common.loginRequired')); return; }
-  setFollowLoading(true);
-  try {
-    const { error } = await supabase
-      .from('company_followers')
-      .insert({ user_id: user.id, company_id: company.id });
-    if (error) throw error;
-    setIsFollowing(true);
-    setFollowersCount(prev => prev + 1);
-    toast.success(t('companyDetail.followSuccess'));
-  } catch (err) {
-    console.error('Follow error:', err);
-    toast.error(err.message || t('common.error'));
-  } finally {
-    setFollowLoading(false);
-  }
-};
+    if (!user) { toast.error(t('common.loginRequired')); return; }
+    setFollowLoading(true);
+    try {
+      const { error } = await supabase
+        .from('company_followers')
+        .insert({ user_id: user.id, company_id: company.id });
+      if (error) throw error;
+      setIsFollowing(true);
+      setFollowersCount(prev => prev + 1);
+      toast.success(t('companyDetail.followSuccess'));
+    } catch (err) {
+      console.error('Follow error:', err);
+      toast.error(err.message || t('common.error'));
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
-const handleUnfollow = async () => {
-  setFollowLoading(true);
-  try {
-    const { error } = await supabase
-      .from('company_followers')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('company_id', company.id);
-    if (error) throw error;
-    setIsFollowing(false);
-    setFollowersCount(prev => Math.max(0, prev - 1));
-    toast.success(t('companyDetail.unfollowSuccess'));
-  } catch (err) {
-    console.error('Unfollow error:', err);
-    toast.error(err.message || t('common.error'));
-  } finally {
-    setFollowLoading(false);
-  }
-};
+  const handleUnfollow = async () => {
+    setFollowLoading(true);
+    try {
+      const { error } = await supabase
+        .from('company_followers')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('company_id', company.id);
+      if (error) throw error;
+      setIsFollowing(false);
+      setFollowersCount(prev => Math.max(0, prev - 1));
+      toast.success(t('companyDetail.unfollowSuccess'));
+    } catch (err) {
+      console.error('Unfollow error:', err);
+      toast.error(err.message || t('common.error'));
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const isOwner = user?.id && company?.owner_id === user.id;
+
+  // ✅ Catégories disponibles pour l'entreprise
+  const companyCategories = useMemo(() => {
+    if (!categories || jobs.length === 0) return [];
+    const usedCategoryIds = new Set(jobs.map(j => j.category_id).filter(Boolean));
+    return categories.filter(cat => usedCategoryIds.has(cat.id));
+  }, [categories, jobs]);
+
+  // ✅ Offres filtrées par catégorie
+  const filteredJobs = useMemo(() => {
+    if (!filterCategory) return jobs;
+    return jobs.filter(job => job.category_id === filterCategory);
+  }, [jobs, filterCategory]);
 
   const TABS = useMemo(() => {
     const tabs = [
@@ -301,7 +362,7 @@ const handleUnfollow = async () => {
     : company.phone ? `tel:${company.phone}` : null;
 
   const formattedFollowers = formatCount(followersCount);
-  const formattedJobsCount = formatCount(jobs.length);
+  const formattedJobsCount = formatCount(filteredJobs.length);
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20">
@@ -401,12 +462,37 @@ const handleUnfollow = async () => {
 
             {activeTab === 'jobs' && (
               <div>
-                <h2 className="text-xl font-bold text-slate-900 mb-6">{t('companyDetail.jobs')} ({formattedJobsCount})</h2>
-                {jobs.length === 0 ? (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+                  <h2 className="text-xl font-bold text-slate-900">
+                    {t('companyDetail.jobs')} ({formattedJobsCount})
+                  </h2>
+                  {/* ✅ Filtre par catégorie - SELECT stylisé */}
+                  {companyCategories.length > 1 && (
+                    <div className="relative w-full sm:w-56">
+                      <select
+                        value={filterCategory || 'all'}
+                        onChange={(e) => setFilterCategory(e.target.value === 'all' ? null : e.target.value)}
+                        className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                      >
+                        <option value="all">{t('jobs.allCategories')}</option>
+                        {companyCategories.map(cat => (
+                          <option key={cat.id} value={cat.id}>
+                            {t(`categories.${cat.slug}`, cat.name)}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {filteredJobs.length === 0 ? (
                   <p className="text-slate-500 text-center py-12">{t('companyDetail.noJobs')}</p>
                 ) : (
                   <div className="grid gap-4">
-                    {jobs.map(job => {
+                    {filteredJobs.map(job => {
                       const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
                       const applicationStatus = appliedStatuses[job.id];
                       return (
@@ -430,7 +516,6 @@ const handleUnfollow = async () => {
                                     {formatSalaryPeriod(job.salary_period, t)}
                                   </span>
                                 )}
-                                {/* ✅ Badge "Postulé" modernisé */}
                                 {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
                                   <Badge className="bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200 shadow-sm px-3 py-1 flex items-center gap-1">
                                     <CheckCircle className="w-3 h-3" />
@@ -440,6 +525,17 @@ const handleUnfollow = async () => {
                               </div>
                             </div>
                             <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
+                          </div>
+                          {/* Statistiques : uniquement icônes + chiffres */}
+                          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-3.5 h-3.5" />
+                              {job.views_count || 0}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-3.5 h-3.5" />
+                              {job.favorites_count || 0}
+                            </span>
                           </div>
                         </Link>
                       );
