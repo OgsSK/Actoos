@@ -161,7 +161,7 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- JobCard (avec badges à droite) --------------------
+// -------------------- JobCard --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -313,7 +313,6 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
-          {/* Badge Urgent à l'intérieur de l'image */}
           {job.is_urgent && (
             <div className="absolute top-3 left-3 z-10">
               <span className="bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full shadow-lg">
@@ -323,7 +322,6 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
           )}
         </div>
       )}
-      {/* Badge Urgent en haut de la carte si pas de cover */}
       {!hasCover && job.is_urgent && (
         <div className="absolute -top-px inset-x-0 z-10">
           <div className="bg-red-500 text-white text-xs font-medium px-3 py-1 text-center rounded-t-2xl">
@@ -429,7 +427,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
         </button>
       )}
 
-      {/* === Badge "Postulé" – à droite, sous le bouton favori === */}
+      {/* Badge "Postulé" – à droite, sous le bouton favori */}
       {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
         <Badge
           className={cn(
@@ -441,19 +439,23 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
         </Badge>
       )}
 
-      {/* === Badge "Votre offre" – à droite (pas de bouton favori) === */}
+      {/* === BADGE + MENU POUR LE PROPRIÉTAIRE === */}
       {isOwner && (
         <>
+          {/* Badge "Votre offre" – positionné en dessous du badge urgent si présent */}
           <Badge
             className={cn(
-              "absolute right-3 z-20 bg-blue-600 text-white text-xs rounded-full",
-              hasCover ? "top-3" : "top-3"
+              "absolute left-3 z-20 bg-blue-600 text-white text-xs rounded-full",
+              job.is_urgent
+                ? hasCover ? "top-12" : "top-8"
+                : "top-3"
             )}
           >
             {t('jobs.yourOffer')}
           </Badge>
-          {/* Menu à trois points décalé à droite pour ne pas chevaucher le badge */}
-          <div className="absolute top-2 right-12 z-40">
+
+          {/* Menu à trois points à droite, devant le titre */}
+          <div className="absolute top-3 right-3 z-30">
             <Button
               variant="ghost"
               size="icon"
@@ -463,8 +465,9 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
                 e.stopPropagation();
                 openMenu();
               }}
+              className="bg-white/80 hover:bg-white shadow-sm backdrop-blur-sm rounded-full h-8 w-8"
             >
-              <MoreVertical className="w-5 h-5" />
+              <MoreVertical className="w-4 h-4" />
             </Button>
           </div>
         </>
@@ -711,7 +714,6 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
-  // ===== fetchJobs avec cover_url et fallback =====
   useEffect(() => {
     if (!countryLoaded) return;
 
@@ -738,7 +740,6 @@ const JobsPage = () => {
           query = query.eq('country_id', countryId);
         }
 
-        // Tentative avec views_count ET cover_url
         let data;
         try {
           const queryWithViews = query.select(`
@@ -761,7 +762,6 @@ const JobsPage = () => {
           data = jobsData;
         } catch (err) {
           console.warn('views_count or cover_url columns may not exist, retrying without them', err);
-          // Fallback : on garde la query de base (sans views_count ni cover_url)
           const { data: jobsData, error: jobsError } = await query
             .order('boosted_until', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false });
@@ -770,7 +770,6 @@ const JobsPage = () => {
           data = jobsData.map(job => ({ ...job, views_count: 0, cover_url: null }));
         }
 
-        // Récupération des favoris
         if (data && data.length > 0) {
           const jobIds = data.map(job => job.id);
           const { data: savedData, error: savedError } = await supabase
@@ -804,7 +803,6 @@ const JobsPage = () => {
     fetchJobs();
   }, [countryId, countryLoaded, t]);
 
-  // --- Reste du code inchangé (useEffect pour appliedStatuses, savedJobs, etc.) ---
   useEffect(() => {
     if (!user || jobs.length === 0) {
       setAppliedStatuses({});
@@ -1004,7 +1002,6 @@ const JobsPage = () => {
     setCurrentPage(page);
   };
 
-  // --- Rendu final (inchangé) ---
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30">
