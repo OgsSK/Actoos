@@ -9,7 +9,8 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { cn } from '../lib/utils';
-import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ centralisé
+import { usePreferencesContext } from '../contexts/PreferencesContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const LANGUAGES = [
   { code: 'ar', nativeName: 'العربية', flag: '🇸🇦' },
@@ -26,7 +27,8 @@ const normalizeLang = (lng = '') => lng.toLowerCase().split('-')[0];
 
 const LanguageSwitcher = ({ isTransparent = false, isMobile = false }) => {
   const { i18n } = useTranslation();
-  const { updatePrefs } = usePreferencesContext(); // ✅ hook du contexte
+  const { updatePrefs } = usePreferencesContext();
+  const { user } = useAuth();
 
   const currentCode = normalizeLang(i18n.resolvedLanguage || i18n.language || 'fr');
 
@@ -35,16 +37,59 @@ const LanguageSwitcher = ({ isTransparent = false, isMobile = false }) => {
   }, [currentCode]);
 
   const changeLanguage = async (code) => {
+    console.log('================== LANGUE ==================');
+    console.log('🔵 1. Changement demandé vers :', code);
+    console.log('👤 2. Utilisateur actuel (useAuth) :', user);
+    console.log('🌍 3. Langue actuelle i18n :', i18n.language);
+
     try {
+      // Étape 1 : Changer l'affichage
+      console.log('🔄 4. Changement i18n en cours...');
       await i18n.changeLanguage(code);
-      // ✅ Sauvegarde centralisée de la langue (en base + API + localStorage)
+      console.log('✅ 5. i18n changé avec succès ! Nouvelle langue :', i18n.language);
+
+      // Étape 2 : Mettre à jour le contexte local
+      console.log('💾 6. Mise à jour du contexte local (updatePrefs)...');
       updatePrefs('language', code);
+      console.log('✅ 7. updatePrefs fait');
+
+      // Étape 3 : Sauvegarder en base
+      if (user) {
+        console.log('📤 8. Envoi de la requête à /api/user/language');
+        console.log('   → user_id :', user.id);
+        console.log('   → language :', code);
+
+        const response = await fetch('/api/user/language', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            language: code,
+          }),
+        });
+
+        console.log('📥 9. Réponse reçue, status :', response.status);
+
+        const result = await response.json();
+        console.log('📄 10. Réponse JSON :', result);
+
+        if (result.success) {
+          console.log('✅ 11. ✅✅✅ Langue sauvegardée en base :', code);
+        } else {
+          console.error('❌ 12. Erreur sauvegarde en base :', result);
+        }
+      } else {
+        console.warn('⚠️ 13. Utilisateur non connecté → pas de sauvegarde en base');
+      }
     } catch (error) {
-      console.error('Erreur changement langue:', error);
+      console.error('❌ 14. Erreur globale :', error);
     }
+    console.log('================== FIN ==================');
   };
 
-  // Styles du bouton déclencheur adaptés au mode mobile
+  // Styles (inchangés)
   const triggerClasses = cn(
     'h-11 gap-2 rounded-full border px-3.5 text-sm font-medium transition-all shrink-0 whitespace-nowrap shadow-none',
     isMobile

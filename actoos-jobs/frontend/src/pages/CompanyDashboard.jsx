@@ -275,9 +275,8 @@ const CompanyDashboard = () => {
   const [pendingDocsCount, setPendingDocsCount] = useState(0);
   const hasLoaded = useRef(false);
 
-  const [primaryCompanyId, setPrimaryCompanyId] = useState(
-    () => localStorage.getItem('actoosPrimaryCompanyId') || null
-  );
+  // ✅ primaryCompanyId stocké en base, plus de localStorage
+  const [primaryCompanyId, setPrimaryCompanyId] = useState(null);
 
   const [followersSummary, setFollowersSummary] = useState({ total: 0, followers: [] });
   const [loadingFollowers, setLoadingFollowers] = useState(false);
@@ -308,19 +307,25 @@ const CompanyDashboard = () => {
     fetchCompanyData(companyId);
   };
 
-  const handleSetPrimaryCompany = () => {
-    if (!activeCompanyId) return;
-    const currentPrimary = localStorage.getItem('actoosPrimaryCompanyId');
-    if (currentPrimary === activeCompanyId) {
-      localStorage.removeItem('actoosPrimaryCompanyId');
-      setPrimaryCompanyId(null);
-      toast.success(t('companyDashboard.primaryCompanyRemoved'));
-    } else {
-      localStorage.setItem('actoosPrimaryCompanyId', activeCompanyId);
-      setPrimaryCompanyId(activeCompanyId);
-      toast.success(t('companyDashboard.primaryCompanySet'));
-    }
-  };
+  // ✅ Nouvelle gestion de primaryCompanyId avec Supabase
+ const handleSetPrimaryCompany = async () => {
+  if (!activeCompanyId || !user) return;
+
+  const newPrimaryId = (primaryCompanyId === activeCompanyId) ? null : activeCompanyId;
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ primary_company_id: newPrimaryId })
+      .eq('id', user.id);
+    if (error) throw error;
+
+    setPrimaryCompanyId(newPrimaryId);
+    toast.success(newPrimaryId ? t('companyDashboard.primaryCompanySet') : t('companyDashboard.primaryCompanyRemoved'));
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
 
   const fetchCompanyData = async (companyId) => {
     setLoading(true);
@@ -374,8 +379,22 @@ const CompanyDashboard = () => {
       setCompanies(userCompanies);
       if (userCompanies.length === 0) { setLoading(false); return; }
 
-      const targetId = primaryCompanyId && userCompanies.find(c => c.id === primaryCompanyId)
-        ? primaryCompanyId
+      // ✅ Récupérer primary_company_id depuis la table users
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('primary_company_id')
+        .eq('id', user.id)
+        .single();
+
+      let primaryId = null;
+      if (!profileError && userProfile) {
+        primaryId = userProfile.primary_company_id;
+      }
+      setPrimaryCompanyId(primaryId);
+
+      // Déterminer l'entreprise active
+      const targetId = primaryId && userCompanies.find(c => c.id === primaryId)
+        ? primaryId
         : activeCompanyId && userCompanies.find(c => c.id === activeCompanyId)
           ? activeCompanyId
           : userCompanies[0].id;
@@ -572,8 +591,14 @@ const CompanyDashboard = () => {
           </select>
 
           {activeCompanyId && (
-            <Button variant="ghost" size="sm" className={activeCompanyId === primaryCompanyId ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'} onClick={handleSetPrimaryCompany} title={activeCompanyId === primaryCompanyId ? t('companyDashboard.removeAsPrimary') : t('companyDashboard.setAsPrimary')}>
-              <Star className={`w-4 h-4 ${activeCompanyId === primaryCompanyId ? 'fill-amber-500' : ''}`} />
+            <Button
+              variant="ghost"
+              size="sm"
+              className={primaryCompanyId === activeCompanyId ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}
+              onClick={handleSetPrimaryCompany}
+              title={primaryCompanyId === activeCompanyId ? t('companyDashboard.removeAsPrimary') : t('companyDashboard.setAsPrimary')}
+            >
+              <Star className={`w-4 h-4 ${primaryCompanyId === activeCompanyId ? 'fill-amber-500' : ''}`} />
             </Button>
           )}
 

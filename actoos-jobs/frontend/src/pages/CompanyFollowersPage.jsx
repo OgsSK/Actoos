@@ -124,7 +124,10 @@ const CompanyFollowersPage = () => {
                   </div>
                   {isBusinessPlan && (
                     <div className="flex items-center gap-2">
-                      <Link to={`/candidat/${follower.user_id}?from=followers&company_id=${companyId}`}><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1" />{t('companyFollowers.viewProfile', 'Profil')}</Button></Link>
+                      {/* ✅ Lien vers la route frontend /candidat/:id */}
+                      <Link to={`/candidat/${follower.user_id}?from=followers&company_id=${companyId}`}>
+                        <Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1" />{t('companyFollowers.viewProfile', 'Profil')}</Button>
+                      </Link>
                       <Button variant="ghost" size="sm" onClick={() => { setSelectedFollower(follower); setContactModalOpen(true); }}>{t('companyFollowers.contact', 'Contacter')}</Button>
                     </div>
                   )}

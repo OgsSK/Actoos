@@ -37,7 +37,7 @@ const RegisterPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    companyName: '',
+    // companyName supprimé
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -94,7 +94,7 @@ const RegisterPage = () => {
     if (!formData.email.trim()) newErrors.email = true;
     if (!formData.password.trim()) newErrors.password = true;
     if (!formData.confirmPassword.trim()) newErrors.confirmPassword = true;
-    if (role === 'company' && !formData.companyName.trim()) newErrors.companyName = true;
+    // ✅ Suppression de la validation companyName
 
     setErrors(newErrors);
 
@@ -122,6 +122,7 @@ const RegisterPage = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         language: i18n.language?.split('-')[0] || 'fr',
+        // companyName supprimé
       });
 
       toast.success(t('register.toasts.accountCreated'));
@@ -312,25 +313,7 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              {role === 'company' && (
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">{t('register.companyNameLabel')}</Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <Input
-                      id="companyName"
-                      name="companyName"
-                      placeholder={t('register.companyNamePlaceholder')}
-                      value={formData.companyName}
-                      onChange={handleChange}
-                      className={cn(
-                        'pl-10 h-12',
-                        errors.companyName && 'border-red-500 focus-visible:ring-red-500'
-                      )}
-                    />
-                  </div>
-                </div>
-              )}
+              {/* ✅ Le champ Company name a été supprimé */}
 
               <div className="space-y-2">
                 <Label htmlFor="email">{t('register.emailLabel')}</Label>

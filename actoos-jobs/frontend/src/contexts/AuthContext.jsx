@@ -52,6 +52,16 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
       const roleFromDb = userData?.role;
 
+      // ✅ Si la colonne language est NULL ou absente, on la met à jour avec la langue du navigateur
+      if (userData && !userData.language) {
+        const browserLang = navigator.language?.split('-')[0] || 'fr';
+        await supabase
+          .from('users')
+          .update({ language: browserLang })
+          .eq('id', authUser.id);
+        userData.language = browserLang;
+      }
+
       if (roleFromDb && roleFromDb !== authUser.user_metadata?.role) {
         await supabase.auth.updateUser({ data: { role: roleFromDb } });
       }
@@ -135,8 +145,8 @@ export const AuthProvider = ({ children }) => {
     };
   }, [handleSession]);
 
-  // ✅ Modification : signUp accepte maintenant `companyName` et crée l'entreprise si rôle = company
-  const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language, companyName }) => {
+  // ✅ signUp modifié : on ne crée plus d'entreprise automatiquement
+  const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language }) => {
     const cleanLanguage = language ? language.split('-')[0] : 'fr';
 
     const { data, error } = await supabase.auth.signUp({
@@ -154,27 +164,16 @@ export const AuthProvider = ({ children }) => {
     if (error) throw error;
 
     if (data.user) {
-      // 1. Créer l'utilisateur dans la table users
+      // Créer l'utilisateur dans la table users avec la langue
       await supabase.from('users').insert({
         id: data.user.id,
         email,
         role,
         first_name: firstName,
         last_name: lastName,
+        language: cleanLanguage,
       });
-
-      // 2. Si c'est une entreprise, créer également l'entrée dans companies
-      if (role === 'company' && companyName) {
-        const { error: companyError } = await supabase.from('companies').insert({
-          owner_id: data.user.id,
-          name: companyName,
-          is_verified: false, // en attente de validation admin
-        });
-        if (companyError) {
-          console.error('Erreur création entreprise :', companyError);
-          // On ne bloque pas l'inscription, l'entreprise pourra être créée plus tard
-        }
-      }
+      // ✅ L'entreprise sera créée ultérieurement via le formulaire dédié (CreateCompany)
     }
     return data;
   };

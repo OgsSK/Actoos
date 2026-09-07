@@ -305,7 +305,6 @@ const CandidateBankPage = () => {
           email: c.user.email,
         } : null,
         city: c.user?.city || null,
-        // ✅ Nouveaux champs pour langues et contrats
         languages: c.languages || [],
         preferred_contract_types: c.preferred_contract_types || [],
       }));
@@ -493,6 +492,7 @@ const CandidateBankPage = () => {
                         const telLink = phone ? `tel:${phone.replace(/\s/g, '')}` : null;
 
                         return (
+                          // ✅ Lien vers la route frontend /candidat/:id
                           <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group min-w-0">
                             <Card className="hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col overflow-hidden bg-white/90 backdrop-blur-sm border border-slate-200/70 rounded-3xl shadow-md shadow-slate-200/50">
                               <CardContent className="p-6 flex-1 flex flex-col min-w-0">
