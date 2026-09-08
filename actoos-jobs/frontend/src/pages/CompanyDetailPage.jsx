@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ Import
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -22,7 +22,7 @@ import {
 import { toast } from 'sonner';
 import { formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod, cn } from '../lib/utils';
 
-// ✅ Taux de change (copiés depuis JobsPage)
+// ✅ Taux de change
 const RATES = {
   XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
   GBP: 754.2, BRL: 115.3, ARS: 0.72, NGN: 0.4, ZAR: 32.5,
@@ -67,7 +67,7 @@ const CompanyDetailPage = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { format } = useCurrencyFormatter();
-  const { prefs } = usePreferencesContext(); // ✅ Récupération des préférences
+  const { prefs } = usePreferencesContext();
 
   const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
 
@@ -491,7 +491,6 @@ const CompanyDetailPage = () => {
                 </div>
                 {company.industry && <p className="text-white/60 text-base sm:text-lg">{getTranslatedIndustry(company.industry)}</p>}
 
-                {/* ✅ Badge de notation – ultra discret */}
                 {totalReviews > 0 && (
                   <div className="flex items-center gap-2 mt-2 text-white/60 text-sm">
                     <StarRating rating={Math.round(avgRating)} size="w-3.5 h-3.5" starColor="text-white/40" />
@@ -653,24 +652,24 @@ const CompanyDetailPage = () => {
                       </label>
                     </div>
 
-                    {/* Ligne 3 : Salaire min + Salaire max avec placeholders de devise */}
+                    {/* ✅ Ligne 3 : Salaire min + Salaire max (SANS devise, avec min-width adaptée) */}
                     <div className="flex flex-wrap gap-3">
-                      <div className="relative flex-1 min-w-[120px]">
+                      <div className="relative flex-1 min-w-[80px] sm:min-w-[120px]">
                         <input
                           type="number"
-                          placeholder={`${t('jobs.minSalary')} (${prefs.currency})`}
+                          placeholder={t('jobs.minSalary')}
                           value={filterSalaryMin || ''}
                           onChange={(e) => setFilterSalaryMin(e.target.value ? Number(e.target.value) : null)}
-                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-3 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
-                      <div className="relative flex-1 min-w-[120px]">
+                      <div className="relative flex-1 min-w-[80px] sm:min-w-[120px]">
                         <input
                           type="number"
-                          placeholder={`${t('jobs.maxSalary')} (${prefs.currency})`}
+                          placeholder={t('jobs.maxSalary')}
                           value={filterSalaryMax || ''}
                           onChange={(e) => setFilterSalaryMax(e.target.value ? Number(e.target.value) : null)}
-                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-3 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
