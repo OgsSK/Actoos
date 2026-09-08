@@ -76,6 +76,7 @@ const CompanyDetailPage = () => {
   const [companyPosts, setCompanyPosts] = useState([]);
 
   const [filterCategory, setFilterCategory] = useState(null);
+  const [filterContract, setFilterContract] = useState(null);
 
   const handleBack = () => {
     if (from === 'company-dashboard') navigate('/dashboard/entreprise');
@@ -101,6 +102,7 @@ const CompanyDetailPage = () => {
     setCompany(null);
     setJobs([]);
     setFilterCategory(null);
+    setFilterContract(null);
 
     const loadAll = async () => {
       try {
@@ -320,10 +322,24 @@ const CompanyDetailPage = () => {
     return categories.filter(cat => usedCategoryIds.has(cat.id));
   }, [categories, jobs]);
 
+  // ✅ Types de contrat utilisés par l’entreprise (comme pour les catégories)
+  const contractTypesUsed = useMemo(() => {
+    if (jobs.length === 0) return [];
+    const used = new Set(jobs.map(j => j.contract_type).filter(Boolean));
+    return Array.from(used);
+  }, [jobs]);
+
+  // ✅ FILTRES combinés (catégorie + type de contrat)
   const filteredJobs = useMemo(() => {
-    if (!filterCategory) return jobs;
-    return jobs.filter(job => job.category_id === filterCategory);
-  }, [jobs, filterCategory]);
+    let result = jobs;
+    if (filterCategory) {
+      result = result.filter(job => job.category_id === filterCategory);
+    }
+    if (filterContract) {
+      result = result.filter(job => job.contract_type === filterContract);
+    }
+    return result;
+  }, [jobs, filterCategory, filterContract]);
 
   const TABS = useMemo(() => {
     const tabs = [
@@ -465,29 +481,57 @@ const CompanyDetailPage = () => {
 
             {activeTab === 'jobs' && (
               <div>
+                {/* ✅ Barre de filtres avec catégorie + contrat (liste dynamique) */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                   <h2 className="text-xl font-bold text-slate-900">
                     {t('companyDetail.jobs')} ({formattedJobsCount})
                   </h2>
-                  {companyCategories.length > 1 && (
-                    <div className="relative w-full sm:w-56">
-                      <select
-                        value={filterCategory || 'all'}
-                        onChange={(e) => setFilterCategory(e.target.value === 'all' ? null : e.target.value)}
-                        className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
-                      >
-                        <option value="all">{t('jobs.allCategories')}</option>
-                        {companyCategories.map(cat => (
-                          <option key={cat.id} value={cat.id}>
-                            {t(`categories.${cat.slug}`, cat.name)}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
-                        <ChevronDown className="h-4 w-4" />
+                  <div className="flex flex-wrap gap-3">
+                    {/* Filtre par catégorie (si plusieurs) */}
+                    {companyCategories.length > 1 && (
+                      <div className="relative w-full sm:w-48">
+                        <select
+                          value={filterCategory || 'all'}
+                          onChange={(e) => setFilterCategory(e.target.value === 'all' ? null : e.target.value)}
+                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                        >
+                          <option value="all">{t('jobs.allCategories')}</option>
+                          {companyCategories.map(cat => (
+                            <option key={cat.id} value={cat.id}>
+                              {t(`categories.${cat.slug}`, cat.name)}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                          <ChevronDown className="h-4 w-4" />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {/* ✅ Filtre par type de contrat (uniquement ceux utilisés) */}
+                    {contractTypesUsed.length > 0 && (
+                      <div className="relative w-full sm:w-48">
+                        <select
+                          value={filterContract || 'all'}
+                          onChange={(e) => setFilterContract(e.target.value === 'all' ? null : e.target.value)}
+                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                        >
+                          <option value="all">{t('jobs.contractType', 'Tous les contrats')}</option>
+                          {contractTypesUsed.map(contractType => {
+                            const contractInfo = CONTRACT_TYPES[contractType];
+                            return (
+                              <option key={contractType} value={contractType}>
+                                {t(contractInfo?.key || contractType)}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                          <ChevronDown className="h-4 w-4" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {filteredJobs.length === 0 ? (
