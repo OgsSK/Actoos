@@ -1340,6 +1340,7 @@
  
 
   "companiesPage": {
+     "allRatings": "Tutte le valutazioni",
     "title": "Aziende",
     "subtitle": "Scopri le aziende che assumono su Actoos",
     "searchPlaceholder": "Cerca un'azienda...",
@@ -3628,6 +3629,57 @@
         "coverDeleted": "Immagine di copertina eliminata",
         "coverUploadError": "Errore durante il caricamento"
       }
+    },
+    "reviews": {
+      "sort": {
+      "newest": "Più recenti",
+      "oldest": "Più vecchi",
+      "highest": "Meglio valutati",
+      "lowest": "Peggio valutati"
+    },
+    "showing": "Visualizzazione da {{from}} a {{to}} di {{total}} recensioni",
+      "replyRequired": "La risposta non può essere vuota.",
+    "updateReply": "Aggiorna risposta",
+    "replyUpdated": "La tua risposta è stata aggiornata",
+    "replyUpdateError": "Errore durante l'aggiornamento della risposta",
+      "locked": "Modifica bloccata (7 giorni)",
+       "edit": "Modifica",
+    "editReview": "Modifica la mia recensione",
+    "update": "Aggiorna",
+    "reviewUpdated": "La tua recensione è stata aggiornata",
+    "updateError": "Errore durante l'aggiornamento",
+    "edited": "modificato",
+      "tabs": {
+      "reviews": "Recensioni"
+    },
+      "ratings": "valutazioni",
+    "averageRating": "Valutazione media",
+      "reviews": "Recensioni",
+      "writeReview": "Scrivi una recensione",
+      "rating": "Voto",
+      "comment": "Commento",
+      "commentPlaceholder": "Condividi la tua esperienza con questa azienda...",
+      "showName": "Mostra il mio nome",
+      "anonymous": "Candidato anonimo",
+      "submit": "Pubblica",
+      "reviewSubmitted": "La tua recensione è stata pubblicata!",
+      "submitError": "Errore durante la pubblicazione",
+      "deleteConfirm": "Vuoi davvero eliminare questa recensione?",
+      "deleted": "Recensione eliminata",
+      "deleteError": "Errore durante l'eliminazione",
+      "employerReply": "Risposta dell'azienda:",
+      "reply": "Rispondi",
+      "replyPlaceholder": "La tua risposta...",
+      "submitReply": "Pubblica risposta",
+      "replySubmitted": "Risposta pubblicata",
+      "replyError": "Errore durante la pubblicazione",
+      "replyDeleted": "Risposta eliminata",
+      "replyDeleteError": "Errore durante l'eliminazione",
+      "deleteReplyConfirm": "Vuoi davvero eliminare questa risposta?",
+      "noReviews": "Ancora nessuna recensione.",
+      "showMore": "Vedi di più",
+      "showLess": "Vedi di meno",
+      "fillAllFields": "Per favore valuta e lascia un commento."
     }
  
 

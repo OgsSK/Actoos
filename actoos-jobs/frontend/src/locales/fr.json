@@ -1148,6 +1148,7 @@
   },
   
   "companiesPage": {
+    "allRatings": "Toutes les notes",
   "title": "Entreprises",
   "subtitle": "Découvrez les entreprises qui recrutent sur Actoos",
   "searchPlaceholder": "Rechercher une entreprise...",
@@ -3600,7 +3601,58 @@
     "coverUploadError": "Erreur lors du téléchargement de la couverture",
     "coverDeleted": "Image de couverture supprimée"
   }
-}
+},
+"reviews": {
+   "sort": {
+      "newest": "Plus récents",
+      "oldest": "Plus anciens",
+      "highest": "Mieux notés",
+      "lowest": "Moins bien notés"
+    },
+    "showing": "Affichage de {{from}} à {{to}} sur {{total}} avis",
+  "replyRequired": "La réponse ne peut pas être vide.",
+    "updateReply": "Mettre à jour la réponse",
+    "replyUpdated": "Votre réponse a été mise à jour",
+    "replyUpdateError": "Erreur lors de la mise à jour de la réponse",
+   "locked": "Modification verrouillée (7 jours)",
+   "edit": "Modifier",
+    "editReview": "Modifier mon avis",
+    "update": "Mettre à jour",
+    "reviewUpdated": "Votre avis a été mis à jour",
+    "updateError": "Erreur lors de la mise à jour",
+    "edited": "modifié",
+  "tabs": {
+      "reviews": "Avis"
+    },
+  "ratings": "évaluations",
+  "averageRating": "Note moyenne",
+    "reviews": "Avis",
+    "writeReview": "Donner mon avis",
+    "rating": "Note",
+    "comment": "Commentaire",
+    "commentPlaceholder": "Partagez votre expérience avec cette entreprise...",
+    "showName": "Afficher mon nom",
+    "anonymous": "Candidat anonyme",
+    "submit": "Publier",
+    "reviewSubmitted": "Votre avis a été publié !",
+    "submitError": "Erreur lors de la publication",
+    "deleteConfirm": "Voulez-vous vraiment supprimer cet avis ?",
+    "deleted": "Avis supprimé",
+    "deleteError": "Erreur lors de la suppression",
+    "employerReply": "Réponse de l'entreprise :",
+    "reply": "Répondre",
+    "replyPlaceholder": "Votre réponse...",
+    "submitReply": "Publier la réponse",
+    "replySubmitted": "Réponse publiée",
+    "replyError": "Erreur lors de la publication",
+    "replyDeleted": "Réponse supprimée",
+    "replyDeleteError": "Erreur lors de la suppression",
+    "deleteReplyConfirm": "Voulez-vous vraiment supprimer cette réponse ?",
+    "noReviews": "Aucun avis pour le moment.",
+    "showMore": "Voir plus",
+    "showLess": "Voir moins",
+    "fillAllFields": "Veuillez noter et laisser un commentaire."
+  }
   
 
 

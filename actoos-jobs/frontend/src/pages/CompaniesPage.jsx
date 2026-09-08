@@ -5,20 +5,21 @@ import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
+import { StarRating } from '../components/ui/StarRating';
 import {
   Building2, MapPin, Users, Search, Briefcase, CheckCircle, Loader2,
-  Bell, BellOff, TrendingUp, FilterX,
+  Bell, BellOff, TrendingUp, FilterX, Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 
-// ✅ Nouvelle fonction pour ignorer les accents et la casse
+// ✅ Fonction pour ignorer les accents et la casse
 const removeAccents = (str = '') => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 };
 
-// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+// ✅ Formatage des nombres
 const formatCount = (num) => {
   if (!num || num < 10000) return num?.toString() || '0';
   if (num >= 1000000) {
@@ -29,7 +30,7 @@ const formatCount = (num) => {
   return `${val}K`;
 };
 
-// ✅ Skeleton pour une carte entreprise
+// ✅ Skeleton pour carte entreprise (avec place pour les étoiles)
 const CompanyCardSkeleton = () => (
   <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden h-full">
     <div className="p-5 sm:p-6">
@@ -63,7 +64,6 @@ const CompanyCard = ({ company, user }) => {
   const [followersCount, setFollowersCount] = useState(company.followers_count || 0);
   const [loadingFollow, setLoadingFollow] = useState(false);
 
-  // ✅ Remplacer apiFetch par Supabase direct
   useEffect(() => {
     if (!user) return;
     supabase
@@ -77,7 +77,6 @@ const CompanyCard = ({ company, user }) => {
     setFollowersCount(company.followers_count || 0);
   }, [user, company.id, company.followers_count]);
 
-  // ✅ Gestion du follow/unfollow via Supabase
   const handleToggleFollow = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -125,6 +124,10 @@ const CompanyCard = ({ company, user }) => {
   const formattedFollowers = formatCount(followersCount);
   const formattedJobs = formatCount(company.activeJobsCount || 0);
 
+  // ✅ Note moyenne (arrondie)
+  const avgRating = company.avg_rating || 0;
+  const totalReviews = company.total_reviews || 0;
+
   return (
     <div className="group bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
       <Link to={`/entreprises/${company.id}`} className="block p-5 sm:p-6 flex-1">
@@ -165,6 +168,17 @@ const CompanyCard = ({ company, user }) => {
             )}
           </div>
         </div>
+
+        {/* ✅ Affichage des étoiles – version discrète avec formatCount */}
+        {totalReviews > 0 ? (
+          <div className="flex items-center gap-1.5 mb-3 text-slate-500">
+            <StarRating rating={Math.round(avgRating)} size="w-3.5 h-3.5" starColor="text-slate-400" />
+            <span className="text-sm font-medium text-slate-700">{avgRating.toFixed(1)}</span>
+            <span className="text-xs text-slate-400">({formatCount(totalReviews)} {t('reviews.reviews')})</span>
+          </div>
+        ) : (
+          <div className="h-6 mb-3" /> // espace réservé pour garder l'alignement
+        )}
 
         {company.description && (
           <p className="text-sm text-slate-600 line-clamp-2 mb-4 leading-relaxed">
@@ -236,7 +250,17 @@ const CompaniesPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [selectedRating, setSelectedRating] = useState(0); // 0 = toutes, 1, 2, 3, 4, 5
   const [usedIndustryRaw, setUsedIndustryRaw] = useState([]);
+
+  // ✅ Options de filtre par note (pour le select)
+  const ratingOptions = [
+    { value: 0, label: t('companiesPage.allRatings', 'Toutes les notes') },
+    { value: 4, label: '4+ ⭐' },
+    { value: 3, label: '3+ ⭐' },
+    { value: 2, label: '2+ ⭐' },
+    { value: 1, label: '1+ ⭐' },
+  ];
 
   useEffect(() => {
     const fetchUsedIndustries = async () => {
@@ -284,7 +308,7 @@ const CompaniesPage = () => {
       fetchCompanies();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedIndustry, prefs.country]);
+  }, [searchQuery, selectedIndustry, selectedRating, prefs.country]);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -322,7 +346,6 @@ const CompaniesPage = () => {
       const { data, error } = await query.limit(50);
       if (error) throw error;
 
-      // ✅ Filtrage local insensible aux accents
       let companiesData = data || [];
       if (searchQuery) {
         const kw = removeAccents(searchQuery);
@@ -332,6 +355,8 @@ const CompaniesPage = () => {
       if (companiesData.length > 0) {
         const companyIds = companiesData.map(c => c.id);
         const now = new Date().toISOString();
+
+        // ✅ Récupérer le nombre d'offres actives
         const { data: activeJobs } = await supabase
           .from('jobs')
           .select('company_id')
@@ -339,16 +364,46 @@ const CompaniesPage = () => {
           .eq('status', 'active')
           .or(`expires_at.is.null,expires_at.gte.${now}`);
 
+        // ✅ Récupérer les notes moyennes et le nombre d'avis
+        const { data: reviewsData } = await supabase
+          .from('company_reviews')
+          .select('company_id, rating')
+          .in('company_id', companyIds)
+          .eq('is_visible', true);
+
         const countMap = {};
         (activeJobs || []).forEach(row => {
           countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
         });
 
-        let enriched = companiesData.map(company => ({
-          ...company,
-          activeJobsCount: countMap[company.id] || 0,
-        }));
+        // Calcul des notes moyennes
+        const ratingMap = {};
+        const reviewCountMap = {};
+        (reviewsData || []).forEach(row => {
+          if (!ratingMap[row.company_id]) {
+            ratingMap[row.company_id] = { sum: 0, count: 0 };
+          }
+          ratingMap[row.company_id].sum += row.rating;
+          ratingMap[row.company_id].count += 1;
+        });
 
+        let enriched = companiesData.map(company => {
+          const ratingInfo = ratingMap[company.id] || { sum: 0, count: 0 };
+          const avg = ratingInfo.count > 0 ? ratingInfo.sum / ratingInfo.count : 0;
+          return {
+            ...company,
+            activeJobsCount: countMap[company.id] || 0,
+            avg_rating: avg,
+            total_reviews: ratingInfo.count,
+          };
+        });
+
+        // ✅ Filtrage par note (uniquement si > 0)
+        if (selectedRating > 0) {
+          enriched = enriched.filter(c => c.avg_rating >= selectedRating);
+        }
+
+        // Tri : plan premium + note + offres
         const planPriority = {
           'business': 3,
           'enterprise': 3,
@@ -360,6 +415,7 @@ const CompaniesPage = () => {
           const planA = planPriority[a.subscription_plan] || 0;
           const planB = planPriority[b.subscription_plan] || 0;
           if (planA !== planB) return planB - planA;
+          if (a.avg_rating !== b.avg_rating) return b.avg_rating - a.avg_rating;
           if (a.activeJobsCount !== b.activeJobsCount) return b.activeJobsCount - a.activeJobsCount;
           return a.name.localeCompare(b.name);
         });
@@ -378,6 +434,7 @@ const CompaniesPage = () => {
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedIndustry('');
+    setSelectedRating(0);
   };
 
   if (profile && (!profile.is_active || profile.is_banned)) {
@@ -399,7 +456,8 @@ const CompaniesPage = () => {
             {t('companiesPage.subtitle')}
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-2xl">
+          {/* ✅ Barre de recherche + filtres (avec select pour la note) */}
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-3xl">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
@@ -419,17 +477,36 @@ const CompaniesPage = () => {
                 <option key={ind} value={ind}>{ind}</option>
               ))}
             </select>
-            {(searchQuery || selectedIndustry) && (
-              <Button variant="outline" size="sm" onClick={resetFilters} className="h-12 border-white/20 text-white hover:bg-white/10">
+
+            {/* ✅ Nouveau select pour la note */}
+            <select
+              value={selectedRating}
+              onChange={(e) => setSelectedRating(Number(e.target.value))}
+              className="h-12 pl-4 pr-10 bg-white text-slate-900 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none min-w-[140px] sm:min-w-[160px] bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23475569%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[right_0.75rem_center] bg-no-repeat"
+            >
+              {ratingOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* ✅ Bouton Reset (si des filtres sont actifs) */}
+          {(searchQuery || selectedIndustry || selectedRating > 0) && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="border-white/20 text-white hover:bg-white/10"
+              >
                 <FilterX className="w-4 h-4 mr-2" /> {t('common.clear')}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* ✅ Squelettes au lieu du spinner */}
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (

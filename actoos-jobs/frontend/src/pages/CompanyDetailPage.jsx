@@ -4,12 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ Import
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import ReportButton from '../components/ReportButton';
 import ShareButton from '../components/ShareButton';
 import useCachedData from '../hooks/useCachedData';
+import { CompanyReviews } from '../components/CompanyReviews';
+import { StarRating } from '../components/ui/StarRating';
 import {
   Loader2, MapPin, Globe, Mail, Phone, Users, ChevronLeft,
   Building2, Briefcase, Clock, Banknote, AlertTriangle,
@@ -17,7 +20,15 @@ import {
   MessageSquare, ExternalLink, FileText, Eye, Heart, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod, cn } from '../lib/utils';
+import { formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod, cn } from '../lib/utils';
+
+// ✅ Taux de change (copiés depuis JobsPage)
+const RATES = {
+  XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
+  GBP: 754.2, BRL: 115.3, ARS: 0.72, NGN: 0.4, ZAR: 32.5,
+  SAR: 160.9, AED: 164.3, EGP: 19.5, DZD: 4.48, TND: 194.5,
+  CHF: 722.3, XAF: 1, GNF: 0.07, CDF: 0.22, MGA: 0.15,
+};
 
 // Fonction de formatage des nombres (10K, 1.2M, etc.)
 const formatCount = (num) => {
@@ -56,6 +67,7 @@ const CompanyDetailPage = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { format } = useCurrencyFormatter();
+  const { prefs } = usePreferencesContext(); // ✅ Récupération des préférences
 
   const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
 
@@ -77,6 +89,17 @@ const CompanyDetailPage = () => {
 
   const [filterCategory, setFilterCategory] = useState(null);
   const [filterContract, setFilterContract] = useState(null);
+  const [filterExperience, setFilterExperience] = useState(null);
+  const [filterSalaryMin, setFilterSalaryMin] = useState(null);
+  const [filterSalaryMax, setFilterSalaryMax] = useState(null);
+  const [filterRemoteOnly, setFilterRemoteOnly] = useState(false);
+
+  // États pour les notes moyennes
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+
+  // ✅ Taux de conversion pour la devise
+  const conversionRate = RATES[prefs.currency] || 1;
 
   const handleBack = () => {
     if (from === 'company-dashboard') navigate('/dashboard/entreprise');
@@ -103,6 +126,12 @@ const CompanyDetailPage = () => {
     setJobs([]);
     setFilterCategory(null);
     setFilterContract(null);
+    setFilterExperience(null);
+    setFilterSalaryMin(null);
+    setFilterSalaryMax(null);
+    setFilterRemoteOnly(false);
+    setAvgRating(0);
+    setTotalReviews(0);
 
     const loadAll = async () => {
       try {
@@ -121,6 +150,22 @@ const CompanyDetailPage = () => {
           return;
         }
 
+        // Récupération des notes moyennes et du nombre d'avis
+        const { data: reviewsData } = await supabase
+          .from('company_reviews')
+          .select('rating')
+          .eq('company_id', id)
+          .eq('is_visible', true);
+
+        if (reviewsData && reviewsData.length > 0) {
+          const sum = reviewsData.reduce((acc, r) => acc + r.rating, 0);
+          setAvgRating(sum / reviewsData.length);
+          setTotalReviews(reviewsData.length);
+        } else {
+          setAvgRating(0);
+          setTotalReviews(0);
+        }
+
         const now = new Date().toISOString();
 
         // --- Récupération des offres avec cover_url ---
@@ -131,7 +176,7 @@ const CompanyDetailPage = () => {
             .select(`
               id, title, contract_type, salary_min, salary_max, salary_period,
               created_at, address, views_count, category_id, is_urgent,
-              cover_url,
+              cover_url, experience_level, is_remote,
               city:cities(name)
             `)
             .eq('company_id', id)
@@ -141,7 +186,7 @@ const CompanyDetailPage = () => {
           if (error) throw error;
           jobsData = data;
         } catch (err) {
-          console.warn('views_count or cover_url column may not exist, retrying without them', err);
+          console.warn('views_count, cover_url, experience_level, is_remote columns may not exist, retrying without them', err);
           const { data, error } = await supabase
             .from('jobs')
             .select(`
@@ -154,7 +199,7 @@ const CompanyDetailPage = () => {
             .or(`expires_at.is.null,expires_at.gte.${now}`)
             .order('created_at', { ascending: false });
           if (error) throw error;
-          jobsData = data.map(job => ({ ...job, views_count: 0, cover_url: null }));
+          jobsData = data.map(job => ({ ...job, views_count: 0, cover_url: null, experience_level: null, is_remote: false }));
         }
 
         // Récupération du nombre de favoris
@@ -322,14 +367,19 @@ const CompanyDetailPage = () => {
     return categories.filter(cat => usedCategoryIds.has(cat.id));
   }, [categories, jobs]);
 
-  // ✅ Types de contrat utilisés par l’entreprise (comme pour les catégories)
   const contractTypesUsed = useMemo(() => {
     if (jobs.length === 0) return [];
     const used = new Set(jobs.map(j => j.contract_type).filter(Boolean));
     return Array.from(used);
   }, [jobs]);
 
-  // ✅ FILTRES combinés (catégorie + type de contrat)
+  const experienceLevelsUsed = useMemo(() => {
+    if (jobs.length === 0) return [];
+    const used = new Set(jobs.map(j => j.experience_level).filter(Boolean));
+    return Array.from(used);
+  }, [jobs]);
+
+  // ✅ FILTRES avec conversion de devise pour le salaire
   const filteredJobs = useMemo(() => {
     let result = jobs;
     if (filterCategory) {
@@ -338,9 +388,24 @@ const CompanyDetailPage = () => {
     if (filterContract) {
       result = result.filter(job => job.contract_type === filterContract);
     }
+    if (filterExperience) {
+      result = result.filter(job => job.experience_level === filterExperience);
+    }
+    if (filterSalaryMin) {
+      const minXOF = filterSalaryMin * conversionRate;
+      result = result.filter(job => job.salary_max >= minXOF);
+    }
+    if (filterSalaryMax) {
+      const maxXOF = filterSalaryMax * conversionRate;
+      result = result.filter(job => job.salary_min <= maxXOF);
+    }
+    if (filterRemoteOnly) {
+      result = result.filter(job => job.is_remote === true);
+    }
     return result;
-  }, [jobs, filterCategory, filterContract]);
+  }, [jobs, filterCategory, filterContract, filterExperience, filterSalaryMin, filterSalaryMax, filterRemoteOnly, conversionRate]);
 
+  // Onglets avec la bonne clé de traduction pour "Avis"
   const TABS = useMemo(() => {
     const tabs = [
       { key: 'about', icon: Building2 },
@@ -348,6 +413,7 @@ const CompanyDetailPage = () => {
     ];
     if (companyPosts.length > 0) tabs.push({ key: 'news', icon: FileText });
     tabs.push({ key: 'contact', icon: Mail });
+    tabs.push({ key: 'reviews', icon: MessageSquare });
     return tabs;
   }, [companyPosts]);
 
@@ -424,6 +490,16 @@ const CompanyDetailPage = () => {
                   )}
                 </div>
                 {company.industry && <p className="text-white/60 text-base sm:text-lg">{getTranslatedIndustry(company.industry)}</p>}
+
+                {/* ✅ Badge de notation – ultra discret */}
+                {totalReviews > 0 && (
+                  <div className="flex items-center gap-2 mt-2 text-white/60 text-sm">
+                    <StarRating rating={Math.round(avgRating)} size="w-3.5 h-3.5" starColor="text-white/40" />
+                    <span className="font-medium text-white/80">{avgRating.toFixed(1)}</span>
+                    <span className="text-white/40 text-xs">({formatCount(totalReviews)} {t('reviews.reviews')})</span>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap items-center gap-3 mt-6">
                   {!isOwner && user && !isAdmin && (
                     <Button
@@ -449,14 +525,23 @@ const CompanyDetailPage = () => {
           {/* Onglets */}
           <div className="border-b border-slate-200 overflow-x-auto">
             <div className="flex space-x-0 px-4 sm:px-8">
-              {TABS.map(tab => (
-                <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
-                  <tab.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">
-                    {tab.key === 'about' ? t('companyDetail.tabs.about') : tab.key === 'jobs' ? t('companyDetail.tabs.jobs') : tab.key === 'news' ? t('candidateProfile.posts', 'Actualités') : t(`companyDetail.tabs.${tab.key}`)}
-                  </span>
-                </button>
-              ))}
+              {TABS.map(tab => {
+                let label = '';
+                switch (tab.key) {
+                  case 'about': label = t('companyDetail.tabs.about'); break;
+                  case 'jobs': label = t('companyDetail.tabs.jobs'); break;
+                  case 'news': label = t('candidateProfile.posts', 'Actualités'); break;
+                  case 'contact': label = t('companyDetail.tabs.contact'); break;
+                  case 'reviews': label = t('reviews.tabs.reviews', 'Avis'); break;
+                  default: label = tab.key;
+                }
+                return (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
+                    <tab.icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -481,56 +566,114 @@ const CompanyDetailPage = () => {
 
             {activeTab === 'jobs' && (
               <div>
-                {/* ✅ Barre de filtres avec catégorie + contrat (liste dynamique) */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                   <h2 className="text-xl font-bold text-slate-900">
                     {t('companyDetail.jobs')} ({formattedJobsCount})
                   </h2>
-                  <div className="flex flex-wrap gap-3">
-                    {/* Filtre par catégorie (si plusieurs) */}
-                    {companyCategories.length > 1 && (
-                      <div className="relative w-full sm:w-48">
-                        <select
-                          value={filterCategory || 'all'}
-                          onChange={(e) => setFilterCategory(e.target.value === 'all' ? null : e.target.value)}
-                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
-                        >
-                          <option value="all">{t('jobs.allCategories')}</option>
-                          {companyCategories.map(cat => (
-                            <option key={cat.id} value={cat.id}>
-                              {t(`categories.${cat.slug}`, cat.name)}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
-                          <ChevronDown className="h-4 w-4" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ✅ Filtre par type de contrat (uniquement ceux utilisés) */}
-                    {contractTypesUsed.length > 0 && (
-                      <div className="relative w-full sm:w-48">
-                        <select
-                          value={filterContract || 'all'}
-                          onChange={(e) => setFilterContract(e.target.value === 'all' ? null : e.target.value)}
-                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
-                        >
-                          <option value="all">{t('jobs.contractType', 'Tous les contrats')}</option>
-                          {contractTypesUsed.map(contractType => {
-                            const contractInfo = CONTRACT_TYPES[contractType];
-                            return (
-                              <option key={contractType} value={contractType}>
-                                {t(contractInfo?.key || contractType)}
+                  <div className="flex flex-col gap-3 w-full sm:w-auto">
+                    {/* Ligne 1 : Catégorie + Contrat */}
+                    <div className="flex flex-wrap gap-3">
+                      {companyCategories.length > 1 && (
+                        <div className="relative flex-1 min-w-[140px]">
+                          <select
+                            value={filterCategory || 'all'}
+                            onChange={(e) => setFilterCategory(e.target.value === 'all' ? null : e.target.value)}
+                            className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                          >
+                            <option value="all">{t('jobs.allCategories')}</option>
+                            {companyCategories.map(cat => (
+                              <option key={cat.id} value={cat.id}>
+                                {t(`categories.${cat.slug}`, cat.name)}
                               </option>
-                            );
-                          })}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
-                          <ChevronDown className="h-4 w-4" />
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                            <ChevronDown className="h-4 w-4" />
+                          </div>
                         </div>
+                      )}
+
+                      {contractTypesUsed.length > 0 && (
+                        <div className="relative flex-1 min-w-[140px]">
+                          <select
+                            value={filterContract || 'all'}
+                            onChange={(e) => setFilterContract(e.target.value === 'all' ? null : e.target.value)}
+                            className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                          >
+                            <option value="all">{t('jobs.contractType', 'Tous les contrats')}</option>
+                            {contractTypesUsed.map(contractType => {
+                              const contractInfo = CONTRACT_TYPES[contractType];
+                              return (
+                                <option key={contractType} value={contractType}>
+                                  {t(contractInfo?.key || contractType)}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                            <ChevronDown className="h-4 w-4" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ligne 2 : Expérience + Télétravail (checkbox) */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      {experienceLevelsUsed.length > 0 && (
+                        <div className="relative flex-1 min-w-[140px]">
+                          <select
+                            value={filterExperience || 'all'}
+                            onChange={(e) => setFilterExperience(e.target.value === 'all' ? null : e.target.value)}
+                            className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                          >
+                            <option value="all">{t('jobs.experience', 'Toute expérience')}</option>
+                            {experienceLevelsUsed.map(exp => {
+                              const expInfo = EXPERIENCE_LEVELS[exp];
+                              return (
+                                <option key={exp} value={exp}>
+                                  {t(expInfo?.key || exp)}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                            <ChevronDown className="h-4 w-4" />
+                          </div>
+                        </div>
+                      )}
+
+                      <label className="flex items-center gap-2 text-sm text-slate-700 whitespace-nowrap cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filterRemoteOnly || false}
+                          onChange={(e) => setFilterRemoteOnly(e.target.checked)}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        {t('jobs.remotePossible', 'Télétravail uniquement')}
+                      </label>
+                    </div>
+
+                    {/* Ligne 3 : Salaire min + Salaire max avec placeholders de devise */}
+                    <div className="flex flex-wrap gap-3">
+                      <div className="relative flex-1 min-w-[120px]">
+                        <input
+                          type="number"
+                          placeholder={`${t('jobs.minSalary')} (${prefs.currency})`}
+                          value={filterSalaryMin || ''}
+                          onChange={(e) => setFilterSalaryMin(e.target.value ? Number(e.target.value) : null)}
+                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
-                    )}
+                      <div className="relative flex-1 min-w-[120px]">
+                        <input
+                          type="number"
+                          placeholder={`${t('jobs.maxSalary')} (${prefs.currency})`}
+                          value={filterSalaryMax || ''}
+                          onChange={(e) => setFilterSalaryMax(e.target.value ? Number(e.target.value) : null)}
+                          className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-4 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -546,7 +689,6 @@ const CompanyDetailPage = () => {
 
                       return (
                         <Link key={job.id} to={`/emplois/${job.id}`} className="block bg-white rounded-2xl border border-slate-100 hover:shadow-md hover:border-blue-200 transition-all overflow-hidden relative group">
-                          {/* ===== AFFICHAGE COUVERTURE ===== */}
                           {hasCover && (
                             <div className="relative w-full h-28 overflow-hidden">
                               <img
@@ -555,7 +697,6 @@ const CompanyDetailPage = () => {
                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
-                              {/* Badge Urgent dans l'image */}
                               {job.is_urgent && (
                                 <div className="absolute top-2 left-2 z-10">
                                   <span className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-lg">
@@ -565,7 +706,6 @@ const CompanyDetailPage = () => {
                               )}
                             </div>
                           )}
-                          {/* Badge Urgent en haut de carte si pas de cover */}
                           {!hasCover && job.is_urgent && (
                             <div className="absolute -top-px inset-x-0 z-10">
                               <div className="bg-red-500 text-white text-xs font-medium px-3 py-0.5 text-center">
@@ -605,7 +745,6 @@ const CompanyDetailPage = () => {
                               <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
                             </div>
 
-                            {/* Statistiques formatées */}
                             <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 border-t border-slate-50 pt-3">
                               <span className="flex items-center gap-1">
                                 <Eye className="w-3.5 h-3.5" />
@@ -618,7 +757,6 @@ const CompanyDetailPage = () => {
                             </div>
                           </div>
 
-                          {/* ✅ Badges en haut à droite */}
                           {(isOwnerJob || (applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn')) && (
                             <div className="absolute top-2 right-2 z-20 flex flex-col gap-1 items-end">
                               {isOwnerJob && (
@@ -673,6 +811,16 @@ const CompanyDetailPage = () => {
                     />
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ✅ Onglet Avis avec formatCount */}
+            {activeTab === 'reviews' && (
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 mb-6">
+                  {t('reviews.tabs.reviews', 'Avis')} ({formatCount(totalReviews)})
+                </h2>
+                <CompanyReviews companyId={company.id} isOwner={isOwner} />
               </div>
             )}
           </div>

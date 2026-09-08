@@ -1374,6 +1374,7 @@
   
 
   "companiesPage": {
+    "allRatings": "Alle Bewertungen",
     "title": "Unternehmen",
     "subtitle": "Entdecken Sie Unternehmen, die auf Actoos einstellen",
     "searchPlaceholder": "Unternehmen suchen...",
@@ -3732,6 +3733,57 @@
         "coverDeleted": "Titelbild gelöscht",
         "coverUploadError": "Fehler beim Hochladen"
       }
+    },
+    "reviews": {
+      "sort": {
+      "newest": "Neueste",
+      "oldest": "Älteste",
+      "highest": "Bestbewertete",
+      "lowest": "Schlechtestbewertete"
+    },
+    "showing": "Anzeige von {{from}} bis {{to}} von {{total}} Bewertungen",
+       "replyRequired": "Die Antwort darf nicht leer sein.",
+    "updateReply": "Antwort aktualisieren",
+    "replyUpdated": "Ihre Antwort wurde aktualisiert",
+    "replyUpdateError": "Fehler beim Aktualisieren der Antwort",
+      "locked": "Bearbeitung gesperrt (7 Tage)",
+      "edit": "Bearbeiten",
+    "editReview": "Meine Bewertung bearbeiten",
+    "update": "Aktualisieren",
+    "reviewUpdated": "Ihre Bewertung wurde aktualisiert",
+    "updateError": "Fehler beim Aktualisieren",
+    "edited": "bearbeitet",
+      "tabs": {
+      "reviews": "Bewertungen"
+    },
+        "ratings": "Bewertungen",
+    "averageRating": "Durchschnittliche Bewertung",
+       "reviews": "Bewertungen",
+      "writeReview": "Bewertung abgeben",
+      "rating": "Bewertung",
+      "comment": "Kommentar",
+      "commentPlaceholder": "Teilen Sie Ihre Erfahrung mit diesem Unternehmen...",
+      "showName": "Meinen Namen anzeigen",
+      "anonymous": "Anonymer Kandidat",
+      "submit": "Veröffentlichen",
+      "reviewSubmitted": "Ihre Bewertung wurde veröffentlicht!",
+      "submitError": "Fehler beim Veröffentlichen",
+      "deleteConfirm": "Möchten Sie diese Bewertung wirklich löschen?",
+      "deleted": "Bewertung gelöscht",
+      "deleteError": "Fehler beim Löschen",
+      "employerReply": "Antwort des Unternehmens:",
+      "reply": "Antworten",
+      "replyPlaceholder": "Ihre Antwort...",
+      "submitReply": "Antwort veröffentlichen",
+      "replySubmitted": "Antwort veröffentlicht",
+      "replyError": "Fehler beim Veröffentlichen",
+      "replyDeleted": "Antwort gelöscht",
+      "replyDeleteError": "Fehler beim Löschen",
+      "deleteReplyConfirm": "Möchten Sie diese Antwort wirklich löschen?",
+      "noReviews": "Noch keine Bewertungen.",
+      "showMore": "Mehr anzeigen",
+      "showLess": "Weniger anzeigen",
+      "fillAllFields": "Bitte bewerten Sie und hinterlassen Sie einen Kommentar."
     }
 
 

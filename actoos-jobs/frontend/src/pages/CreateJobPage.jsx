@@ -155,7 +155,7 @@ const CreateJobPage = () => {
         is_urgent: data.is_urgent || false,
         status: data.status || 'draft',
         required_languages: requiredLanguages,
-        cover_url: data.cover_url || '', // ✅ AJOUT
+        cover_url: data.cover_url || '',
       });
     } catch (error) {
       console.error('Error fetching job:', error);
@@ -246,6 +246,16 @@ const CreateJobPage = () => {
     toast.success(t('job.toasts.coverDeleted'));
   };
 
+  // ✅ Fonction de conversion nettoyée
+  const toXOF = (amount) => {
+    if (!amount) return null;
+    // Nettoyer : enlever espaces, remplacer virgule par point
+    const cleaned = String(amount).replace(/\s/g, '').replace(',', '.');
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return null;
+    return Math.round(num * (RATES[currency] || 1));
+  };
+
   // Sauvegarde / Publication
   const handleSave = async (publish = false) => {
     if (!company?.is_active) {
@@ -307,11 +317,6 @@ const CreateJobPage = () => {
         }
       }
 
-      const toXOF = (amount) => {
-        const num = parseInt(amount);
-        return isNaN(num) ? null : Math.round(num * RATES[currency] || 1);
-      };
-
       const eligibilityCriteria = form.required_languages.length > 0
         ? { languages: form.required_languages }
         : null;
@@ -343,7 +348,7 @@ const CreateJobPage = () => {
         is_urgent: form.is_urgent,
         status: finalStatus,
         eligibility_criteria: eligibilityCriteria,
-        cover_url: form.cover_url || null, // ✅ AJOUT
+        cover_url: form.cover_url || null,
       };
 
       let newJobId = id;

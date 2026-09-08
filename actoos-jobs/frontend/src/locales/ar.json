@@ -1340,6 +1340,7 @@
   
 
   "companiesPage": {
+     "allRatings": "جميع التقييمات",
     "title": "الشركات",
     "subtitle": "اكتشف الشركات التي توظف على أكتوس",
     "searchPlaceholder": "ابحث عن شركة...",
@@ -3703,6 +3704,57 @@
         "coverDeleted": "تم حذف صورة الغلاف",
         "coverUploadError": "خطأ أثناء التحميل"
       }
+    },
+    "reviews": {
+      "sort": {
+      "newest": "الأحدث",
+      "oldest": "الأقدم",
+      "highest": "الأعلى تقييماً",
+      "lowest": "الأقل تقييماً"
+    },
+    "showing": "عرض من {{from}} إلى {{to}} من أصل {{total}} تقييم",
+      "replyRequired": "لا يمكن أن يكون الرد فارغًا.",
+    "updateReply": "تحديث الرد",
+    "replyUpdated": "تم تحديث ردك",
+    "replyUpdateError": "خطأ أثناء تحديث الرد",
+      "locked": "التعديل مقفل (7 أيام)",
+       "edit": "تعديل",
+    "editReview": "تعديل تقييمي",
+    "update": "تحديث",
+    "reviewUpdated": "تم تحديث تقييمك",
+    "updateError": "خطأ أثناء التحديث",
+    "edited": "معدل",
+      "tabs": {
+      "reviews": "التقييمات"
+    },
+      "ratings": "تقييمات",
+    "averageRating": "متوسط التقييم",
+       "reviews": "التقييمات",
+      "writeReview": "أضف تقييمًا",
+      "rating": "التقييم",
+      "comment": "تعليق",
+      "commentPlaceholder": "شارك تجربتك مع هذه الشركة...",
+      "showName": "إظهار اسمي",
+      "anonymous": "مرشح مجهول",
+      "submit": "نشر",
+      "reviewSubmitted": "تم نشر تقييمك!",
+      "submitError": "خطأ أثناء النشر",
+      "deleteConfirm": "هل تريد بالتأكيد حذف هذا التقييم؟",
+      "deleted": "تم حذف التقييم",
+      "deleteError": "خطأ أثناء الحذف",
+      "employerReply": "رد الشركة:",
+      "reply": "رد",
+      "replyPlaceholder": "ردك...",
+      "submitReply": "نشر الرد",
+      "replySubmitted": "تم نشر الرد",
+      "replyError": "خطأ أثناء النشر",
+      "replyDeleted": "تم حذف الرد",
+      "replyDeleteError": "خطأ أثناء الحذف",
+      "deleteReplyConfirm": "هل تريد بالتأكيد حذف هذا الرد؟",
+      "noReviews": "لا توجد تقييمات بعد.",
+      "showMore": "عرض المزيد",
+      "showLess": "عرض أقل",
+      "fillAllFields": "يرجى التقييم وترك تعليق."
     }
 
 

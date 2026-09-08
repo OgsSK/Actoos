@@ -1406,6 +1406,7 @@
   },
   
   "companiesPage": {
+     "allRatings": "Alle beoordelingen",
     "title": "Bedrijven",
     "subtitle": "Ontdek bedrijven die personeel zoeken via Actoos",
     "searchPlaceholder": "Zoek een bedrijf...",
@@ -3693,6 +3694,57 @@
         "coverDeleted": "Omslagafbeelding verwijderd",
         "coverUploadError": "Fout bij uploaden"
       }
+    },
+    "reviews": {
+      "sort": {
+      "newest": "Nieuwste",
+      "oldest": "Oudste",
+      "highest": "Hoogst beoordeeld",
+      "lowest": "Laagst beoordeeld"
+    },
+    "showing": "Weergave van {{from}} tot {{to}} van {{total}} beoordelingen",
+       "replyRequired": "Het antwoord mag niet leeg zijn.",
+    "updateReply": "Antwoord bijwerken",
+    "replyUpdated": "Je antwoord is bijgewerkt",
+    "replyUpdateError": "Fout bij het bijwerken van het antwoord",
+      "locked": "Bewerking vergrendeld (7 dagen)",
+       "edit": "Bewerken",
+    "editReview": "Mijn beoordeling bewerken",
+    "update": "Bijwerken",
+    "reviewUpdated": "Je beoordeling is bijgewerkt",
+    "updateError": "Fout bij het bijwerken",
+    "edited": "bewerkt",
+      "tabs": {
+      "reviews": "Beoordelingen"
+    },
+      "ratings": "beoordelingen",
+    "averageRating": "Gemiddelde beoordeling",
+      "reviews": "Beoordelingen",
+      "writeReview": "Schrijf een beoordeling",
+      "rating": "Beoordeling",
+      "comment": "Opmerking",
+      "commentPlaceholder": "Deel je ervaring met dit bedrijf...",
+      "showName": "Mijn naam tonen",
+      "anonymous": "Anonieme kandidaat",
+      "submit": "Publiceren",
+      "reviewSubmitted": "Je beoordeling is gepubliceerd!",
+      "submitError": "Fout bij publiceren",
+      "deleteConfirm": "Weet je zeker dat je deze beoordeling wilt verwijderen?",
+      "deleted": "Beoordeling verwijderd",
+      "deleteError": "Fout bij verwijderen",
+      "employerReply": "Reactie van het bedrijf:",
+      "reply": "Reageren",
+      "replyPlaceholder": "Jouw reactie...",
+      "submitReply": "Reactie publiceren",
+      "replySubmitted": "Reactie gepubliceerd",
+      "replyError": "Fout bij publiceren",
+      "replyDeleted": "Reactie verwijderd",
+      "replyDeleteError": "Fout bij verwijderen",
+      "deleteReplyConfirm": "Weet je zeker dat je deze reactie wilt verwijderen?",
+      "noReviews": "Nog geen beoordelingen.",
+      "showMore": "Meer tonen",
+      "showLess": "Minder tonen",
+      "fillAllFields": "Beoordeel en laat een opmerking achter."
     }
  
 

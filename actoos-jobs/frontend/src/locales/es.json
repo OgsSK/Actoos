@@ -1338,6 +1338,7 @@
   
 
   "companiesPage": {
+    "allRatings": "Todas las evaluaciones",
     "title": "Empresas",
     "subtitle": "Descubra las empresas que contratan en Actoos",
     "searchPlaceholder": "Buscar una empresa...",
@@ -3626,6 +3627,57 @@
         "coverDeleted": "Imagen de portada eliminada",
         "coverUploadError": "Error al subir"
       }
+    },
+    "reviews": {
+      "sort": {
+      "newest": "Más recientes",
+      "oldest": "Más antiguos",
+      "highest": "Mejor calificados",
+      "lowest": "Peor calificados"
+    },
+    "showing": "Mostrando de {{from}} a {{to}} de {{total}} reseñas",
+      "replyRequired": "La respuesta no puede estar vacía.",
+    "updateReply": "Actualizar respuesta",
+    "replyUpdated": "Tu respuesta ha sido actualizada",
+    "replyUpdateError": "Error al actualizar la respuesta",
+      "locked": "Edición bloqueada (7 días)",
+      "edit": "Editar",
+    "editReview": "Editar mi reseña",
+    "update": "Actualizar",
+    "reviewUpdated": "Tu reseña ha sido actualizada",
+    "updateError": "Error al actualizar",
+    "edited": "editado",
+      "tabs": {
+      "reviews": "Reseñas"
+    },
+       "ratings": "evaluaciones",
+    "averageRating": "Calificación media",
+     "reviews": "Reseñas",
+      "writeReview": "Escribir una reseña",
+      "rating": "Calificación",
+      "comment": "Comentario",
+      "commentPlaceholder": "Comparte tu experiencia con esta empresa...",
+      "showName": "Mostrar mi nombre",
+      "anonymous": "Candidato anónimo",
+      "submit": "Publicar",
+      "reviewSubmitted": "¡Tu reseña ha sido publicada!",
+      "submitError": "Error al publicar",
+      "deleteConfirm": "¿Seguro que quieres eliminar esta reseña?",
+      "deleted": "Reseña eliminada",
+      "deleteError": "Error al eliminar",
+      "employerReply": "Respuesta de la empresa:",
+      "reply": "Responder",
+      "replyPlaceholder": "Tu respuesta...",
+      "submitReply": "Publicar respuesta",
+      "replySubmitted": "Respuesta publicada",
+      "replyError": "Error al publicar",
+      "replyDeleted": "Respuesta eliminada",
+      "replyDeleteError": "Error al eliminar",
+      "deleteReplyConfirm": "¿Seguro que quieres eliminar esta respuesta?",
+      "noReviews": "Aún no hay reseñas.",
+      "showMore": "Ver más",
+      "showLess": "Ver menos",
+      "fillAllFields": "Por favor, califica y deja un comentario."
     }
 
 }

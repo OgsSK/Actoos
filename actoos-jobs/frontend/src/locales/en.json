@@ -1258,6 +1258,7 @@
   },
  
 "companiesPage": {
+  "allRatings": "All ratings",
   "title": "Companies",
   "subtitle": "Discover companies hiring on Actoos",
   "searchPlaceholder": "Search a company...",
@@ -3701,6 +3702,58 @@
         "coverDeleted": "Cover image deleted",
         "coverUploadError": "Upload error"
       }
+    },
+     
+    "reviews": {
+       "sort": {
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "highest": "Highest rated",
+      "lowest": "Lowest rated"
+    },
+    "showing": "Showing {{from}} to {{to}} of {{total}} reviews",
+        "replyRequired": "The response cannot be empty.",
+    "updateReply": "Update response",
+    "replyUpdated": "Your response has been updated",
+    "replyUpdateError": "Error while updating the response",
+      "locked": "Editing locked (7 days)",
+       "edit": "Edit",
+    "editReview": "Edit my review",
+    "update": "Update",
+    "reviewUpdated": "Your review has been updated",
+    "updateError": "Error while updating",
+    "edited": "edited",
+      "tabs": {
+      "reviews": "Reviews"
+    },
+      "ratings": "ratings",
+    "averageRating": "Average rating",
+     "reviews": "Reviews",
+      "writeReview": "Write a review",
+      "rating": "Rating",
+      "comment": "Comment",
+      "commentPlaceholder": "Share your experience with this company...",
+      "showName": "Show my name",
+      "anonymous": "Anonymous candidate",
+      "submit": "Publish",
+      "reviewSubmitted": "Your review has been published!",
+      "submitError": "Error while publishing",
+      "deleteConfirm": "Are you sure you want to delete this review?",
+      "deleted": "Review deleted",
+      "deleteError": "Error while deleting",
+      "employerReply": "Company's response:",
+      "reply": "Reply",
+      "replyPlaceholder": "Your response...",
+      "submitReply": "Publish response",
+      "replySubmitted": "Response published",
+      "replyError": "Error while publishing",
+      "replyDeleted": "Response deleted",
+      "replyDeleteError": "Error while deleting",
+      "deleteReplyConfirm": "Are you sure you want to delete this response?",
+      "noReviews": "No reviews yet.",
+      "showMore": "See more",
+      "showLess": "See less",
+      "fillAllFields": "Please rate and leave a comment."
     }
 
 

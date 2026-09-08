@@ -1,10 +1,10 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
-import { I18nextProvider } from 'react-i18next';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import i18n from './i18n';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { PreferencesProvider } from './contexts/PreferencesContext';
+import { PreferencesProvider, usePreferencesContext } from './contexts/PreferencesContext';
 import { CountriesProvider } from './contexts/CountriesContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -62,7 +62,7 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const CandidateBankPage = lazy(() => import('./pages/CandidateBankPage'));
 const CandidateDocumentsPage = lazy(() => import('./pages/CandidateDocumentsPage'));
 const RecommendedJobsPage = lazy(() => import('./pages/RecommendedJobsPage'));
-const FollowedCompaniesPage = lazy(() => import('./pages/FollowedCompaniesPage')); // ✅ Nouvelle page suivis
+const FollowedCompaniesPage = lazy(() => import('./pages/FollowedCompaniesPage'));
 
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
@@ -121,6 +121,15 @@ const NotFoundPage = () => (
 // ---------- Main App Content ----------
 const AppContent = () => {
   const { user, signOut } = useAuth();
+  const { i18n } = useTranslation();
+  const { prefs } = usePreferencesContext();
+
+  // ✅ Synchronisation de la langue au chargement et à chaque changement
+  useEffect(() => {
+    if (prefs.language && prefs.language !== i18n.language) {
+      i18n.changeLanguage(prefs.language);
+    }
+  }, [prefs.language, i18n]);
 
   // 🔍 DEBUG : intercepte tous les toast.error pour trouver la source exacte
   useEffect(() => {
@@ -196,7 +205,7 @@ const AppContent = () => {
               <Route path="/alertes" element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
               <Route path="/documents" element={<ProtectedRoute><CandidateDocumentsPage /></ProtectedRoute>} />
               <Route path="/dashboard/candidat/offres-recommandees" element={<ProtectedRoute><RecommendedJobsPage /></ProtectedRoute>} />
-              <Route path="/dashboard/candidat/suivis" element={<ProtectedRoute><FollowedCompaniesPage /></ProtectedRoute>} /> {/* ✅ Nouvelle route suivis */}
+              <Route path="/dashboard/candidat/suivis" element={<ProtectedRoute><FollowedCompaniesPage /></ProtectedRoute>} />
 
               {/* ---------- Protected routes - Entreprise ---------- */}
               <Route path="/dashboard/entreprise" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
@@ -208,7 +217,7 @@ const AppContent = () => {
               <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/cv-bank" element={<ProtectedRoute><CandidateBankPage /></ProtectedRoute>} />
-              <Route path="/dashboard/entreprise/abonnes" element={<ProtectedRoute><CompanyFollowersPage /></ProtectedRoute>} /> {/* ✅ Route protégée */}
+              <Route path="/dashboard/entreprise/abonnes" element={<ProtectedRoute><CompanyFollowersPage /></ProtectedRoute>} />
 
               {/* ---------- Voir profil candidat (public) ---------- */}
               <Route path="/candidat/:id" element={<CandidatePublicProfilePage />} />
