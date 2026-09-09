@@ -187,6 +187,7 @@
           "description": "Per iniziare",
           "features": {
             "0": "{{count}} offerta/e attiva/e",
+            "interviewTools": "Strumenti di pianificazione colloqui",
             "expiration": "{{days}} giorni alla scadenza",
             "2": "Profilo verificato"
           },
@@ -736,6 +737,16 @@
   },
 
   "blog": {
+     "createTitle": "Crea un articolo",
+    "createDescription": "Scrivi un articolo per il blog",
+    "contentLabel": "Contenuto (HTML)",
+    "contentPlaceholder": "Scrivi il contenuto dell'articolo in HTML...",
+    "excerptLabel": "Estratto",
+    "excerptPlaceholder": "Riassunto dell'articolo...",
+    "publishButton": "Pubblica articolo",
+    "createdToast": "Articolo pubblicato!",
+    "createError": "Errore durante la pubblicazione",
+    "fillRequired": "Si prega di compilare il titolo e il contenuto.",
     "badge": "Blog",
     "title": "Consigli e risorse per la tua carriera",
     "subtitle": "Trova i nostri migliori consigli per potenziare la tua ricerca di lavoro, superare i colloqui e sviluppare la tua carriera.",
@@ -1743,7 +1754,7 @@
     "jobs": "Offerte",
     "companies": "Aziende",
     "pricing": "Prezzi",
-    "blog": "Blog"
+     "newsletter": "Newsletter"
   },
   "auth": {
     "login": "Accedi",
@@ -2629,6 +2640,7 @@
         "button": "Elimina il mio account"
       },
       "roleChange": {
+        "alreadyRequested": "Hai già effettuato una richiesta negli ultimi 30 giorni. Per favore riprova più tardi.",
         "title": "Cambia ruolo",
         "descriptionCandidate": "Sei <strong>candidato</strong>. Richiedi di diventare reclutatore.",
         "descriptionCompany": "Sei <strong>reclutatore</strong>. Richiedi di diventare candidato.",
@@ -3722,6 +3734,20 @@
       "showMore": "Vedi di più",
       "showLess": "Vedi di meno",
       "fillAllFields": "Per favore valuta e lascia un commento."
+    },
+    "newsletter": {
+      "title": "Resta informato",
+      "subtitle": "Iscriviti alla nostra newsletter per ricevere le ultime offerte di lavoro e consigli.",
+      "placeholder": "Il tuo indirizzo email",
+      "subscribeButton": "Iscriviti",
+      "privacyNote": "Rispettiamo la tua privacy. Puoi annullare l'iscrizione in qualsiasi momento.",
+      "subscribedTitle": "Grazie per l'iscrizione!",
+      "subscribedMessage": "Riceverai presto le nostre notizie.",
+      "toasts": {
+        "emailRequired": "Per favore inserisci il tuo indirizzo email.",
+        "subscribeSuccess": "Iscrizione riuscita!",
+        "subscribeError": "Errore durante l'iscrizione."
+      }
     }
  
 

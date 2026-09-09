@@ -27,12 +27,33 @@ const CoverLetter = () => {
         body: JSON.stringify({
           agent_id: 'cover-letter',
           text: `Offre : ${jobDescription}\n\nProfil : ${candidateProfile}`,
+          language: 'fr', // ou récupérer depuis i18n
         }),
       });
-      setLetter(res.result);
-      toast.success(t('coverLetter.toasts.generated'));
+      
+      // Vérifier si la réponse a un champ 'result'
+      if (res && res.result) {
+        setLetter(res.result);
+        toast.success(t('coverLetter.toasts.generated'));
+      } else if (res && res.letter) {
+        // Fallback si la clé s'appelle 'letter'
+        setLetter(res.letter);
+        toast.success(t('coverLetter.toasts.generated'));
+      } else {
+        // Si la réponse est une chaîne directement
+        setLetter(typeof res === 'string' ? res : JSON.stringify(res));
+        toast.success(t('coverLetter.toasts.generated'));
+      }
     } catch (err) {
-      toast.error(err.message || t('coverLetter.toasts.error'));
+      console.error('Erreur CoverLetter:', err);
+      // Message d'erreur plus précis
+      if (err.message && err.message.includes('404')) {
+        toast.error(t('coverLetter.toasts.endpointNotFound', 'L\'API de génération n\'est pas disponible.'));
+      } else if (err.message && err.message.includes('500')) {
+        toast.error(t('coverLetter.toasts.serverError', 'Erreur serveur. Veuillez réessayer.'));
+      } else {
+        toast.error(err.message || t('coverLetter.toasts.error'));
+      }
     } finally {
       setLoading(false);
     }

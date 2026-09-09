@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import MessageSender from '../components/MessageSender';
-import { StarRating } from '../components/ui/StarRating'; // ✅ Import ajouté pour les avis
+import { StarRating } from '../components/ui/StarRating';
 import {
   Shield,
   Building2,
@@ -41,10 +41,7 @@ import {
   UserCog,
   LayoutDashboard,
   CreditCard,
-  Sparkles,
-  Edit,
-  Save,
-  MessageSquare, // ✅ Ajout pour l'onglet Avis
+  MessageSquare,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
@@ -751,7 +748,6 @@ const AdminDashboard = () => {
   const [usersPage, setUsersPage] = useState(1);
   const [usersHasMore, setUsersHasMore] = useState(true);
 
-  // États pour les signalements (reports)
   const [reports, setReports] = useState([]);
   const [reportFilter, setReportFilter] = useState('all');
   const [reportsLoading, setReportsLoading] = useState(false);
@@ -769,21 +765,6 @@ const AdminDashboard = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [loadingSubscribers, setLoadingSubscribers] = useState(true);
 
-  const [blogPosts, setBlogPosts] = useState([]);
-  const [loadingBlog, setLoadingBlog] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [blogForm, setBlogForm] = useState({
-    title: '',
-    keywords: '',
-    audience: 'all',
-    category: 'Carrière',
-    read_time: '5 min',
-    author: 'Équipe Actoos',
-    icon: 'FileText',
-    color: 'blue'
-  });
-  const [editingSlug, setEditingSlug] = useState(null);
-
   const [suspendModal, setSuspendModal] = useState({ open: false, userId: null });
   const [suspendDuration, setSuspendDuration] = useState(0);
   const [suspendReason, setSuspendReason] = useState('');
@@ -794,7 +775,6 @@ const AdminDashboard = () => {
 
   const [roleRequests, setRoleRequests] = useState([]);
 
-  // États pour la gestion des avis
   const [reviews, setReviews] = useState([]);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [reviewsHasMore, setReviewsHasMore] = useState(true);
@@ -835,12 +815,11 @@ const AdminDashboard = () => {
     if (isAdmin) fetchCancellations();
   }, [isAdmin]);
 
-  // Chargement des reports quand l'onglet est actif
- useEffect(() => {
-  if (isAdmin && activeTab === 'reports') {
-    fetchReports(true);
-  }
-}, [activeTab, isAdmin]);
+  useEffect(() => {
+    if (isAdmin && activeTab === 'reports') {
+      fetchReports(true);
+    }
+  }, [activeTab, isAdmin]);
 
   const fetchSubscribers = async () => {
     setLoadingSubscribers(true);
@@ -852,26 +831,6 @@ const AdminDashboard = () => {
     setLoadingSubscribers(false);
   };
 
-  const fetchBlogPosts = async () => {
-    setLoadingBlog(true);
-    try {
-      const res = await apiFetch('/api/blog/posts');
-      setBlogPosts(Array.isArray(res) ? res : []);
-    } catch (err) {
-      console.error(err);
-      setBlogPosts([]);
-    } finally {
-      setLoadingBlog(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAdmin && activeTab === 'blog') {
-      fetchBlogPosts();
-    }
-  }, [isAdmin, activeTab]);
-
-  // Chargement des avis
   useEffect(() => {
     if (isAdmin && activeTab === 'reviews') {
       fetchReviews(true);
@@ -959,7 +918,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Actions sur les avis
   const handleHideReview = async (reviewId) => {
     if (!window.confirm(t('adminDashboard.reviews.hideConfirm', 'Masquer cet avis ?'))) return;
     try {
@@ -1037,8 +995,6 @@ const AdminDashboard = () => {
       setUsers(usersData || []);
       setUsersPage(1);
       setUsersHasMore((usersData || []).length === ITEMS_PER_PAGE);
-
-      // Ne plus charger les reports ici, ils seront chargés via l'onglet
 
       const pendingJobs = (jobsData || []).filter((j) => j.status === 'pending' || j.status === 'draft').length;
       const activeJobs = (jobsData || []).filter((j) => j.status === 'active').length;
@@ -1128,25 +1084,24 @@ const AdminDashboard = () => {
     }
   };
 
-  // Nouvelle fonction fetchReports
- const fetchReports = async (reset = true) => {
-  if (reset) setReportsLoading(true);
-  try {
-    const { data, error } = await supabase
-      .from('reports')
-      .select('*, reporter:users(email, first_name, last_name)')
-      .order('created_at', { ascending: false });
+  const fetchReports = async (reset = true) => {
+    if (reset) setReportsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*, reporter:users(email, first_name, last_name)')
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    setReports(data || []);
-  } catch (err) {
-    console.error('Erreur fetchReports:', err);
-    toast.error(t('adminDashboard.reports.loadError'));
-  } finally {
-    setReportsLoading(false);
-  }
-};
-  // Suppression en masse par statut
+      if (error) throw error;
+      setReports(data || []);
+    } catch (err) {
+      console.error('Erreur fetchReports:', err);
+      toast.error(t('adminDashboard.reports.loadError'));
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
   const handleDeleteReportsByStatus = async (status) => {
     const count = reports.filter(r => r.status === status).length;
     if (count === 0) {
@@ -1733,7 +1688,7 @@ const AdminDashboard = () => {
         }),
       });
       if (res.success) {
-        toast.success(t('adminDashboard.newsletter.sentSuccess', { count: res.sent, total: res.total }));
+        toast.success(t('adminDashboard.newsletter.sentSuccess', { sent: res.sent, total: res.total }));
         setNewsletter({ subject: '', content: '' });
       } else {
         toast.error(res.message || t('adminDashboard.jobs.genericError'));
@@ -1742,61 +1697,6 @@ const AdminDashboard = () => {
       toast.error(t('adminDashboard.newsletter.networkError'));
     } finally {
       setSendingNewsletter(false);
-    }
-  };
-
-  const handleGenerateBlog = async () => {
-    if (!blogForm.title.trim()) {
-      toast.error(t('adminDashboard.blog.titleRequired'));
-      return;
-    }
-    setGenerating(true);
-    try {
-      await apiFetch('/api/admin/blog/generate', {
-        method: 'POST',
-        body: JSON.stringify(blogForm),
-      });
-      toast.success(t('adminDashboard.blog.generatedToast'));
-      setBlogForm({
-        title: '',
-        keywords: '',
-        audience: 'all',
-        category: 'Carrière',
-        read_time: '5 min',
-        author: 'Équipe Actoos',
-        icon: 'FileText',
-        color: 'blue'
-      });
-      fetchBlogPosts();
-    } catch (err) {
-      toast.error(err.message || t('adminDashboard.blog.generateError'));
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handleUpdateBlog = async (slug, updates) => {
-    try {
-      await apiFetch(`/api/admin/blog/${slug}`, {
-        method: 'PUT',
-        body: JSON.stringify(updates),
-      });
-      toast.success(t('adminDashboard.blog.updatedToast'));
-      setEditingSlug(null);
-      fetchBlogPosts();
-    } catch (err) {
-      toast.error(err.message || t('adminDashboard.blog.updateError'));
-    }
-  };
-
-  const handleDeleteBlog = async (slug) => {
-    if (!window.confirm(t('adminDashboard.blog.deleteConfirm'))) return;
-    try {
-      await apiFetch(`/api/admin/blog/${slug}`, { method: 'DELETE' });
-      toast.success(t('adminDashboard.blog.deletedToast'));
-      fetchBlogPosts();
-    } catch (err) {
-      toast.error(err.message || t('adminDashboard.blog.deleteError'));
     }
   };
 
@@ -1827,282 +1727,280 @@ const AdminDashboard = () => {
   }
 
   if (!isAdmin) return null;
-// Composant local pour l'onglet Reports (à l'intérieur de AdminDashboard)
-const ReportsContent = () => {
-  const { t } = useTranslation();
-  const [localReports, setLocalReports] = useState([]);
-  const [localLoading, setLocalLoading] = useState(true);
-  const [localFilter, setLocalFilter] = useState('all');
 
-  const fetchReports = async () => {
-    setLocalLoading(true);
-    try {
-      let query = supabase
-        .from('reports')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const ReportsContent = () => {
+    const { t } = useTranslation();
+    const [localReports, setLocalReports] = useState([]);
+    const [localLoading, setLocalLoading] = useState(true);
+    const [localFilter, setLocalFilter] = useState('all');
 
-      if (localFilter !== 'all') {
-        query = query.eq('status', localFilter);
-      }
+    const fetchReports = async () => {
+      setLocalLoading(true);
+      try {
+        let query = supabase
+          .from('reports')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      const { data: reportsData, error: reportsError } = await query;
-      if (reportsError) throw reportsError;
+        if (localFilter !== 'all') {
+          query = query.eq('status', localFilter);
+        }
 
-      if (!reportsData || reportsData.length === 0) {
-        setLocalReports([]);
-        setLocalLoading(false);
-        return;
-      }
+        const { data: reportsData, error: reportsError } = await query;
+        if (reportsError) throw reportsError;
 
-      const reporterIds = [...new Set(reportsData.map(r => r.reporter_id))];
-      const { data: reporters, error: reportersError } = await supabase
-        .from('users')
-        .select('id, email, first_name, last_name')
-        .in('id', reporterIds);
+        if (!reportsData || reportsData.length === 0) {
+          setLocalReports([]);
+          setLocalLoading(false);
+          return;
+        }
 
-      const reporterMap = {};
-      (reporters || []).forEach(u => {
-        reporterMap[u.id] = u;
-      });
-
-      const jobIds = reportsData.filter(r => r.reported_item_type === 'job').map(r => r.reported_item_id);
-      const companyIds = reportsData.filter(r => r.reported_item_type === 'company').map(r => r.reported_item_id);
-      const candidateIds = reportsData.filter(r => r.reported_item_type === 'candidate' || r.reported_item_type === 'user').map(r => r.reported_item_id);
-
-      let jobsMap = {};
-      if (jobIds.length > 0) {
-        const { data: jobs } = await supabase
-          .from('jobs')
-          .select('id, title, company:companies(name), posted_by_user:users(email, first_name, last_name)')
-          .in('id', jobIds);
-        (jobs || []).forEach(j => { jobsMap[j.id] = j; });
-      }
-
-      let companiesMap = {};
-      if (companyIds.length > 0) {
-        const { data: companies } = await supabase
-          .from('companies')
-          .select('id, name, owner:users(email, first_name, last_name)')
-          .in('id', companyIds);
-        (companies || []).forEach(c => { companiesMap[c.id] = c; });
-      }
-
-      let candidatesMap = {};
-      if (candidateIds.length > 0) {
-        const { data: candidates } = await supabase
+        const reporterIds = [...new Set(reportsData.map(r => r.reporter_id))];
+        const { data: reporters, error: reportersError } = await supabase
           .from('users')
           .select('id, email, first_name, last_name')
-          .in('id', candidateIds);
-        (candidates || []).forEach(u => { candidatesMap[u.id] = u; });
-      }
+          .in('id', reporterIds);
 
-      const enriched = reportsData.map(report => {
-        const reporter = reporterMap[report.reporter_id] || { email: 'Inconnu', first_name: '', last_name: '' };
-        let details = null;
-        if (report.reported_item_type === 'job') {
-          details = jobsMap[report.reported_item_id] || { title: 'Offre introuvable', company: { name: 'Inconnue' }, posted_by_user: { email: 'Inconnu' } };
-        } else if (report.reported_item_type === 'company') {
-          details = companiesMap[report.reported_item_id] || { name: 'Entreprise introuvable', owner: { email: 'Inconnu' } };
-        } else if (report.reported_item_type === 'candidate' || report.reported_item_type === 'user') {
-          details = candidatesMap[report.reported_item_id] || { email: 'Inconnu', first_name: 'Candidat', last_name: '' };
+        const reporterMap = {};
+        (reporters || []).forEach(u => {
+          reporterMap[u.id] = u;
+        });
+
+        const jobIds = reportsData.filter(r => r.reported_item_type === 'job').map(r => r.reported_item_id);
+        const companyIds = reportsData.filter(r => r.reported_item_type === 'company').map(r => r.reported_item_id);
+        const candidateIds = reportsData.filter(r => r.reported_item_type === 'candidate' || r.reported_item_type === 'user').map(r => r.reported_item_id);
+
+        let jobsMap = {};
+        if (jobIds.length > 0) {
+          const { data: jobs } = await supabase
+            .from('jobs')
+            .select('id, title, company:companies(name), posted_by_user:users(email, first_name, last_name)')
+            .in('id', jobIds);
+          (jobs || []).forEach(j => { jobsMap[j.id] = j; });
         }
-        return { ...report, reporter, details };
-      });
 
-      setLocalReports(enriched);
-    } catch (error) {
-      console.error('Erreur fetchReports:', error);
-      toast.error(t('adminDashboard.reports.loadError'));
-    } finally {
-      setLocalLoading(false);
+        let companiesMap = {};
+        if (companyIds.length > 0) {
+          const { data: companies } = await supabase
+            .from('companies')
+            .select('id, name, owner:users(email, first_name, last_name)')
+            .in('id', companyIds);
+          (companies || []).forEach(c => { companiesMap[c.id] = c; });
+        }
+
+        let candidatesMap = {};
+        if (candidateIds.length > 0) {
+          const { data: candidates } = await supabase
+            .from('users')
+            .select('id, email, first_name, last_name')
+            .in('id', candidateIds);
+          (candidates || []).forEach(u => { candidatesMap[u.id] = u; });
+        }
+
+        const enriched = reportsData.map(report => {
+          const reporter = reporterMap[report.reporter_id] || { email: 'Inconnu', first_name: '', last_name: '' };
+          let details = null;
+          if (report.reported_item_type === 'job') {
+            details = jobsMap[report.reported_item_id] || { title: 'Offre introuvable', company: { name: 'Inconnue' }, posted_by_user: { email: 'Inconnu' } };
+          } else if (report.reported_item_type === 'company') {
+            details = companiesMap[report.reported_item_id] || { name: 'Entreprise introuvable', owner: { email: 'Inconnu' } };
+          } else if (report.reported_item_type === 'candidate' || report.reported_item_type === 'user') {
+            details = candidatesMap[report.reported_item_id] || { email: 'Inconnu', first_name: 'Candidat', last_name: '' };
+          }
+          return { ...report, reporter, details };
+        });
+
+        setLocalReports(enriched);
+      } catch (error) {
+        console.error('Erreur fetchReports:', error);
+        toast.error(t('adminDashboard.reports.loadError'));
+      } finally {
+        setLocalLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      fetchReports();
+    }, [localFilter]);
+
+    const typeLabels = {
+      job: t('adminDashboard.reports.badges.job', 'Offre'),
+      company: t('adminDashboard.reports.badges.company', 'Entreprise'),
+      candidate: t('adminDashboard.reports.badges.candidate', 'Candidat'),
+      user: t('adminDashboard.reports.badges.candidate', 'Candidat'),
+    };
+
+    const statusLabels = {
+      pending: t('adminDashboard.reports.status.pending', 'En attente'),
+      reviewed: t('adminDashboard.reports.status.reviewed', 'Examiné'),
+      resolved: t('adminDashboard.reports.status.resolved', 'Résolu'),
+    };
+
+    if (localLoading) {
+      return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
     }
-  };
 
-  useEffect(() => {
-    fetchReports();
-  }, [localFilter]);
+    if (localReports.length === 0) {
+      return <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>;
+    }
 
-  const typeLabels = {
-    job: t('adminDashboard.reports.badges.job', 'Offre'),
-    company: t('adminDashboard.reports.badges.company', 'Entreprise'),
-    candidate: t('adminDashboard.reports.badges.candidate', 'Candidat'),
-    user: t('adminDashboard.reports.badges.candidate', 'Candidat'),
-  };
-
-  const statusLabels = {
-    pending: t('adminDashboard.reports.status.pending', 'En attente'),
-    reviewed: t('adminDashboard.reports.status.reviewed', 'Examiné'),
-    resolved: t('adminDashboard.reports.status.resolved', 'Résolu'),
-  };
-
-  if (localLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
-  }
-
-  if (localReports.length === 0) {
-    return <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>;
-  }
-
-  return (
-    <div>
-      {/* Filtres */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-          <select
-            value={localFilter}
-            onChange={(e) => setLocalFilter(e.target.value)}
-            className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white w-full sm:w-auto"
-          >
-            <option value="all">{t('adminDashboard.reports.filterAll', 'Tous')}</option>
-            <option value="pending">{t('adminDashboard.reports.filterPending', 'En attente')}</option>
-            <option value="reviewed">{t('adminDashboard.reports.filterReviewed', 'Examinés')}</option>
-            <option value="resolved">{t('adminDashboard.reports.filterResolved', 'Résolus')}</option>
-          </select>
+    return (
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+            <select
+              value={localFilter}
+              onChange={(e) => setLocalFilter(e.target.value)}
+              className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white w-full sm:w-auto"
+            >
+              <option value="all">{t('adminDashboard.reports.filterAll', 'Tous')}</option>
+              <option value="pending">{t('adminDashboard.reports.filterPending', 'En attente')}</option>
+              <option value="reviewed">{t('adminDashboard.reports.filterReviewed', 'Examinés')}</option>
+              <option value="resolved">{t('adminDashboard.reports.filterResolved', 'Résolus')}</option>
+            </select>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => fetchReports()} disabled={localLoading} className="w-full sm:w-auto">
+            <RefreshCw className={cn('w-4 h-4 mr-2', localLoading && 'animate-spin')} />
+            {t('adminDashboard.refresh')}
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => fetchReports()} disabled={localLoading} className="w-full sm:w-auto">
-          <RefreshCw className={cn('w-4 h-4 mr-2', localLoading && 'animate-spin')} />
-          {t('adminDashboard.refresh')}
-        </Button>
-      </div>
 
-      {/* Liste des signalements */}
-      <div className="space-y-4">
-        {localReports.map((report) => {
-          const isJob = report.reported_item_type === 'job';
-          const isCompany = report.reported_item_type === 'company';
-          const isCandidate = report.reported_item_type === 'candidate' || report.reported_item_type === 'user';
-          const details = report.details;
+        <div className="space-y-4">
+          {localReports.map((report) => {
+            const isJob = report.reported_item_type === 'job';
+            const isCompany = report.reported_item_type === 'company';
+            const isCandidate = report.reported_item_type === 'candidate' || report.reported_item_type === 'user';
+            const details = report.details;
 
-          return (
-            <div key={report.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
-              <div className="flex flex-col gap-3">
-                {/* En-tête : badges + date */}
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className={
-                      isJob ? 'bg-blue-100 text-blue-700' :
-                      isCompany ? 'bg-purple-100 text-purple-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }>
-                      {typeLabels[report.reported_item_type] || report.reported_item_type}
-                    </Badge>
-                    <Badge className={
-                      report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
-                      'bg-green-100 text-green-700'
-                    }>
-                      {statusLabels[report.status] || report.status}
-                    </Badge>
+            return (
+              <div key={report.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className={
+                        isJob ? 'bg-blue-100 text-blue-700' :
+                        isCompany ? 'bg-purple-100 text-purple-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }>
+                        {typeLabels[report.reported_item_type] || report.reported_item_type}
+                      </Badge>
+                      <Badge className={
+                        report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
+                        'bg-green-100 text-green-700'
+                      }>
+                        {statusLabels[report.status] || report.status}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-slate-400 whitespace-nowrap">
+                      {new Date(report.created_at).toLocaleString('fr-FR')}
+                    </span>
                   </div>
-                  <span className="text-xs text-slate-400 whitespace-nowrap">
-                    {new Date(report.created_at).toLocaleString('fr-FR')}
-                  </span>
-                </div>
 
-                {/* Signalant et motif */}
-                <div className="space-y-1 text-sm">
-                  <p>
-  <span className="font-medium">{t('adminDashboard.reports.reportedBy')}</span>{' '}
-  {report.reporter?.email || t('adminDashboard.reports.unknownUser', 'Inconnu')}
-  {report.reporter?.first_name && report.reporter?.last_name && (
-    <span className="text-slate-500"> ({report.reporter.first_name} {report.reporter.last_name})</span>
-  )}
-</p>
-<p>
-  <span className="font-medium">{t('adminDashboard.reports.reason')}</span>{' '}
-  {report.reason}
-</p>
-                  {report.description && (
-                    <p className="text-slate-600 italic">« {report.description} »</p>
-                  )}
-                </div>
-
-                {/* ✅ Détails de l'objet signalé (traduits) */}
-                {details && (
-                  <div className="mt-1 p-3 bg-slate-50 rounded-xl text-sm border border-slate-100 space-y-1">
-                    <p className="font-medium">
-                      {isJob ? t('adminDashboard.reports.jobDetails') :
-                       isCompany ? t('adminDashboard.reports.companyDetails') :
-                       t('adminDashboard.reports.candidateDetails')}
+                  <div className="space-y-1 text-sm">
+                    <p>
+                      <span className="font-medium">{t('adminDashboard.reports.reportedBy')}</span>{' '}
+                      {report.reporter?.email || t('adminDashboard.reports.unknownUser', 'Inconnu')}
+                      {report.reporter?.first_name && report.reporter?.last_name && (
+                        <span className="text-slate-500"> ({report.reporter.first_name} {report.reporter.last_name})</span>
+                      )}
                     </p>
-                    {isJob && (
-                      <>
-                        <p><span className="font-medium">{t('adminDashboard.reports.jobTitle')}</span> {details.title}</p>
-                        <p><span className="font-medium">{t('adminDashboard.reports.company')}</span> {details.company?.name}</p>
-                        <p><span className="font-medium">{t('adminDashboard.reports.postedBy')}</span> {details.posted_by_user?.email}</p>
-                      </>
-                    )}
-                    {isCompany && (
-                      <>
-                        <p><span className="font-medium">{t('adminDashboard.reports.companyName')}</span> {details.name}</p>
-                        <p><span className="font-medium">{t('adminDashboard.reports.owner')}</span> {details.owner?.email}</p>
-                      </>
-                    )}
-                    {isCandidate && (
-                      <>
-                        <p><span className="font-medium">{t('adminDashboard.reports.candidateName')}</span> {details.first_name} {details.last_name}</p>
-                        <p><span className="font-medium">{t('adminDashboard.reports.candidateEmail')}</span> {details.email}</p>
-                      </>
+                    <p>
+                      <span className="font-medium">{t('adminDashboard.reports.reason')}</span>{' '}
+                      {report.reason}
+                    </p>
+                    {report.description && (
+                      <p className="text-slate-600 italic">« {report.description} »</p>
                     )}
                   </div>
-                )}
 
-                {/* Actions */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-                  {report.status === 'pending' && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} className="flex-1 sm:flex-none">
-                        {t('adminDashboard.reports.markReviewed', 'Marquer comme examiné')}
-                      </Button>
+                  {details && (
+                    <div className="mt-1 p-3 bg-slate-50 rounded-xl text-sm border border-slate-100 space-y-1">
+                      <p className="font-medium">
+                        {isJob ? t('adminDashboard.reports.jobDetails') :
+                         isCompany ? t('adminDashboard.reports.companyDetails') :
+                         t('adminDashboard.reports.candidateDetails')}
+                      </p>
+                      {isJob && (
+                        <>
+                          <p><span className="font-medium">{t('adminDashboard.reports.jobTitle')}</span> {details.title}</p>
+                          <p><span className="font-medium">{t('adminDashboard.reports.company')}</span> {details.company?.name}</p>
+                          <p><span className="font-medium">{t('adminDashboard.reports.postedBy')}</span> {details.posted_by_user?.email}</p>
+                        </>
+                      )}
+                      {isCompany && (
+                        <>
+                          <p><span className="font-medium">{t('adminDashboard.reports.companyName')}</span> {details.name}</p>
+                          <p><span className="font-medium">{t('adminDashboard.reports.owner')}</span> {details.owner?.email}</p>
+                        </>
+                      )}
+                      {isCandidate && (
+                        <>
+                          <p><span className="font-medium">{t('adminDashboard.reports.candidateName')}</span> {details.first_name} {details.last_name}</p>
+                          <p><span className="font-medium">{t('adminDashboard.reports.candidateEmail')}</span> {details.email}</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                    {report.status === 'pending' && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} className="flex-1 sm:flex-none">
+                          {t('adminDashboard.reports.markReviewed', 'Marquer comme examiné')}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
+                          {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
+                        </Button>
+                      </>
+                    )}
+                    {report.status === 'reviewed' && (
                       <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
                         {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
                       </Button>
-                    </>
-                  )}
-                  {report.status === 'reviewed' && (
-                    <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
-                      {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
-                    </Button>
-                  )}
+                    )}
 
-                  {!isCandidate && (
-                    <>
-                      {report.status === 'resolved' || report.status === 'reviewed' ? (
-                        <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 flex-1 sm:flex-none" onClick={() => handleReactivateReportedItem(report)}>
-                          <Check className="w-4 h-4 mr-1" />
-                          {isJob ? t('adminDashboard.jobs.reactivate', 'Réactiver l\'offre') : t('adminDashboard.companies.reactivate', 'Réactiver l\'entreprise')}
+                    {!isCandidate && (
+                      <>
+                        {report.status === 'resolved' || report.status === 'reviewed' ? (
+                          <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 flex-1 sm:flex-none" onClick={() => handleReactivateReportedItem(report)}>
+                            <Check className="w-4 h-4 mr-1" />
+                            {isJob ? t('adminDashboard.jobs.reactivate', 'Réactiver l\'offre') : t('adminDashboard.companies.reactivate', 'Réactiver l\'entreprise')}
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 flex-1 sm:flex-none" onClick={() => handleSuspendReportedItem(report)}>
+                            <Ban className="w-4 h-4 mr-1" />
+                            {isJob ? t('adminDashboard.reports.suspendJob', 'Suspendre l\'offre') : t('adminDashboard.reports.suspendCompany', 'Suspendre l\'entreprise')}
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleDeleteReportedItem(report)}>
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          {isJob ? t('adminDashboard.reports.deleteJob', 'Supprimer l\'offre') : t('adminDashboard.reports.deleteCompany', 'Supprimer l\'entreprise')}
                         </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 flex-1 sm:flex-none" onClick={() => handleSuspendReportedItem(report)}>
-                          <Ban className="w-4 h-4 mr-1" />
-                          {isJob ? t('adminDashboard.reports.suspendJob', 'Suspendre l\'offre') : t('adminDashboard.reports.suspendCompany', 'Suspendre l\'entreprise')}
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleDeleteReportedItem(report)}>
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        {isJob ? t('adminDashboard.reports.deleteJob', 'Supprimer l\'offre') : t('adminDashboard.reports.deleteCompany', 'Supprimer l\'entreprise')}
+                      </>
+                    )}
+                    {/* Bouton Bannir masqué */}
+                    {false && (
+                      <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleBanReportedUser(report)}>
+                        <UserX className="w-4 h-4 mr-1" />
+                        {t('adminDashboard.reports.banUser', 'Bannir l\'utilisateur')}
                       </Button>
-                    </>
-                  )}
-                  <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleBanReportedUser(report)}>
-                    <UserX className="w-4 h-4 mr-1" />
-                    {t('adminDashboard.reports.banUser', 'Bannir l\'utilisateur')}
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none" onClick={() => handleDeleteReport(report.id)}>
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    {t('adminDashboard.reports.deleteReport', 'Supprimer le signalement')}
-                  </Button>
+                    )}
+                    <Button size="sm" variant="outline" className="text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none" onClick={() => handleDeleteReport(report.id)}>
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      {t('adminDashboard.reports.deleteReport', 'Supprimer le signalement')}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="admin-dashboard">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -2159,10 +2057,6 @@ const ReportsContent = () => {
           <TabButton active={activeTab === 'newsletter'} onClick={() => setActiveTab('newsletter')}>
             <Mail className="w-4 h-4" />
             {t('adminDashboard.tabs.newsletter')}
-          </TabButton>
-          <TabButton active={activeTab === 'blog'} onClick={() => setActiveTab('blog')}>
-            <FileText className="w-4 h-4" />
-            {t('adminDashboard.tabs.blog')}
           </TabButton>
           <TabButton active={activeTab === 'message-companies'} onClick={() => setActiveTab('message-companies')}>
             <Building2 className="w-4 h-4" />
@@ -2356,7 +2250,6 @@ const ReportsContent = () => {
           </Card>
         )}
 
-        {/** ================= ONGLET USERS (remplacé) ================= */}
         {activeTab === 'users' && (
           <Card className="overflow-hidden">
             <CardHeader>
@@ -2427,7 +2320,8 @@ const ReportsContent = () => {
                               </Button>
                             )}
 
-                            {!u.is_banned && (
+                            {/* Boutons Bannir / Débannir masqués */}
+                            {false && !u.is_banned && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -2439,7 +2333,7 @@ const ReportsContent = () => {
                               </Button>
                             )}
 
-                            {u.is_banned && (
+                            {false && u.is_banned && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -2478,21 +2372,20 @@ const ReportsContent = () => {
           </Card>
         )}
 
-        {/** ================= ONGLET REPORTS (remplacé) ================= */}
-{activeTab === 'reports' && (
-  <Card className="overflow-hidden">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Flag className="w-5 h-5" />
-        {t('adminDashboard.reports.title')}
-      </CardTitle>
-      <CardDescription>{t('adminDashboard.reports.description')}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <ReportsContent />
-    </CardContent>
-  </Card>
-)}
+        {activeTab === 'reports' && (
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Flag className="w-5 h-5" />
+                {t('adminDashboard.reports.title')}
+              </CardTitle>
+              <CardDescription>{t('adminDashboard.reports.description')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ReportsContent />
+            </CardContent>
+          </Card>
+        )}
 
         {activeTab === 'subscriptions' && (
           <div className="space-y-6">
@@ -2700,135 +2593,7 @@ const ReportsContent = () => {
             </Card>
           </div>
         )}
-
-        {activeTab === 'blog' && (
-          <div className="space-y-6">
-            <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  {t('adminDashboard.blog.generateTitle')}
-                </CardTitle>
-                <CardDescription>{t('adminDashboard.blog.generateDescription')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.titleLabel')}</label>
-                    <Input value={blogForm.title} onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })} placeholder={t('adminDashboard.blog.titlePlaceholder')} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.keywordsLabel')}</label>
-                    <Input value={blogForm.keywords} onChange={(e) => setBlogForm({ ...blogForm, keywords: e.target.value })} placeholder={t('adminDashboard.blog.keywordsPlaceholder')} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.audienceLabel')}</label>
-                    <select value={blogForm.audience} onChange={(e) => setBlogForm({ ...blogForm, audience: e.target.value })} className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white">
-                      <option value="all">{t('adminDashboard.blog.audienceAll')}</option>
-                      <option value="candidate">{t('adminDashboard.blog.audienceCandidates')}</option>
-                      <option value="recruiter">{t('adminDashboard.blog.audienceRecruiters')}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.categoryLabel')}</label>
-                    <select value={blogForm.category} onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })} className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white">
-                      <option value="Carrière">{t('adminDashboard.blog.categories.carriere')}</option>
-                      <option value="Recrutement">{t('adminDashboard.blog.categories.recrutement')}</option>
-                      <option value="Technologie">{t('adminDashboard.blog.categories.technologie')}</option>
-                      <option value="Entrepreneuriat">{t('adminDashboard.blog.categories.entrepreneuriat')}</option>
-                      <option value="Conseils">{t('adminDashboard.blog.categories.conseils')}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.authorLabel')}</label>
-                    <Input value={blogForm.author} onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })} placeholder={t('adminDashboard.blog.authorPlaceholder')} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.readTimeLabel')}</label>
-                    <Input value={blogForm.read_time} onChange={(e) => setBlogForm({ ...blogForm, read_time: e.target.value })} placeholder={t('adminDashboard.blog.readTimePlaceholder')} />
-                  </div>
-                </div>
-                <Button onClick={handleGenerateBlog} disabled={generating || !blogForm.title.trim()} className="bg-blue-600 text-white hover:bg-blue-700">
-                  {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                  {t('adminDashboard.blog.generateButton')}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
-                  {t('adminDashboard.blog.articlesTitle', { count: blogPosts.length })}
-                </CardTitle>
-                <CardDescription>{t('adminDashboard.blog.articlesDescription')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingBlog ? (
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                ) : blogPosts.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.blog.noArticles')}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {blogPosts.map((post) => (
-                      <div key={post.id} className="p-4 bg-slate-50 rounded-2xl">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="font-semibold text-slate-900">{post.title}</h3>
-                            <p className="text-sm text-slate-500">
-                              {post.category} • {post.audience === 'candidate' ? t('adminDashboard.blog.audienceCandidates') : post.audience === 'recruiter' ? t('adminDashboard.blog.audienceRecruiters') : t('adminDashboard.blog.audienceAll')} • {post.author}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-1">{post.excerpt}</p>
-                          </div>
-                          <div className="flex gap-2 shrink-0">
-                            <Button size="sm" variant="outline" onClick={() => setEditingSlug(post.slug)}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => handleDeleteBlog(post.slug)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        {editingSlug === post.slug && (
-                          <div className="mt-4 space-y-3 border-t pt-4">
-                            <Input
-                              value={post.title}
-                              onChange={(e) => {
-                                const updated = blogPosts.map(p => p.slug === post.slug ? { ...p, title: e.target.value } : p);
-                                setBlogPosts(updated);
-                              }}
-                              placeholder="Titre"
-                            />
-                            <textarea
-                              className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
-                              rows="4"
-                              value={post.content}
-                              onChange={(e) => {
-                                const updated = blogPosts.map(p => p.slug === post.slug ? { ...p, content: e.target.value } : p);
-                                setBlogPosts(updated);
-                              }}
-                              placeholder="Contenu HTML"
-                            />
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={() => handleUpdateBlog(post.slug, { title: post.title, content: post.content })} className="bg-blue-600 text-white hover:bg-blue-700">
-                                <Save className="w-4 h-4 mr-1" /> {t('adminDashboard.blog.save')}
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => setEditingSlug(null)}>
-                                {t('adminDashboard.blog.cancel')}
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'message-companies' && <MessageSender role="company" />}
+{activeTab === 'message-companies' && <MessageSender role="company" />}
         {activeTab === 'message-candidates' && <MessageSender role="candidate" />}
 
         {activeTab === 'roleRequests' && (
@@ -3077,6 +2842,5 @@ const ReportsContent = () => {
     </div>
   );
 };
-
 
 export default AdminDashboard;

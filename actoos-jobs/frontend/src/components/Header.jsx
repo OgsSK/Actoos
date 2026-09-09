@@ -86,12 +86,13 @@ const Header = ({ user, onLogout }) => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // ✅ Remplacement de "Blog" par "Newsletter"
   const navLinks = useMemo(
     () => [
       { label: t('header.nav.jobs'), href: '/emplois' },
       { label: t('header.nav.companies'), href: '/entreprises' },
       ...(isCompany ? [{ label: t('header.nav.pricing'), href: '/tarifs' }] : []),
-      { label: t('header.nav.blog'), href: '/blog' },
+      { label: t('header.nav.newsletter', { defaultValue: 'Newsletter' }), href: '/newsletter' },
     ],
     [t, isCompany]
   );

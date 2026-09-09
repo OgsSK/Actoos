@@ -656,6 +656,16 @@
   },
 
   "blog": {
+      "createTitle": "Create article",
+    "createDescription": "Write an article for the blog",
+    "contentLabel": "Content (HTML)",
+    "contentPlaceholder": "Write the article content in HTML...",
+    "excerptLabel": "Excerpt",
+    "excerptPlaceholder": "Article summary...",
+    "publishButton": "Publish article",
+    "createdToast": "Article published!",
+    "createError": "Error while publishing",
+    "fillRequired": "Please fill in the title and content.",
     "badge": "Blog",
     "title": "Career tips and resources",
     "subtitle": "Find our best tips to boost your job search, ace your interviews, and grow your career.",
@@ -1662,7 +1672,7 @@
     "jobs": "Jobs",
     "companies": "Companies",
     "pricing": "Pricing",
-    "blog": "Blog"
+    "newsletter": "Newsletter"
   },
   "auth": {
     "login": "Sign in",
@@ -2473,6 +2483,7 @@
         "button": "Delete my account"
       },
       "roleChange": {
+        "alreadyRequested": "You have already made a request within the last 30 days. Please try again later.",
         "title": "Change role",
         "descriptionCandidate": "You are a <strong>candidate</strong>. Request to become a recruiter.",
         "descriptionCompany": "You are a <strong>recruiter</strong>. Request to become a candidate.",
@@ -3501,6 +3512,7 @@
           "description": "To get started",
           "features": {
             "0": "{{count}} active offer(s)",
+            "interviewTools": "Interview scheduling tools",
             "expiration": "{{days}} days before expiration",
             "2": "Verified profile"
           },
@@ -3699,6 +3711,7 @@
         "button": "Delete my account"
       },
       "roleChange": {
+        "alreadyRequested": "You have already made a request within the last 30 days. Please try again later.",
         "title": "Change role",
         "descriptionCandidate": "You are a <strong>candidate</strong>. Request to become a recruiter.",
         "descriptionCompany": "You are a <strong>recruiter</strong>. Request to become a candidate.",
@@ -3798,6 +3811,20 @@
       "showMore": "See more",
       "showLess": "See less",
       "fillAllFields": "Please rate and leave a comment."
+    },
+     "newsletter": {
+      "title": "Stay informed",
+      "subtitle": "Subscribe to our newsletter to receive the latest job offers and advice.",
+      "placeholder": "Your email address",
+      "subscribeButton": "Subscribe",
+      "privacyNote": "We respect your privacy. Unsubscribe at any time.",
+      "subscribedTitle": "Thank you for subscribing!",
+      "subscribedMessage": "You will receive our news soon.",
+      "toasts": {
+        "emailRequired": "Please enter your email address.",
+        "subscribeSuccess": "Subscription successful!",
+        "subscribeError": "Error while subscribing."
+      }
     }
 
 

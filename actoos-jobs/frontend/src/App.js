@@ -23,8 +23,10 @@ const JobDetailPage = lazy(() => import('./pages/JobDetailPage'));
 const CompaniesPage = lazy(() => import('./pages/CompaniesPage'));
 const CompanyDetailPage = lazy(() => import('./pages/CompanyDetailPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
-const BlogPage = lazy(() => import('./pages/BlogPage'));
-const BlogArticlePage = lazy(() => import('./pages/BlogArticlePage'));
+
+// ✅ Remplacer BlogPage par NewsletterPage
+const NewsletterPage = lazy(() => import('./pages/NewsletterPage'));
+
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -128,6 +130,7 @@ const AppContent = () => {
   useEffect(() => {
     if (prefs.language && prefs.language !== i18n.language) {
       i18n.changeLanguage(prefs.language);
+      localStorage.setItem('actoos-language', prefs.language);
     }
   }, [prefs.language, i18n]);
 
@@ -167,8 +170,13 @@ const AppContent = () => {
               <Route path="/tarifs" element={<PricingPage />} />
               <Route path="/paiement/succes" element={<PaymentSuccess />} />
               <Route path="/paiement/annule" element={<PaymentCancel />} />
-              <Route path="/blog" element={<BlogPage />} />
-              <Route path="/blog/:id" element={<BlogArticlePage />} />
+
+              {/* ✅ Remplacer /blog par /newsletter */}
+              <Route path="/newsletter" element={<NewsletterPage />} />
+              <Route path="/blog" element={<Navigate to="/newsletter" replace />} /> {/* redirection */}
+
+              {/* ❌ Supprimer la route /blog/:id (plus d'articles) */}
+
               <Route path="/preparation-entretien" element={<InterviewPrep />} />
               <Route path="/lettre-motivation" element={<CoverLetter />} />
               <Route path="/planifier-entretien" element={<ScheduleInterview />} />
@@ -254,6 +262,12 @@ const AppContent = () => {
 };
 
 function App() {
+  // ✅ FORCER LA LECTURE DE LA LANGUE DANS localStorage AVANT LE RENDU
+  const storedLanguage = localStorage.getItem('actoos-language');
+  if (storedLanguage && i18n.language !== storedLanguage) {
+    i18n.changeLanguage(storedLanguage);
+  }
+
   return (
     <I18nextProvider i18n={i18n}>
       <Router>

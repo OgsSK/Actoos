@@ -187,6 +187,7 @@
           "description": "Om te starten",
           "features": {
             "0": "{{count}} actieve vacature(s)",
+            "interviewTools": "Tools voor interviewplanning",
             "expiration": "{{days}} dagen voor verloop",
             "2": "Geverifieerd profiel"
           },
@@ -804,6 +805,16 @@
   },
 
   "blog": {
+    "createTitle": "Artikel aanmaken",
+    "createDescription": "Schrijf een artikel voor de blog",
+    "contentLabel": "Inhoud (HTML)",
+    "contentPlaceholder": "Schrijf de inhoud van het artikel in HTML...",
+    "excerptLabel": "Fragment",
+    "excerptPlaceholder": "Samenvatting van het artikel...",
+    "publishButton": "Artikel publiceren",
+    "createdToast": "Artikel gepubliceerd!",
+    "createError": "Fout bij het publiceren",
+    "fillRequired": "Vul de titel en inhoud in.",
     "badge": "Blog",
     "title": "Advies en hulpmiddelen voor uw carrière",
     "subtitle": "Vind onze beste tips om uw zoektocht naar werk te boosten, uw sollicitatiegesprekken te laten slagen en uw carrière te ontwikkelen.",
@@ -1809,7 +1820,7 @@
     "jobs": "Vacatures",
     "companies": "Bedrijven",
     "pricing": "Prijzen",
-    "blog": "Blog"
+    "newsletter": "Nieuwsbrief"
   },
   "auth": {
     "login": "Inloggen",
@@ -2695,6 +2706,7 @@
         "button": "Mijn account verwijderen"
       },
       "roleChange": {
+        "alreadyRequested": "U heeft in de afgelopen 30 dagen al een verzoek ingediend. Probeer het later opnieuw.",
         "title": "Rol wijzigen",
         "descriptionCandidate": "U bent <strong>kandidaat</strong>. Vraag aan om recruiter te worden.",
         "descriptionCompany": "U bent <strong>recruiter</strong>. Vraag aan om kandidaat te worden.",
@@ -3787,6 +3799,20 @@
       "showMore": "Meer tonen",
       "showLess": "Minder tonen",
       "fillAllFields": "Beoordeel en laat een opmerking achter."
+    },
+    "newsletter": {
+      "title": "Blijf op de hoogte",
+      "subtitle": "Abonneer u op onze nieuwsbrief om de nieuwste vacatures en tips te ontvangen.",
+      "placeholder": "Uw e-mailadres",
+      "subscribeButton": "Abonneren",
+      "privacyNote": "Wij respecteren uw privacy. U kunt zich op elk moment uitschrijven.",
+      "subscribedTitle": "Bedankt voor uw abonnement!",
+      "subscribedMessage": "U ontvangt binnenkort ons nieuws.",
+      "toasts": {
+        "emailRequired": "Voer uw e-mailadres in.",
+        "subscribeSuccess": "Abonnement geslaagd!",
+        "subscribeError": "Fout bij abonneren."
+      }
     }
  
 

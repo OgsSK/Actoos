@@ -187,6 +187,7 @@
           "description": "Für den Einstieg",
           "features": {
             "0": "{{count}} aktive Stelle(n)",
+            "interviewTools": "Interview-Planungstools",
             "expiration": "{{days}} Tage vor Ablauf",
             "2": "Verifiziertes Profil"
           },
@@ -771,6 +772,16 @@
   },
 
   "blog": {
+     "createTitle": "Artikel erstellen",
+    "createDescription": "Schreiben Sie einen Artikel für den Blog",
+    "contentLabel": "Inhalt (HTML)",
+    "contentPlaceholder": "Verfassen Sie den Artikelinhalt in HTML...",
+    "excerptLabel": "Auszug",
+    "excerptPlaceholder": "Zusammenfassung des Artikels...",
+    "publishButton": "Artikel veröffentlichen",
+    "createdToast": "Artikel veröffentlicht!",
+    "createError": "Fehler beim Veröffentlichen",
+    "fillRequired": "Bitte füllen Sie Titel und Inhalt aus.",
     "badge": "Blog",
     "title": "Tipps und Ressourcen für Ihre Karriere",
     "subtitle": "Finden Sie unsere besten Tipps, um Ihre Jobsuche zu beschleunigen, Vorstellungsgespräche zu meistern und Ihre Karriere voranzutreiben.",
@@ -1778,7 +1789,7 @@
     "jobs": "Stellen",
     "companies": "Unternehmen",
     "pricing": "Preise",
-    "blog": "Blog"
+     "newsletter": "Newsletter"
   },
   "auth": {
     "login": "Anmelden",
@@ -2734,6 +2745,7 @@
         "button": "Mein Konto löschen"
       },
       "roleChange": {
+        "alreadyRequested": "Sie haben in den letzten 30 Tagen bereits eine Anfrage gestellt. Bitte versuchen Sie es später erneut.",
         "title": "Rolle wechseln",
         "descriptionCandidate": "Sie sind <strong>Kandidat</strong>. Beantragen Sie, Personalvermittler zu werden.",
         "descriptionCompany": "Sie sind <strong>Personalvermittler</strong>. Beantragen Sie, Kandidat zu werden.",
@@ -3826,6 +3838,20 @@
       "showMore": "Mehr anzeigen",
       "showLess": "Weniger anzeigen",
       "fillAllFields": "Bitte bewerten Sie und hinterlassen Sie einen Kommentar."
+    },
+     "newsletter": {
+      "title": "Bleiben Sie informiert",
+      "subtitle": "Abonnieren Sie unseren Newsletter, um die neuesten Stellenangebote und Tipps zu erhalten.",
+      "placeholder": "Ihre E-Mail-Adresse",
+      "subscribeButton": "Abonnieren",
+      "privacyNote": "Wir respektieren Ihre Privatsphäre. Sie können sich jederzeit abmelden.",
+      "subscribedTitle": "Vielen Dank für Ihr Abonnement!",
+      "subscribedMessage": "Sie erhalten bald unsere Neuigkeiten.",
+      "toasts": {
+        "emailRequired": "Bitte geben Sie Ihre E-Mail-Adresse ein.",
+        "subscribeSuccess": "Abonnement erfolgreich!",
+        "subscribeError": "Fehler beim Abonnieren."
+      }
     }
 
 

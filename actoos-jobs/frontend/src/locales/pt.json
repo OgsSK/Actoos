@@ -187,6 +187,7 @@
           "description": "Para começar",
           "features": {
             "0": "{{count}} oferta(s) ativa(s)",
+            "interviewTools": "Ferramentas de agendamento de entrevista",
             "expiration": "{{days}} dias antes da expiração",
             "2": "Perfil verificado"
           },
@@ -736,6 +737,16 @@
   },
 
   "blog": {
+    "createTitle": "Criar um artigo",
+    "createDescription": "Escreva um artigo para o blog",
+    "contentLabel": "Conteúdo (HTML)",
+    "contentPlaceholder": "Escreva o conteúdo do artigo em HTML...",
+    "excerptLabel": "Extrato",
+    "excerptPlaceholder": "Resumo do artigo...",
+    "publishButton": "Publicar artigo",
+    "createdToast": "Artigo publicado!",
+    "createError": "Erro ao publicar",
+    "fillRequired": "Por favor, preencha o título e o conteúdo.",
     "badge": "Blog",
     "title": "Conselhos e recursos para a sua carreira",
     "subtitle": "Encontre os nossos melhores conselhos para impulsionar a sua procura de emprego, ter sucesso nas entrevistas e desenvolver a sua carreira.",
@@ -1742,7 +1753,7 @@
     "jobs": "Vagas",
     "companies": "Empresas",
     "pricing": "Preços",
-    "blog": "Blog"
+    "newsletter": "Newsletter"
   },
   "auth": {
     "login": "Entrar",
@@ -2627,6 +2638,7 @@
         "button": "Eliminar a minha conta"
       },
       "roleChange": {
+        "alreadyRequested": "Você já fez uma solicitação nos últimos 30 dias. Por favor, tente novamente mais tarde.",
         "title": "Mudar de função",
         "descriptionCandidate": "Você é <strong>candidato</strong>. Solicite tornar-se recrutador.",
         "descriptionCompany": "Você é <strong>recrutador</strong>. Solicite tornar-se candidato.",
@@ -3719,5 +3731,19 @@
       "showMore": "Ver mais",
       "showLess": "Ver menos",
       "fillAllFields": "Por favor, avalie e deixe um comentário."
+    },
+     "newsletter": {
+      "title": "Mantenha-se informado",
+      "subtitle": "Assine a nossa newsletter para receber as últimas ofertas de emprego e conselhos.",
+      "placeholder": "O seu endereço de e-mail",
+      "subscribeButton": "Subscrever",
+      "privacyNote": "Respeitamos a sua privacidade. Cancele a subscrição a qualquer momento.",
+      "subscribedTitle": "Obrigado pela sua subscrição!",
+      "subscribedMessage": "Receberá as nossas novidades em breve.",
+      "toasts": {
+        "emailRequired": "Por favor, insira o seu endereço de e-mail.",
+        "subscribeSuccess": "Subscrição bem-sucedida!",
+        "subscribeError": "Erro ao subscrever."
+      }
     }
 }

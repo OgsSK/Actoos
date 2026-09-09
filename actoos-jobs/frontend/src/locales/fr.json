@@ -127,6 +127,7 @@
       "button": "Se déconnecter"
     },
     "roleChange": {
+      "alreadyRequested": "Vous avez déjà fait une demande au cours des 30 derniers jours. Réessayez plus tard.",
       "title": "Changer de type de compte",
       "descriptionCandidate": "Vous êtes actuellement <strong>candidat</strong>. Vous pouvez demander à devenir <strong>recruteur</strong>.",
       "descriptionCompany": "Vous êtes actuellement <strong>recruteur</strong>. Vous pouvez demander à redevenir <strong>candidat</strong>.",
@@ -1551,7 +1552,7 @@
     "jobs": "Offres",
     "companies": "Entreprises",
     "pricing": "Tarifs",
-    "blog": "Blog"
+     "newsletter": "Newsletter"
   },
   "auth": {
     "login": "Connexion",
@@ -1897,6 +1898,16 @@
       "toggledToast": "Statut de l'abonné modifié."
     },
     "blog": {
+      "createTitle": "Créer un article",
+      "createDescription": "Rédigez un article pour le blog",
+      "contentLabel": "Contenu (HTML)",
+      "contentPlaceholder": "Rédigez le contenu de l'article en HTML...",
+      "excerptLabel": "Extrait",
+      "excerptPlaceholder": "Résumé de l'article...",
+      "publishButton": "Publier l'article",
+      "createdToast": "Article publié !",
+      "createError": "Erreur lors de la publication",
+      "fillRequired": "Veuillez remplir le titre et le contenu.",
       "generateTitle": "Générer un article de blog",
       "generateDescription": "L'IA rédigera un article optimisé pour votre audience.",
       "titleLabel": "Titre de l'article",
@@ -3477,6 +3488,7 @@
       "description": "Pour commencer",
       "features": {
         "0": "{{count}} offre(s) active(s)",
+        "interviewTools": "Outils de planification d'entretien",
         "expiration": "{{days}} jours avant expiration",
         "2": "Profil vérifié"
       },
@@ -3694,6 +3706,20 @@
     "showMore": "Voir plus",
     "showLess": "Voir moins",
     "fillAllFields": "Veuillez noter et laisser un commentaire."
+  },
+  "newsletter": {
+    "title": "Restez informé(e)",
+    "subtitle": "Abonnez-vous à notre newsletter pour recevoir les dernières offres d'emploi et conseils.",
+    "placeholder": "Votre adresse email",
+    "subscribeButton": "S'abonner",
+    "privacyNote": "Nous respectons votre vie privée. Désabonnez-vous à tout moment.",
+    "subscribedTitle": "Merci de votre abonnement !",
+    "subscribedMessage": "Vous recevrez bientôt nos actualités.",
+    "toasts": {
+      "emailRequired": "Veuillez saisir votre adresse email.",
+      "subscribeSuccess": "Abonnement réussi !",
+      "subscribeError": "Erreur lors de l'abonnement."
+    }
   }
   
 

@@ -192,42 +192,50 @@ const SettingsPage = () => {
     }
   };
 
-  const handleRequestRoleChange = async () => {
-    setRequestLoading(true);
-    try {
-      const { error } = await supabase.rpc('submit_role_change_request', {
-        p_requested_role: requestedRole,
-        p_reason: requestReason?.trim() || null,
-      });
+ const handleRequestRoleChange = async () => {
+  setRequestLoading(true);
+  try {
+    const { error } = await supabase.rpc('submit_role_change_request', {
+      p_requested_role: requestedRole,
+      p_reason: requestReason?.trim() || null,
+    });
 
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(t('settings.toasts.roleRequestSent'));
-        setShowRoleModal(false);
-        setRequestReason('');
-
-        setTimeout(() => {
-          fetch(`${BASE_URL}/api/notify-admin-role-request`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              user_email: user.email,
-              user_name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || user.email,
-              current_role: profile?.role || 'candidate',
-              requested_role: requestedRole,
-            }),
-          }).catch(err => console.error('Erreur notification admin:', err));
-        }, 100);
+    if (error) {
+      // ✅ Vérifier si le message correspond à la demande en double
+      let errorMsg = error.message;
+      if (
+        errorMsg.includes("déjà fait une demande") ||
+        errorMsg.includes("already requested") ||
+        errorMsg.includes("30 jours")
+      ) {
+        errorMsg = t('settings.roleChange.alreadyRequested');
       }
-    } catch (err) {
-      console.error('Erreur:', err);
-      toast.error(err.message || t('settings.toasts.roleRequestError'));
-    } finally {
-      setRequestLoading(false);
-    }
-  };
+      toast.error(errorMsg);
+    } else {
+      toast.success(t('settings.toasts.roleRequestSent'));
+      setShowRoleModal(false);
+      setRequestReason('');
 
+      setTimeout(() => {
+        fetch(`${BASE_URL}/api/notify-admin-role-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_email: user.email,
+            user_name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || user.email,
+            current_role: profile?.role || 'candidate',
+            requested_role: requestedRole,
+          }),
+        }).catch(err => console.error('Erreur notification admin:', err));
+      }, 100);
+    }
+  } catch (err) {
+    console.error('Erreur:', err);
+    toast.error(err.message || t('settings.toasts.roleRequestError'));
+  } finally {
+    setRequestLoading(false);
+  }
+};
   const isCandidate = profile?.role === 'candidate';
 
   return (

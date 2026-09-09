@@ -187,6 +187,7 @@
           "description": "للبدء",
           "features": {
             "0": "{{count}} عرض (عروض) نشط(ة)",
+            "interviewTools": "أدوات جدولة المقابلات",
             "expiration": "{{days}} يومًا قبل انتهاء الصلاحية",
             "2": "ملف موثق"
           },
@@ -737,6 +738,16 @@
   },
 
   "blog": {
+    "createTitle": "إنشاء مقال",
+    "createDescription": "اكتب مقالاً للمدونة",
+    "contentLabel": "المحتوى (HTML)",
+    "contentPlaceholder": "اكتب محتوى المقال بصيغة HTML...",
+    "excerptLabel": "مقتطف",
+    "excerptPlaceholder": "ملخص المقال...",
+    "publishButton": "نشر المقال",
+    "createdToast": "تم نشر المقال!",
+    "createError": "خطأ أثناء النشر",
+    "fillRequired": "يرجى ملء العنوان والمحتوى.",
     "badge": "المدونة",
     "title": "نصائح وموارد لمسيرتك المهنية",
     "subtitle": "اعثر على أفضل نصائحنا لتعزيز بحثك عن وظيفة، والنجاح في مقابلاتك، وتطوير مسيرتك المهنية.",
@@ -1743,7 +1754,7 @@
     "jobs": "الوظائف",
     "companies": "الشركات",
     "pricing": "الأسعار",
-    "blog": "المدونة"
+     "newsletter": "النشرة البريدية"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -2625,6 +2636,7 @@
         "button": "حذف حسابي"
       },
       "roleChange": {
+        "alreadyRequested": "لقد قمت بالفعل بتقديم طلب خلال آخر 30 يومًا. يرجى المحاولة مرة أخرى لاحقًا.",
         "title": "تغيير الدور",
         "descriptionCandidate": "أنت <strong>مرشح</strong>. اطلب لتصبح مسؤول توظيف.",
         "descriptionCompany": "أنت <strong>مسؤول توظيف</strong>. اطلب لتصبح مرشحاً.",
@@ -3699,6 +3711,7 @@
         "button": "حذف حسابي"
       },
       "roleChange": {
+        "alreadyRequested": "لقد قمت بالفعل بتقديم طلب خلال آخر 30 يومًا. يرجى المحاولة مرة أخرى لاحقًا.",
         "title": "تغيير الدور",
         "descriptionCandidate": "أنت <strong>مرشح</strong>. اطلب أن تصبح مسؤول توظيف.",
         "descriptionCompany": "أنت <strong>مسؤول توظيف</strong>. اطلب أن تصبح مرشحاً.",
@@ -3797,6 +3810,20 @@
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
       "fillAllFields": "يرجى التقييم وترك تعليق."
+    },
+    "newsletter": {
+      "title": "ابق على اطلاع",
+      "subtitle": "اشترك في نشرتنا البريدية لتلقي أحدث عروض العمل والنصائح.",
+      "placeholder": "بريدك الإلكتروني",
+      "subscribeButton": "اشتراك",
+      "privacyNote": "نحن نحترم خصوصيتك. يمكنك إلغاء الاشتراك في أي وقت.",
+      "subscribedTitle": "شكرًا لاشتراكك!",
+      "subscribedMessage": "ستتلقى أخبارنا قريبًا.",
+      "toasts": {
+        "emailRequired": "يرجى إدخال بريدك الإلكتروني.",
+        "subscribeSuccess": "تم الاشتراك بنجاح!",
+        "subscribeError": "خطأ أثناء الاشتراك."
+      }
     }
 
 
