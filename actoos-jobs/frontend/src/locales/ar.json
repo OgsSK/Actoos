@@ -2001,6 +2001,14 @@
         }
       },
       "reports": {
+         "loadMore": "تحميل المزيد",
+      "loadError": "خطأ في تحميل البلاغات.",
+      "noReportsOfStatus": "لا توجد بلاغات بهذه الحالة.",
+      "unknownUser": "غير معروف",
+      "reactivateJob": "إعادة تفعيل العرض",
+      "reactivateCompany": "إعادة تفعيل الشركة",
+      "jobReactivatedToast": "تمت إعادة تفعيل العرض",
+      "companyReactivatedToast": "تمت إعادة تفعيل الشركة",
         "filterAll": "الكل",
       "filterPending": "قيد الانتظار",
       "filterReviewed": "تمت المشاهدة",
@@ -2070,6 +2078,17 @@
         "toFrom": "قادم من"
       },
       "newsletter": {
+         "filterAll": "الكل",
+      "filterActive": "نشطون",
+      "filterInactive": "غير نشطين",
+      "loadError": "خطأ في تحميل المشتركين.",
+      "deleteConfirm": "هل تريد بالتأكيد حذف هذا المشترك؟",
+      "deletedToast": "تم حذف المشترك.",
+      "deleteAllInactive": "حذف جميع غير النشطين",
+      "deleteAllInactiveConfirm": "هل تريد بالتأكيد حذف {count} مشترك غير نشط؟",
+      "deleteAllInactiveToast": "تم حذف {count} مشترك(ين) غير نشط(ين).",
+      "noInactive": "لا يوجد مشتركون غير نشطين.",
+      "loadMore": "تحميل المزيد",
         "sendTitle": "إرسال نشرة بريدية",
         "sendDescription": "كتابة وإرسال بريد إلكتروني إلى جميع المشتركين.",
         "subjectLabel": "الموضوع",

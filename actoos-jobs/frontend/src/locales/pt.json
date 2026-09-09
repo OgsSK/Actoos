@@ -2000,6 +2000,14 @@
         }
       },
       "reports": {
+        "loadMore": "Carregar mais",
+      "loadError": "Erro ao carregar as denúncias.",
+      "noReportsOfStatus": "Nenhuma denúncia com este estado.",
+      "unknownUser": "Desconhecido",
+      "reactivateJob": "Reativar oferta",
+      "reactivateCompany": "Reativar empresa",
+      "jobReactivatedToast": "Oferta reativada",
+      "companyReactivatedToast": "Empresa reativada",
          "filterAll": "Todos",
       "filterPending": "Pendentes",
       "filterReviewed": "Marcados como vistos",
@@ -2069,6 +2077,17 @@
         "toFrom": "vindo de"
       },
       "newsletter": {
+          "filterAll": "Todos",
+      "filterActive": "Ativos",
+      "filterInactive": "Inativos",
+      "loadError": "Erro ao carregar os assinantes.",
+      "deleteConfirm": "Tem a certeza de que deseja eliminar este assinante?",
+      "deletedToast": "Assinante eliminado.",
+      "deleteAllInactive": "Eliminar todos os inativos",
+      "deleteAllInactiveConfirm": "Tem a certeza de que deseja eliminar os {count} assinantes inativos?",
+      "deleteAllInactiveToast": "{count} assinante(s) inativo(s) eliminado(s).",
+      "noInactive": "Nenhum assinante inativo.",
+      "loadMore": "Carregar mais",
         "sendTitle": "Enviar newsletter",
         "sendDescription": "Escreva e envie um e-mail para todos os assinantes.",
         "subjectLabel": "Assunto",

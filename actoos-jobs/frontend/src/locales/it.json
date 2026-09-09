@@ -2001,6 +2001,14 @@
         }
       },
       "reports": {
+         "loadMore": "Carica altro",
+      "loadError": "Errore durante il caricamento delle segnalazioni.",
+      "noReportsOfStatus": "Nessuna segnalazione con questo stato.",
+      "unknownUser": "Sconosciuto",
+      "reactivateJob": "Riattiva offerta",
+      "reactivateCompany": "Riattiva azienda",
+      "jobReactivatedToast": "Offerta riattivata",
+      "companyReactivatedToast": "Azienda riattivata",
         "filterAll": "Tutti",
       "filterPending": "In attesa",
       "filterReviewed": "Segnati come visti",
@@ -2070,6 +2078,17 @@
         "toFrom": "proveniente da"
       },
       "newsletter": {
+        "filterAll": "Tutti",
+      "filterActive": "Attivi",
+      "filterInactive": "Inattivi",
+      "loadError": "Errore durante il caricamento degli iscritti.",
+      "deleteConfirm": "Vuoi davvero eliminare questo iscritto?",
+      "deletedToast": "Iscritto eliminato.",
+      "deleteAllInactive": "Elimina tutti gli inattivi",
+      "deleteAllInactiveConfirm": "Vuoi davvero eliminare i {count} iscritti inattivi?",
+      "deleteAllInactiveToast": "{count} iscritto/i inattivo/i eliminato/i.",
+      "noInactive": "Nessun iscritto inattivo.",
+      "loadMore": "Carica altro",
         "sendTitle": "Invia newsletter",
         "sendDescription": "Scrivi e invia un'email a tutti gli iscritti.",
         "subjectLabel": "Oggetto",

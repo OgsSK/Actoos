@@ -2035,6 +2035,14 @@
         }
       },
       "reports": {
+        "loadMore": "Mehr laden",
+      "loadError": "Fehler beim Laden der Meldungen.",
+      "noReportsOfStatus": "Keine Meldungen mit diesem Status.",
+      "unknownUser": "Unbekannt",
+      "reactivateJob": "Stelle reaktivieren",
+      "reactivateCompany": "Unternehmen reaktivieren",
+      "jobReactivatedToast": "Stelle reaktiviert",
+      "companyReactivatedToast": "Unternehmen reaktiviert",
         "filterAll": "Alle",
       "filterPending": "Ausstehend",
       "filterReviewed": "Als gesehen markiert",
@@ -2104,6 +2112,17 @@
         "toFrom": "von"
       },
       "newsletter": {
+         "filterAll": "Alle",
+      "filterActive": "Aktive",
+      "filterInactive": "Inaktive",
+      "loadError": "Fehler beim Laden der Abonnenten.",
+      "deleteConfirm": "Möchten Sie diesen Abonnenten wirklich löschen?",
+      "deletedToast": "Abonnent gelöscht.",
+      "deleteAllInactive": "Alle Inaktiven löschen",
+      "deleteAllInactiveConfirm": "Möchten Sie wirklich die {count} inaktiven Abonnenten löschen?",
+      "deleteAllInactiveToast": "{count} inaktive(r) Abonnent(en) gelöscht.",
+      "noInactive": "Keine inaktiven Abonnenten.",
+      "loadMore": "Mehr laden",
         "sendTitle": "Newsletter senden",
         "sendDescription": "Schreiben und senden Sie eine E-Mail an alle Abonnenten.",
         "subjectLabel": "Betreff",

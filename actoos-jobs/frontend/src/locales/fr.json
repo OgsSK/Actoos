@@ -1802,6 +1802,11 @@
       }
     },
     "reports": {
+      
+ "loadMore": "Charger plus",
+      "loadError": "Erreur de chargement des signalements.", "noReportsOfStatus": "Aucun signalement avec ce statut.",  "unknownUser": "Inconnu", "reactivateJob": "Réactiver l'offre",
+      "reactivateCompany": "Réactiver l'entreprise",  "jobReactivatedToast": "Offre réactivée",
+      "companyReactivatedToast": "Entreprise réactivée",   
       "filterAll": "Tous",
       "filterPending": "En attente",
       "filterReviewed": "Marqués comme vus",
@@ -1871,6 +1876,20 @@
       "toFrom": "venant de"
     },
     "newsletter": {
+      
+      "filterAll": "Tous",
+      "filterActive": "Actifs",
+      "filterInactive": "Inactifs",
+      "loadError": "Erreur de chargement des abonnés.",
+      "deleteConfirm": "Voulez-vous vraiment supprimer cet abonné ?",
+      "deletedToast": "Abonné supprimé.",
+      "deleteAllInactive": "Supprimer tous les inactifs",
+      "deleteAllInactiveConfirm": "Voulez-vous vraiment supprimer les {count} abonnés inactifs ?",
+      "deleteAllInactiveToast": "{count} abonné(s) inactif(s) supprimé(s).",
+      "noInactive": "Aucun abonné inactif.",
+      "loadMore": "Charger plus",
+      
+      
       "sendTitle": "Envoyer une newsletter",
       "sendDescription": "Rédigez et envoyez un email à tous les abonnés.",
       "subjectLabel": "Sujet",
@@ -1885,6 +1904,7 @@
       "subscribersDescription": "Gérez les inscriptions à la newsletter.",
       "noSubscribers": "Aucun abonné.",
       "table": {
+        
         "email": "Email",
         "status": "Statut",
         "actions": "Action",

@@ -2067,6 +2067,15 @@
         }
       },
       "reports": {
+        "loadMore": "Meer laden",
+      "loadError": "Fout bij het laden van meldingen.",
+      "noReportsOfStatus": "Geen meldingen met deze status.",
+      "unknownUser": "Onbekend",
+      "reactivateJob": "Vacature opnieuw activeren",
+      "reactivateCompany": "Bedrijf opnieuw activeren",
+      "jobReactivatedToast": "Vacature opnieuw geactiveerd",
+      "companyReactivatedToast": "Bedrijf opnieuw geactiveerd",
+      
         "filterAll": "Alle",
       "filterPending": "In afwachting",
       "filterReviewed": "Gemarkeerd als gezien",
@@ -2136,6 +2145,17 @@
         "toFrom": "van"
       },
       "newsletter": {
+        "filterAll": "Alle",
+      "filterActive": "Actief",
+      "filterInactive": "Inactief",
+      "loadError": "Fout bij het laden van abonnees.",
+      "deleteConfirm": "Weet u zeker dat u deze abonnee wilt verwijderen?",
+      "deletedToast": "Abonnee verwijderd.",
+      "deleteAllInactive": "Alle inactieve verwijderen",
+      "deleteAllInactiveConfirm": "Weet u zeker dat u de {count} inactieve abonnees wilt verwijderen?",
+      "deleteAllInactiveToast": "{count} inactieve abonnee(s) verwijderd.",
+      "noInactive": "Geen inactieve abonnees.",
+      "loadMore": "Meer laden",
         "sendTitle": "Nieuwsbrief versturen",
         "sendDescription": "Schrijf en verstuur een e-mail naar alle abonnees.",
         "subjectLabel": "Onderwerp",

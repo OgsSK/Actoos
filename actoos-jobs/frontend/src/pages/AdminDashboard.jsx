@@ -748,6 +748,7 @@ const AdminDashboard = () => {
   const [usersPage, setUsersPage] = useState(1);
   const [usersHasMore, setUsersHasMore] = useState(true);
 
+  // États pour Reports (non utilisés par le nouveau ReportsContent, mais conservés)
   const [reports, setReports] = useState([]);
   const [reportFilter, setReportFilter] = useState('all');
   const [reportsLoading, setReportsLoading] = useState(false);
@@ -763,7 +764,12 @@ const AdminDashboard = () => {
   const [newsletter, setNewsletter] = useState({ subject: '', content: '' });
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
   const [subscribers, setSubscribers] = useState([]);
-  const [loadingSubscribers, setLoadingSubscribers] = useState(true);
+  const [subscribersLoading, setSubscribersLoading] = useState(true);
+  // États pour la pagination et le filtre de la newsletter
+  const [subscribersPage, setSubscribersPage] = useState(1);
+  const [subscribersHasMore, setSubscribersHasMore] = useState(true);
+  const [subscriberFilter, setSubscriberFilter] = useState('all');
+  const SUBSCRIBERS_PER_PAGE = 20;
 
   const [suspendModal, setSuspendModal] = useState({ open: false, userId: null });
   const [suspendDuration, setSuspendDuration] = useState(0);
@@ -791,7 +797,7 @@ const AdminDashboard = () => {
     }
     if (user && isAdmin) {
       fetchInitialData();
-      fetchSubscribers();
+      fetchSubscribers(true);
     }
   }, [user, isAdmin, authLoading, navigate]);
 
@@ -815,27 +821,81 @@ const AdminDashboard = () => {
     if (isAdmin) fetchCancellations();
   }, [isAdmin]);
 
-  useEffect(() => {
-    if (isAdmin && activeTab === 'reports') {
-      fetchReports(true);
-    }
-  }, [activeTab, isAdmin]);
+  // Le useEffect pour les reports a été supprimé car le nouveau ReportsContent gère son propre chargement
 
-  const fetchSubscribers = async () => {
-    setLoadingSubscribers(true);
-    const { data, error } = await supabase
-      .from('newsletter_subscribers')
-      .select('*')
-      .order('subscribed_at', { ascending: false });
-    if (!error) setSubscribers(data || []);
-    setLoadingSubscribers(false);
+  // Nouvelle version de fetchSubscribers avec pagination et filtre
+  const fetchSubscribers = async (reset = true) => {
+    if (reset) setSubscribersLoading(true);
+    const from = reset ? 0 : (subscribersPage) * SUBSCRIBERS_PER_PAGE;
+    const to = from + SUBSCRIBERS_PER_PAGE - 1;
+
+    try {
+      let query = supabase
+        .from('newsletter_subscribers')
+        .select('*')
+        .order('subscribed_at', { ascending: false })
+        .range(from, to);
+
+      if (subscriberFilter === 'active') {
+        query = query.eq('is_active', true);
+      } else if (subscriberFilter === 'inactive') {
+        query = query.eq('is_active', false);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (reset) {
+        setSubscribers(data || []);
+      } else {
+        setSubscribers(prev => [...prev, ...(data || [])]);
+      }
+
+      setSubscribersHasMore((data || []).length === SUBSCRIBERS_PER_PAGE);
+    } catch (error) {
+      console.error('Erreur chargement abonnés:', error);
+      toast.error(t('adminDashboard.newsletter.loadError'));
+    } finally {
+      if (reset) setSubscribersLoading(false);
+    }
   };
 
-  useEffect(() => {
-    if (isAdmin && activeTab === 'reviews') {
-      fetchReviews(true);
+  // Supprimer un abonné individuel
+  const handleDeleteSubscriber = async (subId) => {
+    if (!window.confirm(t('adminDashboard.newsletter.deleteConfirm'))) return;
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .delete()
+        .eq('id', subId);
+      if (error) throw error;
+      setSubscribers(prev => prev.filter(s => s.id !== subId));
+      toast.success(t('adminDashboard.newsletter.deletedToast'));
+    } catch (err) {
+      toast.error(err.message);
     }
-  }, [activeTab, isAdmin]);
+  };
+
+  // Supprimer tous les abonnés inactifs
+  const handleDeleteInactiveSubscribers = async () => {
+    const inactiveCount = subscribers.filter(s => !s.is_active).length;
+    if (inactiveCount === 0) {
+      toast.info(t('adminDashboard.newsletter.noInactive'));
+      return;
+    }
+    if (!window.confirm(t('adminDashboard.newsletter.deleteAllInactiveConfirm', { count: inactiveCount }))) return;
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .delete()
+        .eq('is_active', false);
+      if (error) throw error;
+      setSubscribers(prev => prev.filter(s => s.is_active));
+      toast.success(t('adminDashboard.newsletter.deleteAllInactiveToast', { count: inactiveCount }));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   const fetchReviews = async (reset = true) => {
     if (reset) setReviewsLoading(true);
@@ -1084,8 +1144,11 @@ const AdminDashboard = () => {
     }
   };
 
+  // Ancienne fonction fetchReports (non utilisée, conservée pour éviter les erreurs)
   const fetchReports = async (reset = true) => {
-    if (reset) setReportsLoading(true);
+    // Cette fonction n'est plus utilisée par le nouveau ReportsContent
+    // Conservée pour ne pas casser d'éventuels appels
+    setReportsLoading(true);
     try {
       const { data, error } = await supabase
         .from('reports')
@@ -1728,19 +1791,30 @@ const AdminDashboard = () => {
 
   if (!isAdmin) return null;
 
+  // Nouveau composant ReportsContent avec pagination
   const ReportsContent = () => {
     const { t } = useTranslation();
     const [localReports, setLocalReports] = useState([]);
-    const [localLoading, setLocalLoading] = useState(true);
+    const [localLoading, setLocalLoading] = useState(false);
     const [localFilter, setLocalFilter] = useState('all');
+    const [localPage, setLocalPage] = useState(1);
+    const [localHasMore, setLocalHasMore] = useState(true);
+    const ITEMS_PER_PAGE = 20;
 
-    const fetchReports = async () => {
-      setLocalLoading(true);
+    const fetchReports = async (reset = true) => {
+      if (reset) {
+        setLocalLoading(true);
+        setLocalPage(1);
+      }
+      const from = reset ? 0 : (localPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       try {
         let query = supabase
           .from('reports')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(from, to);
 
         if (localFilter !== 'all') {
           query = query.eq('status', localFilter);
@@ -1750,11 +1824,13 @@ const AdminDashboard = () => {
         if (reportsError) throw reportsError;
 
         if (!reportsData || reportsData.length === 0) {
-          setLocalReports([]);
+          if (reset) setLocalReports([]);
+          setLocalHasMore(false);
           setLocalLoading(false);
           return;
         }
 
+        // Récupérer les reporters
         const reporterIds = [...new Set(reportsData.map(r => r.reporter_id))];
         const { data: reporters, error: reportersError } = await supabase
           .from('users')
@@ -1766,6 +1842,7 @@ const AdminDashboard = () => {
           reporterMap[u.id] = u;
         });
 
+        // Grouper les IDs par type pour enrichir les détails
         const jobIds = reportsData.filter(r => r.reported_item_type === 'job').map(r => r.reported_item_id);
         const companyIds = reportsData.filter(r => r.reported_item_type === 'company').map(r => r.reported_item_id);
         const candidateIds = reportsData.filter(r => r.reported_item_type === 'candidate' || r.reported_item_type === 'user').map(r => r.reported_item_id);
@@ -1810,7 +1887,12 @@ const AdminDashboard = () => {
           return { ...report, reporter, details };
         });
 
-        setLocalReports(enriched);
+        if (reset) {
+          setLocalReports(enriched);
+        } else {
+          setLocalReports(prev => [...prev, ...enriched]);
+        }
+        setLocalHasMore(reportsData.length === ITEMS_PER_PAGE);
       } catch (error) {
         console.error('Erreur fetchReports:', error);
         toast.error(t('adminDashboard.reports.loadError'));
@@ -1820,7 +1902,7 @@ const AdminDashboard = () => {
     };
 
     useEffect(() => {
-      fetchReports();
+      fetchReports(true);
     }, [localFilter]);
 
     const typeLabels = {
@@ -1836,7 +1918,7 @@ const AdminDashboard = () => {
       resolved: t('adminDashboard.reports.status.resolved', 'Résolu'),
     };
 
-    if (localLoading) {
+    if (localLoading && localReports.length === 0) {
       return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
     }
 
@@ -1860,7 +1942,7 @@ const AdminDashboard = () => {
               <option value="resolved">{t('adminDashboard.reports.filterResolved', 'Résolus')}</option>
             </select>
           </div>
-          <Button variant="outline" size="sm" onClick={() => fetchReports()} disabled={localLoading} className="w-full sm:w-auto">
+          <Button variant="outline" size="sm" onClick={() => fetchReports(true)} disabled={localLoading} className="w-full sm:w-auto">
             <RefreshCw className={cn('w-4 h-4 mr-2', localLoading && 'animate-spin')} />
             {t('adminDashboard.refresh')}
           </Button>
@@ -1980,13 +2062,6 @@ const AdminDashboard = () => {
                         </Button>
                       </>
                     )}
-                    {/* Bouton Bannir masqué */}
-                    {false && (
-                      <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleBanReportedUser(report)}>
-                        <UserX className="w-4 h-4 mr-1" />
-                        {t('adminDashboard.reports.banUser', 'Bannir l\'utilisateur')}
-                      </Button>
-                    )}
                     <Button size="sm" variant="outline" className="text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none" onClick={() => handleDeleteReport(report.id)}>
                       <Trash2 className="w-4 h-4 mr-1" />
                       {t('adminDashboard.reports.deleteReport', 'Supprimer le signalement')}
@@ -1997,6 +2072,18 @@ const AdminDashboard = () => {
             );
           })}
         </div>
+
+        {localHasMore && (
+          <div className="text-center mt-4">
+            <Button onClick={() => {
+              setLocalPage(prev => prev + 1);
+              fetchReports(false);
+            }} disabled={localLoading}>
+              {localLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {t('adminDashboard.reports.loadMore')}
+            </Button>
+          </div>
+        )}
       </div>
     );
   };
@@ -2543,57 +2630,123 @@ const AdminDashboard = () => {
             </Card>
 
             <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  {t('adminDashboard.newsletter.subscribersTitle', { count: subscribers.length })}
-                </CardTitle>
-                <CardDescription>{t('adminDashboard.newsletter.subscribersDescription')}</CardDescription>
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    {t('adminDashboard.newsletter.subscribersTitle', { count: subscribers.length })}
+                  </CardTitle>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                    <select
+                      value={subscriberFilter}
+                      onChange={(e) => {
+                        setSubscriberFilter(e.target.value);
+                        setSubscribersPage(1);
+                        fetchSubscribers(true);
+                      }}
+                      className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white"
+                    >
+                      <option value="all">{t('adminDashboard.newsletter.filterAll')}</option>
+                      <option value="active">{t('adminDashboard.newsletter.filterActive')}</option>
+                      <option value="inactive">{t('adminDashboard.newsletter.filterInactive')}</option>
+                    </select>
+                    {subscriberFilter === 'inactive' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={handleDeleteInactiveSubscribers}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        {t('adminDashboard.newsletter.deleteAllInactive')}
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchSubscribers(true)}
+                      disabled={subscribersLoading}
+                    >
+                      <RefreshCw className={cn('w-4 h-4', subscribersLoading && 'animate-spin')} />
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {loadingSubscribers ? (
+                {subscribersLoading ? (
                   <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                 ) : subscribers.length === 0 ? (
                   <p className="text-center text-slate-500 py-4">{t('adminDashboard.newsletter.noSubscribers')}</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="border-b">
-                        <tr>
-                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.email')}</th>
-                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.status')}</th>
-                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.actions')}</th>
-                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.subscribed')}</th>
-                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.unsubscribed')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {subscribers.map((sub) => (
-                          <tr key={sub.id} className="border-b last:border-0">
-                            <td className="py-2">{sub.email}</td>
-                            <td className="py-2">
-                              <Badge className={sub.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                                {sub.is_active ? t('adminDashboard.newsletter.statusActive') : t('adminDashboard.newsletter.statusUnsubscribed')}
-                              </Badge>
-                            </td>
-                            <td className="py-2">
-                              <Button size="sm" variant="outline" onClick={() => handleToggleSubscriber(sub)}>
-                                {sub.is_active ? t('adminDashboard.newsletter.deactivate') : t('adminDashboard.newsletter.reactivate')}
-                              </Button>
-                            </td>
-                            <td className="py-2">{new Date(sub.subscribed_at).toLocaleDateString()}</td>
-                            <td className="py-2">{sub.unsubscribed_at ? new Date(sub.unsubscribed_at).toLocaleDateString() : '-'}</td>
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="border-b">
+                          <tr>
+                            <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.email')}</th>
+                            <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.status')}</th>
+                            <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.subscribed')}</th>
+                            <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.unsubscribed')}</th>
+                            <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.actions')}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {subscribers.map((sub) => (
+                            <tr key={sub.id} className="border-b last:border-0">
+                              <td className="py-2">{sub.email}</td>
+                              <td className="py-2">
+                                <Badge className={sub.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                  {sub.is_active ? t('adminDashboard.newsletter.statusActive') : t('adminDashboard.newsletter.statusUnsubscribed')}
+                                </Badge>
+                              </td>
+                              <td className="py-2">{new Date(sub.subscribed_at).toLocaleDateString()}</td>
+                              <td className="py-2">{sub.unsubscribed_at ? new Date(sub.unsubscribed_at).toLocaleDateString() : '-'}</td>
+                              <td className="py-2">
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleToggleSubscriber(sub)}
+                                  >
+                                    {sub.is_active ? t('adminDashboard.newsletter.deactivate') : t('adminDashboard.newsletter.reactivate')}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:bg-red-50"
+                                    onClick={() => handleDeleteSubscriber(sub.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {subscribersHasMore && (
+                      <div className="text-center mt-4">
+                        <Button
+                          onClick={() => {
+                            setSubscribersPage(prev => prev + 1);
+                            fetchSubscribers(false);
+                          }}
+                          disabled={subscribersLoading}
+                        >
+                          {t('adminDashboard.newsletter.loadMore')}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
           </div>
         )}
-{activeTab === 'message-companies' && <MessageSender role="company" />}
+
+        {activeTab === 'message-companies' && <MessageSender role="company" />}
         {activeTab === 'message-candidates' && <MessageSender role="candidate" />}
 
         {activeTab === 'roleRequests' && (

@@ -1920,7 +1920,15 @@
         }
       },
       "reports": {
-        
+         "loadMore": "Load more",
+      "loadError": "Error loading reports.",
+      "noReportsOfStatus": "No reports with this status.",
+      "unknownUser": "Unknown",
+      "reactivateJob": "Reactivate job",
+      "reactivateCompany": "Reactivate company",
+      "jobReactivatedToast": "Job reactivated",
+      "companyReactivatedToast": "Company reactivated",
+
       "filterAll": "All",
       "filterPending": "Pending",
       "filterReviewed": "Marked as viewed",
@@ -1991,6 +1999,17 @@
         "toFrom": "from"
       },
       "newsletter": {
+        "filterAll": "All",
+      "filterActive": "Active",
+      "filterInactive": "Inactive",
+      "loadError": "Error loading subscribers.",
+      "deleteConfirm": "Are you sure you want to delete this subscriber?",
+      "deletedToast": "Subscriber deleted.",
+      "deleteAllInactive": "Delete all inactive",
+      "deleteAllInactiveConfirm": "Are you sure you want to delete the {count} inactive subscribers?",
+      "deleteAllInactiveToast": "{count} inactive subscriber(s) deleted.",
+      "noInactive": "No inactive subscribers.",
+      "loadMore": "Load more",
         "sendTitle": "Send a newsletter",
         "sendDescription": "Write and send an email to all subscribers.",
         "subjectLabel": "Subject",
