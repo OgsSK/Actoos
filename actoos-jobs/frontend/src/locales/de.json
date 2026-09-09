@@ -1815,6 +1815,27 @@
   },
   
   "adminDashboard": {
+    "reviews": {
+        "filterAll": "Alle Bewertungen",
+        "filterVisible": "Sichtbare Bewertungen",
+        "filterHidden": "Ausgeblendete Bewertungen",
+        "noReviews": "Keine Bewertungen gefunden.",
+        "loadError": "Fehler beim Laden der Bewertungen.",
+        "hide": "Ausblenden",
+        "unhide": "Einblenden",
+        "delete": "Löschen",
+        "hideConfirm": "Möchten Sie diese Bewertung wirklich ausblenden?",
+        "hiddenToast": "Bewertung ausgeblendet",
+        "unhiddenToast": "Bewertung eingeblendet",
+        "deleteConfirm": "Möchten Sie diese Bewertung wirklich endgültig löschen?",
+        "deletedToast": "Bewertung endgültig gelöscht",
+        "visible": "Sichtbar",
+        "hidden": "Ausgeblendet",
+        "candidate": "Kandidat",
+        "company": "Unternehmen",
+        "date": "Datum",
+        "edited": "bearbeitet"
+      },
       "title": "Verwaltung",
       "subtitle": "Verwalten Sie Jobs, Unternehmen und Benutzer der Plattform.",
       "refresh": "Aktualisieren",
@@ -1831,6 +1852,7 @@
         "applications": "Bewerbungen"
       },
       "tabs": {
+        "reviews": "Bewertungen",
         "overview": "Übersicht",
         "jobs": "Jobs",
         "companies": "Unternehmen",
@@ -2002,6 +2024,26 @@
         }
       },
       "reports": {
+        "filterAll": "Alle",
+      "filterPending": "Ausstehend",
+      "filterReviewed": "Als gesehen markiert",
+      "filterResolved": "Erledigt",
+      "jobDetails": "Stellendetails",
+      "companyDetails": "Unternehmensdetails",
+      "candidateDetails": "Kandidatendetails",
+      "jobTitle": "Titel",
+      "company": "Unternehmen",
+      "postedBy": "Veröffentlicht von",
+      "companyName": "Name",
+      "owner": "Eigentümer",
+      "candidateName": "Name",
+      "candidateEmail": "E-Mail",
+      "deleteReport": "Meldung löschen",
+      "deleteReportConfirm": "Möchten Sie diese Meldung wirklich löschen?",
+      "deleteReportToast": "Meldung gelöscht",
+      "deleteAllStatus": "Alle löschen ({status})",
+      "deleteAllConfirm": "Möchten Sie wirklich alle Meldungen mit Status \"{status}\" löschen?",
+      "deleteAllToast": "{count} Meldung(en) gelöscht",
         "title": "Meldungen",
         "description": "Behandeln Sie von Benutzern gemeldete Inhalte.",
         "noReports": "Keine Meldungen.",
@@ -2010,8 +2052,8 @@
           "company": "Unternehmen",
           "candidate": "Kandidat"
         },
-        "reportedBy": "Gemeldet von {{email}}",
-        "reason": "Grund: {{reason}}",
+        "reportedBy": "Gemeldet von ",
+        "reason": "Grund: ",
         "status": {
           "pending": "Ausstehend",
           "reviewed": "Überprüft",

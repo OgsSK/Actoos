@@ -1780,6 +1780,27 @@
   },
 
  "adminDashboard": {
+  "reviews": {
+        "filterAll": "جميع التقييمات",
+        "filterVisible": "التقييمات المرئية",
+        "filterHidden": "التقييمات المخفية",
+        "noReviews": "لم يتم العثور على أي تقييم.",
+        "loadError": "خطأ في تحميل التقييمات.",
+        "hide": "إخفاء",
+        "unhide": "إظهار",
+        "delete": "حذف",
+        "hideConfirm": "هل تريد بالتأكيد إخفاء هذا التقييم؟",
+        "hiddenToast": "تم إخفاء التقييم",
+        "unhiddenToast": "تم إظهار التقييم",
+        "deleteConfirm": "هل تريد بالتأكيد حذف هذا التقييم نهائياً؟",
+        "deletedToast": "تم حذف التقييم نهائياً",
+        "visible": "مرئي",
+        "hidden": "مخفي",
+        "candidate": "مرشح",
+        "company": "شركة",
+        "date": "التاريخ",
+        "edited": "مُعدل"
+      },
       "title": "الإدارة",
       "subtitle": "إدارة الوظائف والشركات والمستخدمين في المنصة.",
       "refresh": "تحديث",
@@ -1796,6 +1817,7 @@
         "applications": "الطلبات"
       },
       "tabs": {
+        "reviews": "التقييمات",
         "overview": "نظرة عامة",
         "jobs": "الوظائف",
         "companies": "الشركات",
@@ -1968,6 +1990,26 @@
         }
       },
       "reports": {
+        "filterAll": "الكل",
+      "filterPending": "قيد الانتظار",
+      "filterReviewed": "تمت المشاهدة",
+      "filterResolved": "تم الحل",
+      "jobDetails": "تفاصيل العرض",
+      "companyDetails": "تفاصيل الشركة",
+      "candidateDetails": "تفاصيل المرشح",
+      "jobTitle": "العنوان",
+      "company": "الشركة",
+      "postedBy": "تم النشر من قبل",
+      "companyName": "الاسم",
+      "owner": "المالك",
+      "candidateName": "الاسم",
+      "candidateEmail": "البريد الإلكتروني",
+      "deleteReport": "حذف البلاغ",
+      "deleteReportConfirm": "هل تريد بالتأكيد حذف هذا البلاغ؟",
+      "deleteReportToast": "تم حذف البلاغ",
+      "deleteAllStatus": "حذف الكل ({status})",
+      "deleteAllConfirm": "هل تريد بالتأكيد حذف جميع البلاغات ذات الحالة \"{status}\"؟",
+      "deleteAllToast": "تم حذف {count} بلاغ/بلاغات",
         "title": "البلاغات",
         "description": "معالجة المحتوى الذي أبلغ عنه المستخدمون.",
         "noReports": "لا توجد بلاغات.",
@@ -1976,8 +2018,8 @@
           "company": "شركة",
           "candidate": "مرشح"
         },
-        "reportedBy": "أبلغ عنه {{email}}",
-        "reason": "السبب: {{reason}}",
+        "reportedBy": "أبلغ عنه ",
+        "reason": "السبب: ",
         "status": {
           "pending": "قيد الانتظار",
           "reviewed": "تمت المراجعة",

@@ -1700,6 +1700,27 @@
   },
   
   "adminDashboard": {
+    "reviews": {
+        "filterAll": "All reviews",
+        "filterVisible": "Visible reviews",
+        "filterHidden": "Hidden reviews",
+        "noReviews": "No reviews found.",
+        "loadError": "Error loading reviews.",
+        "hide": "Hide",
+        "unhide": "Show",
+        "delete": "Delete",
+        "hideConfirm": "Are you sure you want to hide this review?",
+        "hiddenToast": "Review hidden",
+        "unhiddenToast": "Review shown",
+        "deleteConfirm": "Are you sure you want to permanently delete this review?",
+        "deletedToast": "Review permanently deleted",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "candidate": "Candidate",
+        "company": "Company",
+        "date": "Date",
+        "edited": "edited"
+      },
       "title": "Administration",
       "subtitle": "Manage jobs, companies and users of the platform.",
       "refresh": "Refresh",
@@ -1716,6 +1737,7 @@
         "applications": "Applications"
       },
       "tabs": {
+        "reviews": "Reviews",
         "overview": "Overview",
         "jobs": "Jobs",
         "companies": "Companies",
@@ -1888,6 +1910,28 @@
         }
       },
       "reports": {
+        
+      "filterAll": "All",
+      "filterPending": "Pending",
+      "filterReviewed": "Marked as viewed",
+      "filterResolved": "Resolved",
+      "jobDetails": "Job details",
+      "companyDetails": "Company details",
+      "candidateDetails": "Candidate details",
+      "jobTitle": "Title",
+      "company": "Company",
+      "postedBy": "Posted by",
+      "companyName": "Name",
+      "owner": "Owner",
+      "candidateName": "Name",
+      "candidateEmail": "Email",
+      "deleteReport": "Delete report",
+      "deleteReportConfirm": "Are you sure you want to delete this report?",
+      "deleteReportToast": "Report deleted",
+      "deleteAllStatus": "Delete all ({status})",
+      "deleteAllConfirm": "Are you sure you want to delete all reports with status \"{status}\"?",
+      "deleteAllToast": "{count} report(s) deleted",
+    
         "title": "Reports",
         "description": "Handle content flagged by users.",
         "noReports": "No reports.",
@@ -1896,8 +1940,8 @@
           "company": "Company",
           "candidate": "Candidate"
         },
-        "reportedBy": "Reported by {{email}}",
-        "reason": "Reason: {{reason}}",
+        "reportedBy": "Reported by ",
+        "reason": "Reason: ",
         "status": {
           "pending": "Pending",
           "reviewed": "Reviewed",

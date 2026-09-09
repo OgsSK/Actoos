@@ -1846,6 +1846,27 @@
   },
   
   "adminDashboard": {
+    "reviews": {
+        "filterAll": "Alle beoordelingen",
+        "filterVisible": "Zichtbare beoordelingen",
+        "filterHidden": "Verborgen beoordelingen",
+        "noReviews": "Geen beoordelingen gevonden.",
+        "loadError": "Fout bij het laden van beoordelingen.",
+        "hide": "Verbergen",
+        "unhide": "Tonen",
+        "delete": "Verwijderen",
+        "hideConfirm": "Weet u zeker dat u deze beoordeling wilt verbergen?",
+        "hiddenToast": "Beoordeling verborgen",
+        "unhiddenToast": "Beoordeling getoond",
+        "deleteConfirm": "Weet u zeker dat u deze beoordeling definitief wilt verwijderen?",
+        "deletedToast": "Beoordeling definitief verwijderd",
+        "visible": "Zichtbaar",
+        "hidden": "Verborgen",
+        "candidate": "Kandidaat",
+        "company": "Bedrijf",
+        "date": "Datum",
+        "edited": "bewerkt"
+      },
       "title": "Beheer",
       "subtitle": "Beheer vacatures, bedrijven en gebruikers van het platform.",
       "refresh": "Vernieuwen",
@@ -1862,6 +1883,7 @@
         "applications": "Sollicitaties"
       },
       "tabs": {
+         "reviews": "Beoordelingen",
         "overview": "Overzicht",
         "jobs": "Vacatures",
         "companies": "Bedrijven",
@@ -2034,6 +2056,26 @@
         }
       },
       "reports": {
+        "filterAll": "Alle",
+      "filterPending": "In afwachting",
+      "filterReviewed": "Gemarkeerd als gezien",
+      "filterResolved": "Opgelost",
+      "jobDetails": "Vacaturedetails",
+      "companyDetails": "Bedrijfsdetails",
+      "candidateDetails": "Kandidaatdetails",
+      "jobTitle": "Titel",
+      "company": "Bedrijf",
+      "postedBy": "Gepubliceerd door",
+      "companyName": "Naam",
+      "owner": "Eigenaar",
+      "candidateName": "Naam",
+      "candidateEmail": "E-mail",
+      "deleteReport": "Melding verwijderen",
+      "deleteReportConfirm": "Weet u zeker dat u deze melding wilt verwijderen?",
+      "deleteReportToast": "Melding verwijderd",
+      "deleteAllStatus": "Alles verwijderen ({status})",
+      "deleteAllConfirm": "Weet u zeker dat u alle meldingen met status \"{status}\" wilt verwijderen?",
+      "deleteAllToast": "{count} melding(en) verwijderd",
         "title": "Meldingen",
         "description": "Behandel inhoud die door gebruikers is gemeld.",
         "noReports": "Geen meldingen.",
@@ -2042,8 +2084,8 @@
           "company": "Bedrijf",
           "candidate": "Kandidaat"
         },
-        "reportedBy": "Gemeld door {{email}}",
-        "reason": "Reden: {{reason}}",
+        "reportedBy": "Gemeld door ",
+        "reason": "Reden: ",
         "status": {
           "pending": "In afwachting",
           "reviewed": "Beoordeeld",

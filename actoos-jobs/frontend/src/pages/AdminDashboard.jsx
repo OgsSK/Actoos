@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import MessageSender from '../components/MessageSender';
+import { StarRating } from '../components/ui/StarRating'; // ✅ Import ajouté pour les avis
 import {
   Shield,
   Building2,
@@ -43,6 +44,7 @@ import {
   Sparkles,
   Edit,
   Save,
+  MessageSquare, // ✅ Ajout pour l'onglet Avis
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
@@ -562,7 +564,6 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
       data-testid={`company-card-${company.id}`}
     >
       <div className="flex items-start gap-3">
-        {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
         <div className="w-14 h-14 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center shrink-0">
           {company.logo_url ? (
             <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
@@ -750,7 +751,13 @@ const AdminDashboard = () => {
   const [usersPage, setUsersPage] = useState(1);
   const [usersHasMore, setUsersHasMore] = useState(true);
 
+  // États pour les signalements (reports)
   const [reports, setReports] = useState([]);
+  const [reportFilter, setReportFilter] = useState('all');
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsPage, setReportsPage] = useState(1);
+  const [reportsHasMore, setReportsHasMore] = useState(true);
+
   const [cancellations, setCancellations] = useState([]);
   const [loadingCancellations, setLoadingCancellations] = useState(true);
 
@@ -787,6 +794,13 @@ const AdminDashboard = () => {
 
   const [roleRequests, setRoleRequests] = useState([]);
 
+  // États pour la gestion des avis
+  const [reviews, setReviews] = useState([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsHasMore, setReviewsHasMore] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState('all');
+
   const roleLabel = (role) => t(`adminDashboard.roleLabels.${role}`, { defaultValue: role || t('adminDashboard.roleLabels.unknown') });
 
   useEffect(() => {
@@ -821,6 +835,13 @@ const AdminDashboard = () => {
     if (isAdmin) fetchCancellations();
   }, [isAdmin]);
 
+  // Chargement des reports quand l'onglet est actif
+ useEffect(() => {
+  if (isAdmin && activeTab === 'reports') {
+    fetchReports(true);
+  }
+}, [activeTab, isAdmin]);
+
   const fetchSubscribers = async () => {
     setLoadingSubscribers(true);
     const { data, error } = await supabase
@@ -849,6 +870,139 @@ const AdminDashboard = () => {
       fetchBlogPosts();
     }
   }, [isAdmin, activeTab]);
+
+  // Chargement des avis
+  useEffect(() => {
+    if (isAdmin && activeTab === 'reviews') {
+      fetchReviews(true);
+    }
+  }, [activeTab, isAdmin]);
+
+  const fetchReviews = async (reset = true) => {
+    if (reset) setReviewsLoading(true);
+    const from = reset ? 0 : (reviewsPage) * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
+    try {
+      let query = supabase
+        .from('company_reviews')
+        .select(`
+          id,
+          rating,
+          comment,
+          show_name,
+          is_visible,
+          created_at,
+          updated_at,
+          user_id,
+          company:companies(id, name)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (reviewFilter === 'visible') {
+        query = query.eq('is_visible', true);
+      } else if (reviewFilter === 'hidden') {
+        query = query.eq('is_visible', false);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const userIds = data.map(r => r.user_id);
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, email, first_name, last_name')
+          .in('id', userIds);
+
+        if (usersError) {
+          console.warn('Erreur récupération utilisateurs:', usersError);
+          const enriched = data.map(review => ({
+            ...review,
+            user: { id: review.user_id, email: 'inconnu', first_name: 'Utilisateur', last_name: '' }
+          }));
+          if (reset) setReviews(enriched);
+          else setReviews(prev => [...prev, ...enriched]);
+          setReviewsHasMore((data || []).length === ITEMS_PER_PAGE);
+          if (reset) setReviewsLoading(false);
+          return;
+        }
+
+        const userMap = {};
+        usersData.forEach(u => {
+          userMap[u.id] = {
+            id: u.id,
+            email: u.email,
+            first_name: u.first_name || 'Utilisateur',
+            last_name: u.last_name || '',
+          };
+        });
+
+        const enrichedReviews = data.map(review => ({
+          ...review,
+          user: userMap[review.user_id] || { id: review.user_id, email: 'inconnu', first_name: 'Utilisateur', last_name: '' }
+        }));
+
+        if (reset) setReviews(enrichedReviews);
+        else setReviews(prev => [...prev, ...enrichedReviews]);
+      } else {
+        if (reset) setReviews([]);
+      }
+
+      setReviewsHasMore((data || []).length === ITEMS_PER_PAGE);
+    } catch (error) {
+      console.error('Erreur chargement avis:', error);
+      toast.error(t('adminDashboard.reviews.loadError', 'Erreur de chargement des avis'));
+    } finally {
+      if (reset) setReviewsLoading(false);
+    }
+  };
+
+  // Actions sur les avis
+  const handleHideReview = async (reviewId) => {
+    if (!window.confirm(t('adminDashboard.reviews.hideConfirm', 'Masquer cet avis ?'))) return;
+    try {
+      const { error } = await supabase
+        .from('company_reviews')
+        .update({ is_visible: false })
+        .eq('id', reviewId);
+      if (error) throw error;
+      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, is_visible: false } : r));
+      toast.success(t('adminDashboard.reviews.hiddenToast', 'Avis masqué'));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleUnhideReview = async (reviewId) => {
+    try {
+      const { error } = await supabase
+        .from('company_reviews')
+        .update({ is_visible: true })
+        .eq('id', reviewId);
+      if (error) throw error;
+      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, is_visible: true } : r));
+      toast.success(t('adminDashboard.reviews.unhiddenToast', 'Avis réaffiché'));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm(t('adminDashboard.reviews.deleteConfirm', 'Supprimer définitivement cet avis ?'))) return;
+    try {
+      const { error } = await supabase
+        .from('company_reviews')
+        .delete()
+        .eq('id', reviewId);
+      if (error) throw error;
+      setReviews(prev => prev.filter(r => r.id !== reviewId));
+      toast.success(t('adminDashboard.reviews.deletedToast', 'Avis supprimé'));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -884,17 +1038,7 @@ const AdminDashboard = () => {
       setUsersPage(1);
       setUsersHasMore((usersData || []).length === ITEMS_PER_PAGE);
 
-      try {
-        const reportsRes = await apiFetch('/api/admin/reports');
-        if (reportsRes.success && Array.isArray(reportsRes.reports)) {
-          setReports(reportsRes.reports);
-        } else {
-          setReports([]);
-        }
-      } catch (e) {
-        console.error(e);
-        setReports([]);
-      }
+      // Ne plus charger les reports ici, ils seront chargés via l'onglet
 
       const pendingJobs = (jobsData || []).filter((j) => j.status === 'pending' || j.status === 'draft').length;
       const activeJobs = (jobsData || []).filter((j) => j.status === 'active').length;
@@ -984,6 +1128,42 @@ const AdminDashboard = () => {
     }
   };
 
+  // Nouvelle fonction fetchReports
+ const fetchReports = async (reset = true) => {
+  if (reset) setReportsLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('*, reporter:users(email, first_name, last_name)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    setReports(data || []);
+  } catch (err) {
+    console.error('Erreur fetchReports:', err);
+    toast.error(t('adminDashboard.reports.loadError'));
+  } finally {
+    setReportsLoading(false);
+  }
+};
+  // Suppression en masse par statut
+  const handleDeleteReportsByStatus = async (status) => {
+    const count = reports.filter(r => r.status === status).length;
+    if (count === 0) {
+      toast.info(t('adminDashboard.reports.noReportsOfStatus'));
+      return;
+    }
+    if (!window.confirm(t('adminDashboard.reports.deleteAllConfirm', { status: t(`adminDashboard.reports.status.${status}`), count }))) return;
+    try {
+      const { error } = await supabase.from('reports').delete().eq('status', status);
+      if (error) throw error;
+      setReports(prev => prev.filter(r => r.status !== status));
+      toast.success(t('adminDashboard.reports.deleteAllToast', { count }));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchInitialData();
@@ -1050,7 +1230,7 @@ const AdminDashboard = () => {
     }
   };
 
-const handleApproveJob = async (job) => {
+  const handleApproveJob = async (job) => {
     if (!job.company?.is_verified || !job.company?.is_active) {
       toast.error(t('adminDashboard.jobs.companySuspendedOrNotVerified'));
       return;
@@ -1104,7 +1284,6 @@ const handleApproveJob = async (job) => {
         }
       }
 
-      // ✅ Notification des followers (offre devenue active)
       try {
         await apiFetch(`/api/jobs/${job.id}/notify-followers`, {
           method: 'POST',
@@ -1497,36 +1676,32 @@ const handleApproveJob = async (job) => {
     }
   };
 
-  // ✅ Statut d'un élément signalé (actif ou suspendu)
   const getItemStatus = (report) => {
     if (!report) return null;
     if (report.reported_item_type === 'job') {
       const job = jobs.find(j => j.id === report.reported_item_id);
-      return job?.status; // 'active', 'suspended', etc.
+      return job?.status;
     } else if (report.reported_item_type === 'company') {
       const comp = companies.find(c => c.id === report.reported_item_id);
       if (!comp) return null;
       if (comp.is_verified && !comp.is_active) return 'suspended';
       if (comp.is_verified && comp.is_active) return 'active';
-      return 'pending'; // non vérifiée
+      return 'pending';
     }
     return null;
   };
 
-  // ✅ Supprimer un signalement (le rapport)
-// NOUVELLE VERSION (appel backend)
-const handleDeleteReport = async (reportId) => {
-  if (!window.confirm(t('adminDashboard.users.deleteConfirm'))) return;
-
-  try {
-    await apiFetch(`/api/admin/reports/${reportId}`, { method: 'DELETE' });
-    setReports(prev => prev.filter(r => r.id !== reportId));
-    toast.success('Signalement supprimé');
-  } catch (error) {
-    console.error('Erreur suppression signalement:', error);
-    toast.error(t('adminDashboard.jobs.genericError'));
-  }
-};
+  const handleDeleteReport = async (reportId) => {
+    if (!window.confirm(t('adminDashboard.users.deleteConfirm'))) return;
+    try {
+      await apiFetch(`/api/admin/reports/${reportId}`, { method: 'DELETE' });
+      setReports(prev => prev.filter(r => r.id !== reportId));
+      toast.success('Signalement supprimé');
+    } catch (error) {
+      console.error('Erreur suppression signalement:', error);
+      toast.error(t('adminDashboard.jobs.genericError'));
+    }
+  };
 
   const handleToggleSubscriber = async (sub) => {
     const { error } = await supabase.rpc('toggle_subscriber_active', {
@@ -1652,7 +1827,282 @@ const handleDeleteReport = async (reportId) => {
   }
 
   if (!isAdmin) return null;
+// Composant local pour l'onglet Reports (à l'intérieur de AdminDashboard)
+const ReportsContent = () => {
+  const { t } = useTranslation();
+  const [localReports, setLocalReports] = useState([]);
+  const [localLoading, setLocalLoading] = useState(true);
+  const [localFilter, setLocalFilter] = useState('all');
 
+  const fetchReports = async () => {
+    setLocalLoading(true);
+    try {
+      let query = supabase
+        .from('reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (localFilter !== 'all') {
+        query = query.eq('status', localFilter);
+      }
+
+      const { data: reportsData, error: reportsError } = await query;
+      if (reportsError) throw reportsError;
+
+      if (!reportsData || reportsData.length === 0) {
+        setLocalReports([]);
+        setLocalLoading(false);
+        return;
+      }
+
+      const reporterIds = [...new Set(reportsData.map(r => r.reporter_id))];
+      const { data: reporters, error: reportersError } = await supabase
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .in('id', reporterIds);
+
+      const reporterMap = {};
+      (reporters || []).forEach(u => {
+        reporterMap[u.id] = u;
+      });
+
+      const jobIds = reportsData.filter(r => r.reported_item_type === 'job').map(r => r.reported_item_id);
+      const companyIds = reportsData.filter(r => r.reported_item_type === 'company').map(r => r.reported_item_id);
+      const candidateIds = reportsData.filter(r => r.reported_item_type === 'candidate' || r.reported_item_type === 'user').map(r => r.reported_item_id);
+
+      let jobsMap = {};
+      if (jobIds.length > 0) {
+        const { data: jobs } = await supabase
+          .from('jobs')
+          .select('id, title, company:companies(name), posted_by_user:users(email, first_name, last_name)')
+          .in('id', jobIds);
+        (jobs || []).forEach(j => { jobsMap[j.id] = j; });
+      }
+
+      let companiesMap = {};
+      if (companyIds.length > 0) {
+        const { data: companies } = await supabase
+          .from('companies')
+          .select('id, name, owner:users(email, first_name, last_name)')
+          .in('id', companyIds);
+        (companies || []).forEach(c => { companiesMap[c.id] = c; });
+      }
+
+      let candidatesMap = {};
+      if (candidateIds.length > 0) {
+        const { data: candidates } = await supabase
+          .from('users')
+          .select('id, email, first_name, last_name')
+          .in('id', candidateIds);
+        (candidates || []).forEach(u => { candidatesMap[u.id] = u; });
+      }
+
+      const enriched = reportsData.map(report => {
+        const reporter = reporterMap[report.reporter_id] || { email: 'Inconnu', first_name: '', last_name: '' };
+        let details = null;
+        if (report.reported_item_type === 'job') {
+          details = jobsMap[report.reported_item_id] || { title: 'Offre introuvable', company: { name: 'Inconnue' }, posted_by_user: { email: 'Inconnu' } };
+        } else if (report.reported_item_type === 'company') {
+          details = companiesMap[report.reported_item_id] || { name: 'Entreprise introuvable', owner: { email: 'Inconnu' } };
+        } else if (report.reported_item_type === 'candidate' || report.reported_item_type === 'user') {
+          details = candidatesMap[report.reported_item_id] || { email: 'Inconnu', first_name: 'Candidat', last_name: '' };
+        }
+        return { ...report, reporter, details };
+      });
+
+      setLocalReports(enriched);
+    } catch (error) {
+      console.error('Erreur fetchReports:', error);
+      toast.error(t('adminDashboard.reports.loadError'));
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, [localFilter]);
+
+  const typeLabels = {
+    job: t('adminDashboard.reports.badges.job', 'Offre'),
+    company: t('adminDashboard.reports.badges.company', 'Entreprise'),
+    candidate: t('adminDashboard.reports.badges.candidate', 'Candidat'),
+    user: t('adminDashboard.reports.badges.candidate', 'Candidat'),
+  };
+
+  const statusLabels = {
+    pending: t('adminDashboard.reports.status.pending', 'En attente'),
+    reviewed: t('adminDashboard.reports.status.reviewed', 'Examiné'),
+    resolved: t('adminDashboard.reports.status.resolved', 'Résolu'),
+  };
+
+  if (localLoading) {
+    return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
+  }
+
+  if (localReports.length === 0) {
+    return <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>;
+  }
+
+  return (
+    <div>
+      {/* Filtres */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+          <select
+            value={localFilter}
+            onChange={(e) => setLocalFilter(e.target.value)}
+            className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white w-full sm:w-auto"
+          >
+            <option value="all">{t('adminDashboard.reports.filterAll', 'Tous')}</option>
+            <option value="pending">{t('adminDashboard.reports.filterPending', 'En attente')}</option>
+            <option value="reviewed">{t('adminDashboard.reports.filterReviewed', 'Examinés')}</option>
+            <option value="resolved">{t('adminDashboard.reports.filterResolved', 'Résolus')}</option>
+          </select>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => fetchReports()} disabled={localLoading} className="w-full sm:w-auto">
+          <RefreshCw className={cn('w-4 h-4 mr-2', localLoading && 'animate-spin')} />
+          {t('adminDashboard.refresh')}
+        </Button>
+      </div>
+
+      {/* Liste des signalements */}
+      <div className="space-y-4">
+        {localReports.map((report) => {
+          const isJob = report.reported_item_type === 'job';
+          const isCompany = report.reported_item_type === 'company';
+          const isCandidate = report.reported_item_type === 'candidate' || report.reported_item_type === 'user';
+          const details = report.details;
+
+          return (
+            <div key={report.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
+              <div className="flex flex-col gap-3">
+                {/* En-tête : badges + date */}
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className={
+                      isJob ? 'bg-blue-100 text-blue-700' :
+                      isCompany ? 'bg-purple-100 text-purple-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }>
+                      {typeLabels[report.reported_item_type] || report.reported_item_type}
+                    </Badge>
+                    <Badge className={
+                      report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
+                      'bg-green-100 text-green-700'
+                    }>
+                      {statusLabels[report.status] || report.status}
+                    </Badge>
+                  </div>
+                  <span className="text-xs text-slate-400 whitespace-nowrap">
+                    {new Date(report.created_at).toLocaleString('fr-FR')}
+                  </span>
+                </div>
+
+                {/* Signalant et motif */}
+                <div className="space-y-1 text-sm">
+                  <p>
+  <span className="font-medium">{t('adminDashboard.reports.reportedBy')}</span>{' '}
+  {report.reporter?.email || t('adminDashboard.reports.unknownUser', 'Inconnu')}
+  {report.reporter?.first_name && report.reporter?.last_name && (
+    <span className="text-slate-500"> ({report.reporter.first_name} {report.reporter.last_name})</span>
+  )}
+</p>
+<p>
+  <span className="font-medium">{t('adminDashboard.reports.reason')}</span>{' '}
+  {report.reason}
+</p>
+                  {report.description && (
+                    <p className="text-slate-600 italic">« {report.description} »</p>
+                  )}
+                </div>
+
+                {/* ✅ Détails de l'objet signalé (traduits) */}
+                {details && (
+                  <div className="mt-1 p-3 bg-slate-50 rounded-xl text-sm border border-slate-100 space-y-1">
+                    <p className="font-medium">
+                      {isJob ? t('adminDashboard.reports.jobDetails') :
+                       isCompany ? t('adminDashboard.reports.companyDetails') :
+                       t('adminDashboard.reports.candidateDetails')}
+                    </p>
+                    {isJob && (
+                      <>
+                        <p><span className="font-medium">{t('adminDashboard.reports.jobTitle')}</span> {details.title}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.company')}</span> {details.company?.name}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.postedBy')}</span> {details.posted_by_user?.email}</p>
+                      </>
+                    )}
+                    {isCompany && (
+                      <>
+                        <p><span className="font-medium">{t('adminDashboard.reports.companyName')}</span> {details.name}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.owner')}</span> {details.owner?.email}</p>
+                      </>
+                    )}
+                    {isCandidate && (
+                      <>
+                        <p><span className="font-medium">{t('adminDashboard.reports.candidateName')}</span> {details.first_name} {details.last_name}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.candidateEmail')}</span> {details.email}</p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                  {report.status === 'pending' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} className="flex-1 sm:flex-none">
+                        {t('adminDashboard.reports.markReviewed', 'Marquer comme examiné')}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
+                        {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
+                      </Button>
+                    </>
+                  )}
+                  {report.status === 'reviewed' && (
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
+                      {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
+                    </Button>
+                  )}
+
+                  {!isCandidate && (
+                    <>
+                      {report.status === 'resolved' || report.status === 'reviewed' ? (
+                        <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 flex-1 sm:flex-none" onClick={() => handleReactivateReportedItem(report)}>
+                          <Check className="w-4 h-4 mr-1" />
+                          {isJob ? t('adminDashboard.jobs.reactivate', 'Réactiver l\'offre') : t('adminDashboard.companies.reactivate', 'Réactiver l\'entreprise')}
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 flex-1 sm:flex-none" onClick={() => handleSuspendReportedItem(report)}>
+                          <Ban className="w-4 h-4 mr-1" />
+                          {isJob ? t('adminDashboard.reports.suspendJob', 'Suspendre l\'offre') : t('adminDashboard.reports.suspendCompany', 'Suspendre l\'entreprise')}
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleDeleteReportedItem(report)}>
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        {isJob ? t('adminDashboard.reports.deleteJob', 'Supprimer l\'offre') : t('adminDashboard.reports.deleteCompany', 'Supprimer l\'entreprise')}
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleBanReportedUser(report)}>
+                    <UserX className="w-4 h-4 mr-1" />
+                    {t('adminDashboard.reports.banUser', 'Bannir l\'utilisateur')}
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none" onClick={() => handleDeleteReport(report.id)}>
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    {t('adminDashboard.reports.deleteReport', 'Supprimer le signalement')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="admin-dashboard">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -1725,6 +2175,10 @@ const handleDeleteReport = async (reportId) => {
           <TabButton active={activeTab === 'roleRequests'} onClick={() => setActiveTab('roleRequests')} count={roleRequests.length}>
             <UserCog className="w-4 h-4" />
             {t('adminDashboard.tabs.roleRequests')}
+          </TabButton>
+          <TabButton active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')}>
+            <MessageSquare className="w-4 h-4" />
+            {t('adminDashboard.tabs.reviews')}
           </TabButton>
         </div>
 
@@ -1902,6 +2356,7 @@ const handleDeleteReport = async (reportId) => {
           </Card>
         )}
 
+        {/** ================= ONGLET USERS (remplacé) ================= */}
         {activeTab === 'users' && (
           <Card className="overflow-hidden">
             <CardHeader>
@@ -1927,10 +2382,15 @@ const handleDeleteReport = async (reportId) => {
                             <p className="text-sm text-slate-500 truncate">{u.email}</p>
                             <Badge className={cn(
                               'mt-1',
-                              u.is_banned ? 'bg-red-100 text-red-700' : u.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                              u.is_banned ? 'bg-red-100 text-red-700' :
+                              u.is_active ? 'bg-green-100 text-green-700' :
+                              'bg-yellow-100 text-yellow-700'
                             )}>
-                              {u.is_banned ? t('adminDashboard.users.status.banned') : u.is_active ? t('adminDashboard.users.status.active') : t('adminDashboard.users.status.suspended')}
+                              {u.is_banned ? t('adminDashboard.users.status.banned') :
+                               u.is_active ? t('adminDashboard.users.status.active') :
+                               t('adminDashboard.users.status.suspended')}
                             </Badge>
+                            {u.role && <Badge className="ml-2 bg-blue-100 text-blue-700">{u.role}</Badge>}
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             <select
@@ -1942,31 +2402,61 @@ const handleDeleteReport = async (reportId) => {
                               <option value="company">{t('adminDashboard.users.roles.company')}</option>
                               <option value="admin">{t('adminDashboard.users.roles.admin')}</option>
                             </select>
-                            {!u.is_banned && u.is_active && (
-                              <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => setSuspendModal({ open: true, userId: u.id })}>
+
+                            {u.role !== 'candidate' && !u.is_banned && u.is_active && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto min-h-[44px]"
+                                onClick={() => setSuspendModal({ open: true, userId: u.id })}
+                              >
                                 <UserX className="w-4 h-4 mr-1" />
                                 {t('adminDashboard.users.actions.suspend')}
                               </Button>
                             )}
+
                             {!u.is_active && !u.is_banned && (
-                              <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => handleToggleUserActive(u.id, u.is_active)}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto min-h-[44px]"
+                                onClick={() => handleToggleUserActive(u.id, u.is_active)}
+                              >
                                 <UserCheck className="w-4 h-4 mr-1" />
                                 {t('adminDashboard.users.actions.reactivate')}
                               </Button>
                             )}
+
                             {!u.is_banned && (
-                              <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanUser(u.id)}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]"
+                                onClick={() => handleBanUser(u.id)}
+                              >
                                 <Ban className="w-4 h-4 mr-1" />
                                 {t('adminDashboard.users.actions.ban')}
                               </Button>
                             )}
+
                             {u.is_banned && (
-                              <Button size="sm" variant="outline" className="w-full sm:w-auto text-green-600 hover:bg-green-50 min-h-[44px]" onClick={() => handleUnbanUser(u.id)}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto text-green-600 hover:bg-green-50 min-h-[44px]"
+                                onClick={() => handleUnbanUser(u.id)}
+                              >
                                 <UserCheck className="w-4 h-4 mr-1" />
                                 {t('adminDashboard.users.actions.unban')}
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteUser(u.id)}>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]"
+                              onClick={() => handleDeleteUser(u.id)}
+                            >
                               <Trash2 className="w-4 h-4 mr-1" />
                               {t('adminDashboard.users.actions.delete')}
                             </Button>
@@ -1988,123 +2478,21 @@ const handleDeleteReport = async (reportId) => {
           </Card>
         )}
 
-        {activeTab === 'reports' && (
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Flag className="w-5 h-5" />
-                {t('adminDashboard.reports.title')}
-              </CardTitle>
-              <CardDescription>{t('adminDashboard.reports.description')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {reports.length === 0 ? (
-                    <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>
-                  ) : (
-                    reports.map((report) => {
-                      const isJobReport = report.reported_item_type === 'job';
-                      const isCompanyReport = report.reported_item_type === 'company';
-                      const isCandidateReport = report.reported_item_type === 'candidate';
-                      const itemStatus = getItemStatus(report);
-                      const isSuspended = itemStatus === 'suspended';
-
-                      return (
-                        <div key={report.id} className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Badge className={
-                                isJobReport ? 'bg-blue-100 text-blue-700' :
-                                isCompanyReport ? 'bg-purple-100 text-purple-700' :
-                                'bg-yellow-100 text-yellow-700'
-                              }>
-                                {isJobReport ? t('adminDashboard.reports.badges.job') : isCompanyReport ? t('adminDashboard.reports.badges.company') : t('adminDashboard.reports.badges.candidate')}
-                              </Badge>
-                              <p className="font-semibold text-slate-900 truncate">
-                                {t('adminDashboard.reports.reportedBy', { email: report.reporter?.email || 'Anonyme' })}
-                              </p>
-                            </div>
-                            <p className="text-sm text-slate-500 mt-1">{t('adminDashboard.reports.reason', { reason: report.reason })}</p>
-                            <Badge className={cn(
-                              'mt-2',
-                              report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
-                              'bg-green-100 text-green-700'
-                            )}>
-                              {report.status === 'pending' ? t('adminDashboard.reports.status.pending') : report.status === 'reviewed' ? t('adminDashboard.reports.status.reviewed') : t('adminDashboard.reports.status.resolved')}
-                            </Badge>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
-                            <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} disabled={report.status !== 'pending'}>
-                              {t('adminDashboard.reports.markReviewed')}
-                            </Button>
-                            <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} disabled={report.status === 'resolved'}>
-                              {t('adminDashboard.reports.markResolved')}
-                            </Button>
-
-                            {/* Bouton Suspendre / Réactiver (affichage conditionnel) */}
-                            {!isCandidateReport && itemStatus && (
-                              isSuspended ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-green-600 hover:bg-green-50 min-h-[44px]"
-                                  onClick={() => handleReactivateReportedItem(report)}
-                                >
-                                  <Check className="w-4 h-4 mr-1" />
-                                  {isJobReport ? t('adminDashboard.jobs.reactivate') : t('adminDashboard.companies.reactivate')}
-                                </Button>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]"
-                                  onClick={() => handleSuspendReportedItem(report)}
-                                >
-                                  <Ban className="w-4 h-4 mr-1" />
-                                  {isJobReport ? t('adminDashboard.reports.suspendJob') : t('adminDashboard.reports.suspendCompany')}
-                                </Button>
-                              )
-                            )}
-
-                            {!isCandidateReport && (
-                              <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteReportedItem(report)}>
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                {isJobReport ? t('adminDashboard.reports.deleteJob') : t('adminDashboard.reports.deleteCompany')}
-                              </Button>
-                            )}
-
-                            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanReportedUser(report)}>
-                              <UserX className="w-4 h-4 mr-1" />
-                              {t('adminDashboard.reports.banUser')}
-                            </Button>
-
-                            {/* ✅ Supprimer le signalement (le rapport) – utilise la clé existante "Supprimer" */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-slate-600 hover:bg-slate-50 min-h-[44px]"
-                              onClick={() => handleDeleteReport(report.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              {t('adminDashboard.jobs.delete')}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {/** ================= ONGLET REPORTS (remplacé) ================= */}
+{activeTab === 'reports' && (
+  <Card className="overflow-hidden">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Flag className="w-5 h-5" />
+        {t('adminDashboard.reports.title')}
+      </CardTitle>
+      <CardDescription>{t('adminDashboard.reports.description')}</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <ReportsContent />
+    </CardContent>
+  </Card>
+)}
 
         {activeTab === 'subscriptions' && (
           <div className="space-y-6">
@@ -2487,6 +2875,130 @@ const handleDeleteReport = async (reportId) => {
           </Card>
         )}
 
+        {activeTab === 'reviews' && (
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={reviewFilter}
+                    onChange={(e) => {
+                      setReviewFilter(e.target.value);
+                      setReviewsPage(1);
+                      fetchReviews(true);
+                    }}
+                    className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white"
+                  >
+                    <option value="all">{t('adminDashboard.reviews.filterAll', 'Tous')}</option>
+                    <option value="visible">{t('adminDashboard.reviews.filterVisible', 'Visibles')}</option>
+                    <option value="hidden">{t('adminDashboard.reviews.filterHidden', 'Masqués')}</option>
+                  </select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchReviews(true)}
+                    disabled={reviewsLoading}
+                    className="ml-auto"
+                  >
+                    <RefreshCw className={cn('w-4 h-4', reviewsLoading && 'animate-spin')} />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {reviewsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <>
+                  {reviews.length === 0 ? (
+                    <p className="text-center text-slate-500 py-12">{t('adminDashboard.reviews.noReviews', 'Aucun avis')}</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div
+                          key={review.id}
+                          className={cn(
+                            'p-4 bg-white border rounded-2xl transition-all',
+                            !review.is_visible ? 'border-red-200 bg-red-50/30' : 'border-slate-200'
+                          )}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <StarRating rating={review.rating} size="w-4 h-4" />
+                                <span className="font-medium text-slate-700">{review.rating}/5</span>
+                                <Badge className={review.is_visible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                  {review.is_visible ? t('adminDashboard.reviews.visible', 'Visible') : t('adminDashboard.reviews.hidden', 'Masqué')}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-slate-700 mt-1 break-words">{review.comment}</p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mt-2">
+                                <span>{t('adminDashboard.reviews.candidate', 'Candidat')} : {review.user?.first_name} {review.user?.last_name} ({review.user?.email})</span>
+                                <span>{t('adminDashboard.reviews.company', 'Entreprise')} : {review.company?.name}</span>
+                                <span>{t('adminDashboard.reviews.date', 'Date')} : {new Date(review.created_at).toLocaleDateString('fr-FR')}</span>
+                                {review.created_at !== review.updated_at && (
+                                  <span className="italic">{t('adminDashboard.reviews.edited', 'Modifié')}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 shrink-0">
+                              {review.is_visible ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-yellow-600 hover:bg-yellow-50"
+                                  onClick={() => handleHideReview(review.id)}
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  {t('adminDashboard.reviews.hide', 'Masquer')}
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 hover:bg-green-50"
+                                  onClick={() => handleUnhideReview(review.id)}
+                                >
+                                  <Check className="w-4 h-4 mr-1" />
+                                  {t('adminDashboard.reviews.unhide', 'Réafficher')}
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteReview(review.id)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                {t('adminDashboard.reviews.delete', 'Supprimer')}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!reviewsLoading && reviewsHasMore && reviews.length === reviewsPage * ITEMS_PER_PAGE && (
+                    <div className="text-center mt-4">
+                      <Button
+                        onClick={() => {
+                          setReviewsPage(prev => prev + 1);
+                          fetchReviews(false);
+                        }}
+                      >
+                        {t('adminDashboard.reviews.loadMore', 'Charger plus')}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {suspendModal.open && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
@@ -2565,5 +3077,6 @@ const handleDeleteReport = async (reportId) => {
     </div>
   );
 };
+
 
 export default AdminDashboard;

@@ -1778,6 +1778,27 @@
   },
   
   "adminDashboard": {
+    "reviews": {
+        "filterAll": "Todas las reseñas",
+        "filterVisible": "Reseñas visibles",
+        "filterHidden": "Reseñas ocultas",
+        "noReviews": "No se encontraron reseñas.",
+        "loadError": "Error al cargar las reseñas.",
+        "hide": "Ocultar",
+        "unhide": "Mostrar",
+        "delete": "Eliminar",
+        "hideConfirm": "¿Seguro que quieres ocultar esta reseña?",
+        "hiddenToast": "Reseña ocultada",
+        "unhiddenToast": "Reseña mostrada",
+        "deleteConfirm": "¿Seguro que quieres eliminar definitivamente esta reseña?",
+        "deletedToast": "Reseña eliminada definitivamente",
+        "visible": "Visible",
+        "hidden": "Oculta",
+        "candidate": "Candidato",
+        "company": "Empresa",
+        "date": "Fecha",
+        "edited": "editado"
+      },
       "title": "Administración",
       "subtitle": "Gestione las ofertas, empresas y usuarios de la plataforma.",
       "refresh": "Actualizar",
@@ -1794,6 +1815,7 @@
         "applications": "Candidaturas"
       },
       "tabs": {
+        "reviews": "Reseñas",
         "overview": "Vista general",
         "jobs": "Ofertas",
         "companies": "Empresas",
@@ -1966,6 +1988,26 @@
         }
       },
       "reports": {
+        "filterAll": "Todos",
+      "filterPending": "Pendientes",
+      "filterReviewed": "Marcados como vistos",
+      "filterResolved": "Resueltos",
+      "jobDetails": "Detalles de la oferta",
+      "companyDetails": "Detalles de la empresa",
+      "candidateDetails": "Detalles del candidato",
+      "jobTitle": "Título",
+      "company": "Empresa",
+      "postedBy": "Publicado por",
+      "companyName": "Nombre",
+      "owner": "Propietario",
+      "candidateName": "Nombre",
+      "candidateEmail": "Correo electrónico",
+      "deleteReport": "Eliminar denuncia",
+      "deleteReportConfirm": "¿Seguro que quieres eliminar esta denuncia?",
+      "deleteReportToast": "Denuncia eliminada",
+      "deleteAllStatus": "Eliminar todos ({status})",
+      "deleteAllConfirm": "¿Seguro que quieres eliminar todas las denuncias con estado \"{status}\"?",
+      "deleteAllToast": "{count} denuncia(s) eliminada(s)",
         "title": "Denuncias",
         "description": "Gestione el contenido denunciado por los usuarios.",
         "noReports": "No hay denuncias.",
@@ -1974,8 +2016,8 @@
           "company": "Empresa",
           "candidate": "Candidato"
         },
-        "reportedBy": "Denunciado por {{email}}",
-        "reason": "Razón: {{reason}}",
+        "reportedBy": "Denunciado por ",
+        "reason": "Razón: ",
         "status": {
           "pending": "Pendiente",
           "reviewed": "Revisado",

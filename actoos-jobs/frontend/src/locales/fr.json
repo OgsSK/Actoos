@@ -1591,6 +1591,27 @@
   
   
 "adminDashboard": {
+    "reviews": {
+      "filterAll": "Tous les avis",
+      "filterVisible": "Avis visibles",
+      "filterHidden": "Avis masqués",
+      "noReviews": "Aucun avis trouvé.",
+      "loadError": "Erreur de chargement des avis.",
+      "hide": "Masquer",
+      "unhide": "Réafficher",
+      "delete": "Supprimer",
+      "hideConfirm": "Voulez-vous vraiment masquer cet avis ?",
+      "hiddenToast": "Avis masqué",
+      "unhiddenToast": "Avis réaffiché",
+      "deleteConfirm": "Voulez-vous vraiment supprimer définitivement cet avis ?",
+      "deletedToast": "Avis supprimé définitivement",
+      "visible": "Visible",
+      "hidden": "Masqué",
+      "candidate": "Candidat",
+      "company": "Entreprise",
+      "date": "Date",
+      "edited": "modifié"
+    },
     "title": "Administration",
     "subtitle": "Gérez les offres, les entreprises et les utilisateurs de la plateforme.",
     "refresh": "Actualiser",
@@ -1607,6 +1628,7 @@
       "applications": "Candidatures"
     },
     "tabs": {
+      "reviews": "Avis",
       "overview": "Vue d'ensemble",
       "jobs": "Offres",
       "companies": "Entreprises",
@@ -1779,6 +1801,26 @@
       }
     },
     "reports": {
+      "filterAll": "Tous",
+      "filterPending": "En attente",
+      "filterReviewed": "Marqués comme vus",
+      "filterResolved": "Résolus",
+      "jobDetails": "Détails de l'offre",
+      "companyDetails": "Détails de l'entreprise",
+      "candidateDetails": "Détails du candidat",
+      "jobTitle": "Titre",
+      "company": "Entreprise",
+      "postedBy": "Publiée par",
+      "companyName": "Nom",
+      "owner": "Propriétaire",
+      "candidateName": "Nom",
+      "candidateEmail": "Email",
+      "deleteReport": "Supprimer le signalement",
+      "deleteReportConfirm": "Voulez-vous vraiment supprimer ce signalement ?",
+      "deleteReportToast": "Signalement supprimé",
+      "deleteAllStatus": "Tout supprimer ({status})",
+      "deleteAllConfirm": "Voulez-vous vraiment supprimer tous les signalements avec le statut « {status} » ?",
+      "deleteAllToast": "{count} signalement(s) supprimé(s)",
       "title": "Signalements",
       "description": "Traitez les contenus signalés par les utilisateurs.",
       "noReports": "Aucun signalement.",
@@ -1787,8 +1829,8 @@
         "company": "Entreprise",
         "candidate": "Candidat"
       },
-      "reportedBy": "Signalé par {{email}}",
-      "reason": "Raison : {{reason}}",
+      "reportedBy": "Signalé par",
+      "reason": "Raison : ",
       "status": {
         "pending": "En attente",
         "reviewed": "Examiné",
