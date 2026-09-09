@@ -54,13 +54,11 @@ function generateUUID() {
 
 // ----- NETTOYAGE URLS DUPLIQUÉES (frontend) -----
 function cleanUrlsForDisplay(text: string): string {
-  // Séparer les URLs collées (ex: https://a.comhttps://a.com)
   text = text.replace(/(https?:\/\/[^\s]+?)(?=https?:\/\/)/g, '$1 ');
   const urlRegex = /https?:\/\/[^\s]+/g;
   const matches = text.match(urlRegex) || [];
   if (matches.length === 0) return text;
 
-  // Dédupliquer
   const uniqueUrls: string[] = [];
   const seen = new Set<string>();
   for (const url of matches) {
@@ -71,7 +69,6 @@ function cleanUrlsForDisplay(text: string): string {
     }
   }
 
-  // Supprimer les URLs du texte et réinsérer les uniques
   let result = text.replace(/https?:\/\/[^\s]+/g, '');
   result = result.replace(/\s+/g, ' ').trim();
   if (uniqueUrls.length > 0) {
@@ -86,7 +83,6 @@ function cleanUrlsForDisplay(text: string): string {
 
 // ----- Rendu des URLs (avec nettoyage anti-doublon) -----
 function renderMessageContent(text: string) {
-  // Nettoyer les URLs dupliquées avant l'affichage
   text = cleanUrlsForDisplay(text);
   
   if (text.includes('<a href=')) {
@@ -303,7 +299,6 @@ export default function ProjectChatBot() {
 
       const data = await res.json();
 
-      // Si le backend renvoie une erreur, on affiche un message d'attente
       if (data.error) {
         setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "I'm processing your request, please wait..." : "Je traite votre demande, patientez..." }]);
         return;
@@ -336,12 +331,11 @@ export default function ProjectChatBot() {
         handleBriefingResponse(data);
         return;
       }
-      // Réponse textuelle (même si ready est false ou non)
       if (data.response) {
-        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
+        const cleanedResponse = cleanUrlsForDisplay(data.response);
+        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: cleanedResponse }]);
         return;
       }
-      // Si rien, message d'attente
       setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "I'm still thinking..." : "Je réfléchis encore..." }]);
     } catch {
       setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "Connection issue, retrying..." : "Problème de connexion, réessai..." }]);
@@ -405,7 +399,8 @@ export default function ProjectChatBot() {
           return;
         }
         if (data.response) {
-          setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
+          const cleanedResponse = cleanUrlsForDisplay(data.response);
+          setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: cleanedResponse }]);
           return;
         }
       }
@@ -494,7 +489,8 @@ export default function ProjectChatBot() {
         return;
       }
       if (data.response) {
-        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
+        const cleanedResponse = cleanUrlsForDisplay(data.response);
+        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: cleanedResponse }]);
         return;
       }
       setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "I'm still thinking..." : "Je réfléchis encore..." }]);
@@ -568,13 +564,16 @@ export default function ProjectChatBot() {
         });
 
         setShowSubmitForm(false);
+        // ✅ MESSAGE DE SUCCÈS CORRIGÉ : 
+        // - PAS de point avant <a>
+        // - PAS de guillemet après le token
         setMessages(prev => [
           ...prev,
           {
             id: generateId(),
             role: 'assistant',
-            content: `✅ ${language === 'en' ? 'Your project has been submitted. You will receive a response within 24 hours.' : 'Votre projet a été transmis à l\'équipe Actoos. Vous recevrez une réponse sous 24h.'}<br/><br/>🔗 <a href="https://actoos.com/client/${clientToken}" target="_blank" class="text-blue-500 underline">${language === 'en' ? 'Track progress here' : "Suivez l'avancement ici"}</a>`,
-          },
+             content: `✅ ${language === 'en' ? 'Your project has been submitted. You will receive a response within 24 hours.' : 'Votre projet a été transmis à l\'équipe Actoos. Vous recevrez une réponse sous 24h.'}\n\n🔗 Suivez l'avancement ici : https://actoos.com/client/${clientToken}`,
+  },
         ]);
         setStep('soumettre');
       } else {

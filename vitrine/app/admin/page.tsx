@@ -6,7 +6,7 @@ import {
   FileText, LayoutDashboard, LogOut, Mail, MessageSquare,
   RefreshCw, Search, TrendingUp, Users, X,
   Activity, PieChart as PieChartIcon, Target, CheckCircle, Archive, Trash2,
-  Download, Upload, Send, Edit3, Eye as EyeIcon
+  Download, Upload, Send, Edit3, Eye as EyeIcon, Plus
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -81,6 +81,11 @@ export default function AdminPage() {
   const [token, setToken] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projets' | 'decision' | 'corbeille' | 'messages' | 'fichiers'>('dashboard');
   const [mounted, setMounted] = useState(false);
+
+  // État pour la modale d'ajout multiple d'étapes
+  const [showAddStepsModal, setShowAddStepsModal] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [multiStepsInput, setMultiStepsInput] = useState('');
 
   // Booking modal
   const [showBooking, setShowBooking] = useState(false);
@@ -261,7 +266,7 @@ export default function AdminPage() {
 
   // ========== FONCTIONS EMAIL (langue du projet) ==========
   const handleDecision = async (projet: any, action: 'accept' | 'archive' | 'refuse') => {
-    const projLang = projet.language || 'fr';   // langue du projet
+    const projLang = projet.language || 'fr';
 
     if (action === 'refuse') {
       const reason = prompt(t[language].adminRefuseReasonPrompt);
@@ -347,7 +352,7 @@ export default function AdminPage() {
 
   const relancer = async (projet: any) => {
     setActionLoading(projet.id);
-    const projLang = projet.language || 'fr';   // langue du projet
+    const projLang = projet.language || 'fr';
     try {
       await fetch('/api/send-project-email', {
         method: 'POST',
@@ -417,16 +422,16 @@ export default function AdminPage() {
   const sendEmailToClient = async () => {
     if (!emailForm) return;
     setEmailSending(true);
-    const projLang = emailForm.projet.language || 'fr';   // langue du projet
+    const projLang = emailForm.projet.language || 'fr';
     try {
       await fetch('/api/send-project-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: emailForm.projet.client_email,
-          subject: emailForm.subject,           // le sujet saisi manuellement
+          subject: emailForm.subject,
           title: projLang === 'en' ? 'Message from Actoos' : 'Message de Actoos',
-          message: emailForm.body,              // corps saisi manuellement
+          message: emailForm.body,
           buttonText: projLang === 'en' ? 'View project' : 'Voir le projet',
           buttonUrl: `https://actoos.com/client/${emailForm.projet.client_token}`,
           language: projLang,
@@ -463,8 +468,7 @@ export default function AdminPage() {
     setActionLoading(projet.id);
     try {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id: projet.id, status: 'nouveau' }),
       });
       setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, status: 'nouveau' } : p));
@@ -479,10 +483,10 @@ export default function AdminPage() {
     if (!confirm(t[language].adminDeletePermanentlyConfirm)) return;
     setActionLoading(projet.id);
     try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-project', {
+      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: projet.id }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: projet.id, action: 'delete' }),
       });
       const data = await res.json();
       if (data.success) {
@@ -555,6 +559,104 @@ export default function AdminPage() {
     } catch (err) { console.error(err); }
   };
 
+  // ============================================================
+  // NOUVEAU : Gestion de l'ajout multiple d'étapes
+  // ============================================================
+  const handleAddMultipleSteps = async () => {
+    if (!currentProjectId) return;
+    const lines = multiStepsInput.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+    if (lines.length === 0) {
+      alert(t[language].adminNoStepsEntered || 'Veuillez saisir au moins une étape.');
+      return;
+    }
+    const projet = projets.find(p => p.id === currentProjectId);
+    if (!projet) return;
+
+    const existingSteps = projet.steps || [];
+    const newSteps = lines.map(name => ({ name, status: 'à_faire' }));
+    const updatedSteps = [...existingSteps, ...newSteps];
+
+    try {
+      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: currentProjectId, steps: updatedSteps }),
+      });
+      // Mettre à jour l'état local
+      setProjets(prev => prev.map(p => p.id === currentProjectId ? { ...p, steps: updatedSteps } : p));
+      if (selectedProject && selectedProject.id === currentProjectId) {
+        setSelectedProject({ ...selectedProject, steps: updatedSteps });
+      }
+      setShowAddStepsModal(false);
+      setMultiStepsInput('');
+      setCurrentProjectId(null);
+    } catch (err) {
+      alert(t[language].adminError);
+    }
+  };
+
+  // NOUVEAU : Génération IA améliorée
+  const generateAISteps = async (projet: any) => {
+    if (!confirm(t[language].adminAiPlanConfirm)) return;
+    setActionLoading(projet.id);
+    try {
+      // Construction d'un message contextuel riche
+      const brief = projet.brief || {};
+      const projectType = brief.type || projet.project_type || '';
+      const sector = brief.sector || '';
+      const features = brief.features ? brief.features.join(', ') : '';
+      const pages = brief.pages ? brief.pages.join(', ') : '';
+      const objective = brief.objective || projet.client_message || '';
+      const projectName = brief.projectName || projet.project_name || '';
+
+      const contextMessage = `
+        Projet : ${projectName}
+        Type : ${projectType}
+        Secteur : ${sector}
+        Objectif : ${objective}
+        Fonctionnalités : ${features}
+        Pages : ${pages}
+      `;
+
+      const res = await fetch('/api/generate-proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'plan-steps',
+          role: 'step_planner',
+          messages: [
+            { role: 'user', content: `Génère une séquence d'étapes concrètes pour ce projet. Les étapes doivent être des phases de travail (ex: Analyse des besoins, Conception UI/UX, Développement front-end, Développement back-end, Tests, Déploiement, Formation, etc.). Chaque étape doit avoir un nom court et clair. Réponds uniquement avec un tableau JSON. ${contextMessage}` }
+          ],
+          language: language,
+        }),
+      });
+      const data = await res.json();
+      if (data.steps) {
+        // Vérifier que les étapes ont le bon format
+        const steps = data.steps.map((s: any) => ({ name: s.name || s.title || 'Étape', status: 'à_faire' }));
+        const existingSteps = projet.steps || [];
+        const updatedSteps = [...existingSteps, ...steps];
+        await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: projet.id, steps: updatedSteps }),
+        });
+        setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, steps: updatedSteps } : p));
+        if (selectedProject && selectedProject.id === projet.id) {
+          setSelectedProject({ ...selectedProject, steps: updatedSteps });
+        }
+      } else {
+        alert(t[language].adminAiPlanFailed || "L'IA n'a pas pu générer d'étapes.");
+      }
+    } catch (err) {
+      alert(t[language].adminError);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ============================================================
+
   const filteredProjets = projets.filter(p => {
     const search = searchTerm.toLowerCase();
     const matchSearch = p.client_name?.toLowerCase().includes(search) || p.client_email?.toLowerCase().includes(search) || p.brief?.projectName?.toLowerCase().includes(search) || p.brief?.sector?.toLowerCase().includes(search);
@@ -618,7 +720,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 font-sans">
-      {/* NAVBAR RESPONSIVE */}
+      {/* NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -649,7 +751,7 @@ export default function AdminPage() {
         </div>
       </nav>
 
-      {/* ONGLETS AVEC PASTILLES NON COUPÉES */}
+      {/* ONGLETS */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <div className="overflow-x-auto -mx-4 sm:mx-0 py-2">
           <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-slate-200 shadow-sm w-fit min-w-max px-4 sm:px-0">
@@ -780,6 +882,8 @@ export default function AdminPage() {
                     <input type="range" min="0" max="10" value={projet.brief?.maturityScore || 0} onChange={(e) => updateMaturity(projet.id, parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#D4AF37] [&::-webkit-slider-thumb]:rounded-full" />
                     <span className="text-xs font-bold">{projet.brief?.maturityScore || 0}/10</span>
                   </div>
+
+                  {/* GESTION DES ÉTAPES */}
                   <div className="mb-3">
                     <p className="text-xs text-slate-400 mb-1">{t[language].adminProjectSteps}</p>
                     {((projet.steps && Array.isArray(projet.steps) ? projet.steps : []) as { name: string; status: string }[]).map((step, idx) => (
@@ -830,46 +934,24 @@ export default function AdminPage() {
                     ))}
                     <div className="flex gap-2 mt-2">
                       <button
-                        onClick={async () => {
-                          const newName = prompt(t[language].adminNewStepPrompt);
-                          if (!newName) return;
-                          const newSteps = [...(projet.steps || []), { name: newName, status: 'à_faire' }];
-                          await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                            body: JSON.stringify({ id: projet.id, steps: newSteps }),
-                          });
-                          setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, steps: newSteps } : p));
+                        onClick={() => {
+                          setCurrentProjectId(projet.id);
+                          setMultiStepsInput('');
+                          setShowAddStepsModal(true);
                         }}
-                        className="text-xs text-[#D4AF37] font-bold hover:text-amber-600"
+                        className="text-xs text-[#D4AF37] font-bold hover:text-amber-600 flex items-center gap-1"
                       >
-                        {t[language].adminAddStep}
+                        <Plus size={12} /> {t[language].adminAddMultipleSteps || 'Ajouter plusieurs étapes'}
                       </button>
                       <button
-                        onClick={async () => {
-                          if (!confirm(t[language].adminAiPlanConfirm)) return;
-                          const res = await fetch('/api/generate-proposal', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              action: 'plan-steps',
-                              role: 'step_planner',
-                              messages: projet.conversation || [{ role: 'user', content: projet.brief?.projectName || projet.client_message || '' }],
-                            }),
-                          });
-                          const data = await res.json();
-                          if (data.steps) {
-                            await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
-                              method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                              body: JSON.stringify({ id: projet.id, steps: data.steps }),
-                            });
-                            setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, steps: data.steps } : p));
-                          }
-                        }}
-                        className="text-xs text-blue-500 font-bold hover:text-blue-700"
+                        onClick={() => generateAISteps(projet)}
+                        className="text-xs text-blue-500 font-bold hover:text-blue-700 flex items-center gap-1"
                       >
                         🤖 {t[language].adminAiPlan}
                       </button>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-2 mb-3">
                     <select value={projet.payment_status || 'aucun'} onChange={e => updatePaymentStatus(projet.id, e.target.value)} className="text-xs border rounded-lg px-2 py-1 outline-none bg-white">
                       <option value="aucun">{t[language].adminPaymentNone}</option>
@@ -1181,7 +1263,6 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Rendez-vous dans la modale détails */}
             {selectedProject.booking_id && (
               <div className="mt-6 pt-6 border-t">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
@@ -1240,6 +1321,42 @@ export default function AdminPage() {
             <input type="text" value={emailForm.subject} onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })} placeholder={t[language].adminEmailSubjectPlaceholder} className="w-full border rounded-xl px-4 py-3 text-sm mb-3" />
             <textarea value={emailForm.body} onChange={e => setEmailForm({ ...emailForm, body: e.target.value })} placeholder={t[language].adminEmailBodyPlaceholder} rows={6} className="w-full border rounded-xl p-3 text-sm mb-4 resize-none" />
             <div className="flex gap-2"><button onClick={sendEmailToClient} disabled={emailSending} className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">{t[language].adminSend}</button><button onClick={() => setEmailForm(null)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">{t[language].adminCancel}</button></div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== MODALE AJOUT MULTIPLE ÉTAPES ========== */}
+      {showAddStepsModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowAddStepsModal(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-black mb-4 flex items-center gap-2">
+              <Plus size={20} className="text-[#D4AF37]" />
+              {t[language].adminAddMultipleSteps || 'Ajouter plusieurs étapes'}
+            </h2>
+            <p className="text-sm text-slate-500 mb-4">
+              {language === 'en' ? 'Enter one step per line.' : 'Saisissez une étape par ligne.'}
+            </p>
+            <textarea
+              value={multiStepsInput}
+              onChange={e => setMultiStepsInput(e.target.value)}
+              rows={6}
+              className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none focus:border-[#D4AF37] outline-none"
+              placeholder={language === 'en' ? 'Ex:\nAnalyse des besoins\nConception UI/UX\nDéveloppement frontend' : 'Ex:\nAnalyse des besoins\nConception UI/UX\nDéveloppement frontend'}
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleAddMultipleSteps}
+                className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm hover:bg-amber-500"
+              >
+                {t[language].adminAdd}
+              </button>
+              <button
+                onClick={() => { setShowAddStepsModal(false); setMultiStepsInput(''); setCurrentProjectId(null); }}
+                className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm"
+              >
+                {t[language].adminCancel}
+              </button>
+            </div>
           </div>
         </div>
       )}

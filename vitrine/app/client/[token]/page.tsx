@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft, Calendar, MessageSquare, RefreshCw,
-  Upload, FileText, Send, Download, Activity, Eye, Trash2, Edit3, X, Check
+  Upload, FileText, Send, Download, Eye, Trash2, Edit3, X
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { t } from '../../../lib/translations';
 import BookingModal from '../../components/BookingModal';
 
+// ----- Helpers -----
 function normalizeStatus(value: string) {
   return (value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
 }
@@ -55,6 +56,23 @@ function normalizeConversation(value: any) {
   return [];
 }
 
+// Mapping des types de projet pour l'affichage (traduit)
+const PROJECT_TYPE_LABELS: Record<string, { fr: string; en: string }> = {
+  'site-vitrine': { fr: 'Site vitrine', en: 'Showcase website' },
+  'e-commerce': { fr: 'E-commerce', en: 'E-commerce' },
+  'application-mobile': { fr: 'Application mobile', en: 'Mobile app' },
+  'application-web': { fr: 'Application web', en: 'Web app' },
+  'logiciel-saas': { fr: 'Logiciel SaaS', en: 'SaaS software' },
+  'autre': { fr: 'Autre', en: 'Other' },
+};
+
+function getProjectTypeLabel(value: string, lang: 'fr' | 'en'): string {
+  if (!value) return '';
+  const label = PROJECT_TYPE_LABELS[value];
+  return label ? label[lang] : value;
+}
+
+// ----- Composant principal -----
 export default function ClientSpacePage() {
   const { language, setLanguage } = useLanguage();
 
@@ -106,19 +124,16 @@ export default function ClientSpacePage() {
       if (!res.ok || data?.error) {
         setProjet(null);
       } else {
-        // ✅ Nettoyer le rendez-vous s'il est passé
         if (data.booking_id && data.booking_start && new Date(data.booking_start) < new Date()) {
           fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/clean-booking', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ project_id: data.id }),
           }).catch(() => {});
-          // Mettre à jour l'état local immédiatement
           data.booking_id = null;
           data.booking_start = null;
           data.booking_link = null;
         }
-
         setProjet(data);
         setLastSyncAt(new Date());
         loadComments(data.id);
@@ -279,9 +294,19 @@ export default function ClientSpacePage() {
   const conversation = normalizeConversation(projet.conversation);
   const unreadCount = comments.filter(c => c.author !== 'client' && c.created_at > clientLastRead).length;
 
+  // ---- Récupération des champs ----
+  const projectTitle = projet.project_name || projet.projectName || projet.brief?.projectName || t[language].clientYourProject;
+  const projectDescription = projet.client_message || projet.brief?.objective || '';
+  const projectTypeRaw = projet.project_type || projet.brief?.type || '';
+  const projectTypeLabel = getProjectTypeLabel(projectTypeRaw, language);
+  const projectBudget = projet.budget || '';
+  const hasBrief = !!projet.brief;
+
+  // Vérifier si des informations générales sont présentes (titre, type ou budget)
+  const hasGeneralInfo = !!(projectTitle || projectTypeLabel || projectBudget);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 font-sans">
-      {/* Navbar compacte et responsive */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -309,11 +334,11 @@ export default function ClientSpacePage() {
       </nav>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* En-tête du projet */}
+        {/* En-tête */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 break-words">
-              {projet.brief?.projectName || t[language].clientYourProject}
+              {projectTitle}
             </h1>
             <p className="text-slate-500 text-sm mt-1">{t[language].clientFollowProgress}</p>
           </div>
@@ -323,7 +348,7 @@ export default function ClientSpacePage() {
           </button>
         </div>
 
-        {/* Actions : rendez-vous uniquement */}
+        {/* Rendez-vous */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           {projet.booking_id ? (
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D4AF37]/30 w-full">
@@ -374,7 +399,7 @@ export default function ClientSpacePage() {
           )}
         </div>
 
-        {/* Timeline des étapes */}
+        {/* Étapes */}
         {projet.steps && Array.isArray(projet.steps) && projet.steps.length > 0 && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border">
             <h2 className="font-bold text-lg mb-4">📈 {t[language].clientProgressTitle}</h2>
@@ -404,7 +429,7 @@ export default function ClientSpacePage() {
           </div>
         )}
 
-        {/* Messages acceptation/refus */}
+        {/* Messages d'état */}
         {projet.status === 'gagné' && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
             <p className="text-sm text-green-700 font-medium">✅ {t[language].clientAcceptedTitle}</p>
@@ -423,8 +448,8 @@ export default function ClientSpacePage() {
           </div>
         )}
 
-        {/* Statut / Paiement / Complexité / Mise à jour */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Cartes statut : Statut, Paiement, Mise à jour */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border">
             <span className="text-xs text-slate-400">{t[language].clientStatus}</span>
             <p className="font-bold text-sm mt-1 truncate">{getClientStatus(projet.status, language)}</p>
@@ -434,10 +459,6 @@ export default function ClientSpacePage() {
             <p className="font-bold text-sm mt-1 truncate">{getClientPaymentStatus(projet.payment_status, language)}</p>
           </div>
           <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border">
-            <span className="text-xs text-slate-400">{t[language].clientComplexity}</span>
-            <p className="font-bold text-sm mt-1 truncate">{projet.brief?.complexity || t[language].clientUnspecified}</p>
-          </div>
-          <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border">
             <span className="text-xs text-slate-400">{t[language].clientLastUpdate}</span>
             <p className="font-bold text-sm mt-1 truncate">
               {lastSyncAt ? lastSyncAt.toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '—'}
@@ -445,9 +466,7 @@ export default function ClientSpacePage() {
           </div>
         </div>
 
-        {/* Barre de progression du paiement supprimée */}
-
-        {/* Onglets – défilement horizontal sur mobile */}
+        {/* Onglets */}
         <div className="overflow-x-auto -mx-4 sm:mx-0 pb-1">
           <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-slate-200 shadow-sm w-fit min-w-max px-4 sm:px-0">
             <button onClick={() => setActiveTab('dashboard')} className={`px-4 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>📊 {t[language].clientTabDashboard}</button>
@@ -461,16 +480,54 @@ export default function ClientSpacePage() {
           </div>
         </div>
 
-        {/* Contenu des onglets */}
+        {/* Dashboard */}
         {activeTab === 'dashboard' && (
           <>
-            {projet.client_message && (
+            {/* Description du projet */}
+            {projectDescription ? (
               <div className="bg-white rounded-2xl p-5 shadow-sm border">
-                <p className="text-xs text-slate-400 mb-2">{t[language].clientYourRequest}</p>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{projet.client_message}</p>
+                <p className="text-xs text-slate-400 mb-2">
+                  {language === 'en' ? 'Project description' : 'Description du projet'}
+                </p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{projectDescription}</p>
+              </div>
+            ) : (
+              <div className="bg-slate-50 rounded-2xl p-5 border border-dashed border-slate-300 text-center text-sm text-slate-400">
+                {language === 'en' ? 'No description provided.' : 'Aucune description fournie.'}
               </div>
             )}
-            {projet.brief && (
+
+            {/* Informations générales (titre, type, budget) */}
+            {hasGeneralInfo && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm border">
+                <h2 className="font-bold text-lg mb-3">
+                  {language === 'en' ? 'General information' : 'Informations générales'}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  {projectTitle && (
+                    <div>
+                      <span className="text-slate-400">{language === 'en' ? 'Title' : 'Titre'}</span>
+                      <p className="font-semibold text-slate-800 break-words">{projectTitle}</p>
+                    </div>
+                  )}
+                  {projectTypeLabel && (
+                    <div>
+                      <span className="text-slate-400">{language === 'en' ? 'Type' : 'Type'}</span>
+                      <p className="font-semibold text-slate-800">{projectTypeLabel}</p>
+                    </div>
+                  )}
+                  {projectBudget && (
+                    <div>
+                      <span className="text-slate-400">{language === 'en' ? 'Budget' : 'Budget'}</span>
+                      <p className="font-semibold text-slate-800">{projectBudget} €</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Détails du brief (si présent) */}
+            {hasBrief && (
               <div className="bg-white rounded-2xl p-5 shadow-sm border">
                 <h2 className="font-bold text-lg mb-4">📋 {t[language].clientProjectDetails}</h2>
                 <div className="grid grid-cols-2 gap-4">
@@ -483,6 +540,8 @@ export default function ClientSpacePage() {
                 </div>
               </div>
             )}
+
+            {/* Conversation */}
             {conversation.length > 0 && (
               <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4">
                 <h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> {t[language].clientConversation}</h2>
@@ -498,6 +557,8 @@ export default function ClientSpacePage() {
                 </div>
               </div>
             )}
+
+            {/* Envoyer un message */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4">
               <h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> {t[language].clientSendMessage}</h2>
               {messageSent && <p className="text-emerald-600 text-sm font-medium">✅ {t[language].clientMessageSent}</p>}
@@ -509,6 +570,7 @@ export default function ClientSpacePage() {
           </>
         )}
 
+        {/* Fichiers */}
         {activeTab === 'fichiers' && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4">
             <h2 className="font-bold text-lg flex items-center gap-2"><Upload size={18} className="text-[#D4AF37]" /> {t[language].clientFilesTitle}</h2>
@@ -545,6 +607,7 @@ export default function ClientSpacePage() {
           </div>
         )}
 
+        {/* Commentaires */}
         {activeTab === 'commentaires' && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4">
             <h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> {t[language].clientCommentsTitle}</h2>
@@ -589,7 +652,7 @@ export default function ClientSpacePage() {
         )}
       </main>
 
-      {/* Modal prévisualisation fichier */}
+      {/* Prévisualisation */}
       {previewFile && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setPreviewFile(null)}>
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -610,12 +673,12 @@ export default function ClientSpacePage() {
         </div>
       )}
 
-      {/* BookingModal pour la prise de rendez-vous */}
+      {/* BookingModal */}
       {showBooking && projet && (
         <BookingModal
           clientName={projet.client_name}
           clientEmail={projet.client_email}
-          projectName={projet.brief?.projectName}
+          projectName={projet.brief?.projectName || projet.projectName || projet.project_name}
           projectId={projet.id}
           onClose={() => setShowBooking(false)}
           onBooked={() => { loadProject(true); setShowBooking(false); }}

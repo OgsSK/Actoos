@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { 
   Code, Smartphone, Globe, ArrowRight, Layers, Menu, X 
 } from 'lucide-react';
-import ProjectChatBot from './components/ProjectChatBot';
+import SimpleProjectForm from './components/SimpleProjectForm';  // ✅ remplace ProjectChatBot
 import FadeInSection from './components/FadeInSection';
 import { useLanguage } from './context/LanguageContext';
 import { t } from '../lib/translations';
@@ -87,7 +87,6 @@ export default function HomePage() {
       </nav>
 
       {/* OVERLAY + DRAWER (menu mobile) */}
-      {/* Overlay sombre */}
       <div
         className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 md:hidden ${
           mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -95,14 +94,12 @@ export default function HomePage() {
         onClick={() => setMobileMenuOpen(false)}
       />
 
-      {/* Drawer latéral */}
       <div
         className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* En-tête du drawer */}
           <div className="flex items-center justify-between p-6 border-b border-slate-100">
             <span className="font-black text-lg">Menu</span>
             <button
@@ -114,7 +111,6 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Liens de navigation */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="flex items-center space-x-6 text-sm font-black uppercase">
               <button
@@ -208,7 +204,7 @@ export default function HomePage() {
         </header>
       </FadeInSection>
 
-      {/* CHATBOT */}
+      {/* FORMULAIRE DE PROJET (remplace le chatbot) */}
       <FadeInSection>
         <section id="chatbot" className="py-16 px-4 bg-slate-50 scroll-mt-[100px]">
           <div className="max-w-4xl mx-auto text-center mb-8">
@@ -219,7 +215,7 @@ export default function HomePage() {
               {t[language].chatbotSubtitle}
             </p>
           </div>
-          <ProjectChatBot />
+          <SimpleProjectForm /> {/* ✅ Remplacement propre */}
         </section>
       </FadeInSection>
 
