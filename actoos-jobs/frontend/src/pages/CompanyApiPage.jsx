@@ -13,54 +13,8 @@ import { toast } from 'sonner';
 import {
   Key, Plus, Copy, Loader2, ChevronLeft,
   Code2, BookOpen, Zap, AlertTriangle, CheckCircle,
-  Terminal, Lock, Check,
+  Terminal, Lock,
 } from 'lucide-react';
-
-// ============================================================
-// Bouton "Copier" avec animation de confirmation
-// Conserve les mêmes classes que les boutons d'origine :
-//   text-slate-400 hover:text-white
-// ============================================================
-const CopyButton = ({ text, className = '' }) => {
-  const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-
-  const handleClick = async (e) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      toast.success(t('apiPage.copied', 'Copié dans le presse-papiers'));
-      setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      aria-label={copied ? t('apiPage.copied', 'Copié') : t('apiPage.copy', 'Copier')}
-      className={`text-slate-400 hover:text-white transition-colors duration-200 ${
-        copied ? 'text-green-400' : ''
-      } ${className}`}
-    >
-      <span className="relative inline-flex items-center justify-center">
-        <Copy
-          className={`w-4 h-4 transition-all duration-200 ${
-            copied ? 'opacity-0 scale-50 rotate-45' : 'opacity-100 scale-100 rotate-0'
-          }`}
-        />
-        <Check
-          className={`w-4 h-4 absolute transition-all duration-200 ${
-            copied ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-45'
-          }`}
-        />
-      </span>
-    </button>
-  );
-};
 
 const CompanyApiPage = () => {
   const { t } = useTranslation();
@@ -71,7 +25,7 @@ const CompanyApiPage = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newKeyData, setNewKeyData] = useState(null);
+  const [newKeyData, setNewKeyData] = useState(null); // { full_key, name, prefix }
 
   const [form, setForm] = useState({
     name: '',
@@ -80,7 +34,7 @@ const CompanyApiPage = () => {
   });
 
   // ============================================================
-  // CHARGEMENT
+  // CHARGEMENT (parallélisé + skeleton)
   // ============================================================
   useEffect(() => {
     if (!user || !activeCompanyId) {
@@ -91,21 +45,32 @@ const CompanyApiPage = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await apiFetchAuth(`/api/company/api-keys?company_id=${activeCompanyId}`);
-        setKeys(res.data || []);
-
         const { supabase } = await import('../lib/supabase');
-        const { data: companyData } = await supabase
-          .from('companies')
-          .select('id, name, subscription_plan')
-          .eq('id', activeCompanyId)
-          .single();
-        setCompany(companyData);
+
+        // ⚡ Les 2 appels EN PARALLÈLE (au lieu de l'un après l'autre)
+        const [companyResult, keysResult] = await Promise.allSettled([
+          supabase
+            .from('companies')
+            .select('id, name, subscription_plan')
+            .eq('id', activeCompanyId)
+            .single(),
+          apiFetchAuth(`/api/company/api-keys?company_id=${activeCompanyId}`),
+        ]);
+
+        if (companyResult.status === 'fulfilled' && companyResult.value.data) {
+          setCompany(companyResult.value.data);
+        }
+
+        if (keysResult.status === 'fulfilled') {
+          setKeys(keysResult.value.data || []);
+        } else {
+          console.error('Erreur keys:', keysResult.reason);
+          toast.error(t('apiPage.loadError', 'Erreur de chargement'));
+        }
       } catch (err) {
-  console.error(err);
-  alert('ERREUR API: ' + (err.message || 'inconnue'));
-  toast.error(t('apiPage.loadError', 'Erreur de chargement'));
-} finally {
+        console.error(err);
+        toast.error(t('apiPage.loadError', 'Erreur de chargement'));
+      } finally {
         setLoading(false);
       }
     };
@@ -140,6 +105,7 @@ const CompanyApiPage = () => {
         prefix: res.data.key_prefix,
       });
 
+      // Rafraîchir la liste
       const refresh = await apiFetchAuth(`/api/company/api-keys?company_id=${activeCompanyId}`);
       setKeys(refresh.data || []);
 
@@ -170,8 +136,7 @@ const CompanyApiPage = () => {
   };
 
   // ============================================================
-  // COPIE DANS LE PRESSE-PAPIERS (utilisé uniquement par le
-  // bouton "Copier et fermer" en bas de la modale de succès)
+  // COPIE DANS LE PRESSE-PAPIERS
   // ============================================================
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -196,16 +161,8 @@ const CompanyApiPage = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 pt-20 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  const plan = company?.subscription_plan || 'free';
-  const hasApiAccess = ['pro', 'business', 'enterprise'].includes(plan);
+  const plan = company?.subscription_plan || null;
+  const hasApiAccess = plan && ['pro', 'business', 'enterprise'].includes(plan);
   const rateLimit = plan === 'business' || plan === 'enterprise' ? 600 : 60;
 
   return (
@@ -229,8 +186,8 @@ const CompanyApiPage = () => {
           </div>
         </div>
 
-        {/* Bannière si pas accès */}
-        {!hasApiAccess && (
+        {/* Bannière si pas accès (seulement quand le plan est chargé) */}
+        {!loading && !hasApiAccess && (
           <Card className="mb-6 border-amber-200 bg-amber-50">
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
@@ -254,142 +211,170 @@ const CompanyApiPage = () => {
           </Card>
         )}
 
-        {/* Fonctionnalités */}
-        {hasApiAccess && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-              <Card className="border-slate-200 bg-white">
-                <CardContent className="p-5">
-                  <Terminal className="w-6 h-6 text-blue-600 mb-2" />
-                  <h3 className="font-semibold text-slate-900 mb-1">{t('apiPage.feat1Title', 'REST API')}</h3>
-                  <p className="text-xs text-slate-500">{t('apiPage.feat1Desc', 'Endpoints JSON pour gérer offres et candidatures')}</p>
-                </CardContent>
-              </Card>
-              <Card className="border-slate-200 bg-white">
-                <CardContent className="p-5">
-                  <Lock className="w-6 h-6 text-green-600 mb-2" />
-                  <h3 className="font-semibold text-slate-900 mb-1">{t('apiPage.feat2Title', 'Sécurisé')}</h3>
-                  <p className="text-xs text-slate-500">{t('apiPage.feat2Desc', 'Authentification par clé API, scopes granulaires')}</p>
-                </CardContent>
-              </Card>
-              <Card className="border-slate-200 bg-white">
-                <CardContent className="p-5">
-                  <Zap className="w-6 h-6 text-purple-600 mb-2" />
-                  <h3 className="font-semibold text-slate-900 mb-1">{t('apiPage.feat3Title', 'Rate limit')}</h3>
-                  <p className="text-xs text-slate-500">
-                    {t('apiPage.feat3Desc', { limit: rateLimit }, `Limite : ${rateLimit} req/min`)}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+        {/* Fonctionnalités (toujours affichées immédiatement) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="p-5">
+              <Terminal className="w-6 h-6 text-blue-600 mb-2" />
+              <h3 className="font-semibold text-slate-900 mb-1">{t('apiPage.feat1Title', 'REST API')}</h3>
+              <p className="text-xs text-slate-500">{t('apiPage.feat1Desc', 'Endpoints JSON pour gérer offres et candidatures')}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="p-5">
+              <Lock className="w-6 h-6 text-green-600 mb-2" />
+              <h3 className="font-semibold text-slate-900 mb-1">{t('apiPage.feat2Title', 'Sécurisé')}</h3>
+              <p className="text-xs text-slate-500">{t('apiPage.feat2Desc', 'Authentification par clé API, scopes granulaires')}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="p-5">
+              <Zap className="w-6 h-6 text-purple-600 mb-2" />
+              <h3 className="font-semibold text-slate-900 mb-1">{t('apiPage.feat3Title', 'Rate limit')}</h3>
+              <p className="text-xs text-slate-500">
+                {loading
+                  ? '...'
+                  : t('apiPage.feat3Desc', { limit: rateLimit }, `Limite : ${rateLimit} req/min`)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Bouton créer */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <Key className="w-5 h-5 text-slate-600" />
-                {t('apiPage.yourKeys', 'Vos clés API')}
-                <Badge className="bg-slate-100 text-slate-600 border-0">
-                  {keys.filter(k => !k.revoked_at).length}
-                </Badge>
-              </h2>
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t('apiPage.createKey', 'Créer une clé')}
-              </Button>
-            </div>
-
-            {/* Liste des clés */}
-            {keys.length === 0 ? (
-              <Card className="border-dashed border-slate-300 bg-white">
-                <CardContent className="p-8 text-center">
-                  <Key className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500 mb-2">{t('apiPage.noKeys', 'Aucune clé API')}</p>
-                  <p className="text-xs text-slate-400">
-                    {t('apiPage.noKeysHint', "Créez votre première clé pour commencer à utiliser l'API.")}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {keys.map((keyData) => (
-                  <ApiKeyCard
-                    key={keyData.id}
-                    keyData={keyData}
-                    onRevoke={handleRevoke}
-                  />
-                ))}
-              </div>
+        {/* Bouton créer */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+            <Key className="w-5 h-5 text-slate-600" />
+            {t('apiPage.yourKeys', 'Vos clés API')}
+            {!loading && (
+              <Badge className="bg-slate-100 text-slate-600 border-0">
+                {keys.filter(k => !k.revoked_at).length}
+              </Badge>
             )}
+          </h2>
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            disabled={loading || !hasApiAccess}
+            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {t('apiPage.createKey', 'Créer une clé')}
+          </Button>
+        </div>
 
-            {/* Documentation */}
-            <Card className="mt-8 border-slate-200 bg-slate-900 text-white overflow-hidden">
-              <CardHeader className="border-b border-slate-800">
-                <CardTitle className="text-white flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-blue-400" />
-                  {t('apiPage.docTitle', 'Documentation rapide')}
-                </CardTitle>
-                <CardDescription className="text-slate-400">
-                  {t('apiPage.docDesc', 'Quelques exemples pour bien démarrer')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-5 space-y-4">
-                <div>
-                  <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
-                    {t('apiPage.docBase', 'Base URL')}
-                  </h4>
-                  <div className="bg-slate-800 rounded-lg p-3 font-mono text-sm flex items-center justify-between">
-                    <span className="text-green-400">https://actoos-jobs-api.onrender.com/api/v1</span>
-                    <CopyButton text="https://actoos-jobs-api.onrender.com/api/v1" />
+        {/* Liste des clés */}
+        {loading ? (
+          // 🔄 Skeleton pendant le chargement
+          <div className="space-y-3">
+            {[1, 2].map(i => (
+              <Card key={i} className="border-slate-200 bg-white">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-200 rounded-full" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-40 bg-slate-200 rounded" />
+                        <div className="h-3 w-24 bg-slate-100 rounded" />
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-slate-200 rounded" />
                   </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
-                    {t('apiPage.docAuth', 'Authentification')}
-                  </h4>
-                  <div className="bg-slate-800 rounded-lg p-3 font-mono text-sm">
-                    <div className="text-slate-500"># Header requis sur chaque requête</div>
-                    <div className="text-green-400">Authorization: Bearer act_live_xxx</div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
-                    {t('apiPage.docExample', 'Exemple : lister les offres')}
-                  </h4>
-                  <div className="bg-slate-800 rounded-lg p-3 font-mono text-sm relative">
-                    <pre className="text-blue-300 whitespace-pre-wrap">
-{`curl -H "Authorization: Bearer act_live_xxx" \\\n  https://actoos-jobs-api.onrender.com/api/v1/jobs`}
-                    </pre>
-                    <CopyButton
-                      text={`curl -H "Authorization: Bearer act_live_xxx" \\\n  https://actoos-jobs-api.onrender.com/api/v1/jobs`}
-                      className="absolute top-2 right-2"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
-                    {t('apiPage.docEndpoints', 'Endpoints disponibles')}
-                  </h4>
-                  <div className="bg-slate-800 rounded-lg p-3 text-sm space-y-1 font-mono">
-                    <div><span className="text-green-400">GET</span> <span className="text-white">/jobs</span> <span className="text-slate-500">— lister les offres</span></div>
-                    <div><span className="text-green-400">GET</span> <span className="text-white">/jobs/:id</span> <span className="text-slate-500">— détails d'une offre</span></div>
-                    <div><span className="text-yellow-400">POST</span> <span className="text-white">/jobs</span> <span className="text-slate-500">— créer une offre (scope write)</span></div>
-                    <div><span className="text-blue-400">PATCH</span> <span className="text-white">/jobs/:id</span> <span className="text-slate-500">— modifier (scope write)</span></div>
-                    <div><span className="text-red-400">DELETE</span> <span className="text-white">/jobs/:id</span> <span className="text-slate-500">— supprimer (scope write)</span></div>
-                    <div><span className="text-green-400">GET</span> <span className="text-white">/applications</span> <span className="text-slate-500">— lister les candidatures</span></div>
-                    <div><span className="text-blue-400">PATCH</span> <span className="text-white">/applications/:id</span> <span className="text-slate-500">— changer le statut</span></div>
-                    <div><span className="text-green-400">GET</span> <span className="text-white">/company</span> <span className="text-slate-500">— infos de l'entreprise</span></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : keys.length === 0 ? (
+          <Card className="border-dashed border-slate-300 bg-white">
+            <CardContent className="p-8 text-center">
+              <Key className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500 mb-2">{t('apiPage.noKeys', 'Aucune clé API')}</p>
+              <p className="text-xs text-slate-400">
+                {t('apiPage.noKeysHint', "Créez votre première clé pour commencer à utiliser l'API.")}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {keys.map((keyData) => (
+              <ApiKeyCard
+                key={keyData.id}
+                keyData={keyData}
+                onRevoke={handleRevoke}
+              />
+            ))}
+          </div>
         )}
+
+        {/* Documentation (toujours affichée) */}
+        <Card className="mt-8 border-slate-200 bg-slate-900 text-white overflow-hidden">
+          <CardHeader className="border-b border-slate-800">
+            <CardTitle className="text-white flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-400" />
+              {t('apiPage.docTitle', 'Documentation rapide')}
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              {t('apiPage.docDesc', 'Quelques exemples pour bien démarrer')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-5 space-y-4">
+            <div>
+              <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                {t('apiPage.docBase', 'Base URL')}
+              </h4>
+              <div className="bg-slate-800 rounded-lg p-3 font-mono text-sm flex items-center justify-between">
+                <span className="text-green-400">https://actoos-jobs-api.onrender.com/api/v1</span>
+                <button
+                  onClick={() => handleCopy('https://actoos-jobs-api.onrender.com/api/v1')}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                {t('apiPage.docAuth', 'Authentification')}
+              </h4>
+              <div className="bg-slate-800 rounded-lg p-3 font-mono text-sm">
+                <div className="text-slate-500"># Header requis sur chaque requête</div>
+                <div className="text-green-400">Authorization: Bearer act_live_xxx</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                {t('apiPage.docExample', 'Exemple : lister les offres')}
+              </h4>
+              <div className="bg-slate-800 rounded-lg p-3 font-mono text-sm relative">
+                <pre className="text-blue-300 whitespace-pre-wrap">
+{`curl -H "Authorization: Bearer act_live_xxx" \\\n  https://actoos-jobs-api.onrender.com/api/v1/jobs`}
+                </pre>
+                <button
+                  onClick={() => handleCopy(`curl -H "Authorization: Bearer act_live_xxx" \\\n  https://actoos-jobs-api.onrender.com/api/v1/jobs`)}
+                  className="absolute top-2 right-2 text-slate-400 hover:text-white"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                {t('apiPage.docEndpoints', 'Endpoints disponibles')}
+              </h4>
+              <div className="bg-slate-800 rounded-lg p-3 text-sm space-y-1 font-mono">
+                <div><span className="text-green-400">GET</span> <span className="text-white">/jobs</span> <span className="text-slate-500">— lister les offres</span></div>
+                <div><span className="text-green-400">GET</span> <span className="text-white">/jobs/:id</span> <span className="text-slate-500">— détails d'une offre</span></div>
+                <div><span className="text-yellow-400">POST</span> <span className="text-white">/jobs</span> <span className="text-slate-500">— créer une offre (scope write)</span></div>
+                <div><span className="text-blue-400">PATCH</span> <span className="text-white">/jobs/:id</span> <span className="text-slate-500">— modifier (scope write)</span></div>
+                <div><span className="text-red-400">DELETE</span> <span className="text-white">/jobs/:id</span> <span className="text-slate-500">— supprimer (scope write)</span></div>
+                <div><span className="text-green-400">GET</span> <span className="text-white">/applications</span> <span className="text-slate-500">— lister les candidatures</span></div>
+                <div><span className="text-blue-400">PATCH</span> <span className="text-white">/applications/:id</span> <span className="text-slate-500">— changer le statut</span></div>
+                <div><span className="text-green-400">GET</span> <span className="text-white">/company</span> <span className="text-slate-500">— infos de l'entreprise</span></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* ============================================================
@@ -485,7 +470,7 @@ const CompanyApiPage = () => {
       )}
 
       {/* ============================================================
-          MODALE DE SUCCÈS (affichage de la clé en clair, UNE SEULE FOIS)
+          MODALE DE SUCCÈS
       ============================================================ */}
       {newKeyData && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -502,10 +487,12 @@ const CompanyApiPage = () => {
             <CardContent className="space-y-4">
               <div className="bg-slate-900 rounded-lg p-3 font-mono text-xs break-all text-green-400 relative">
                 {newKeyData.full_key}
-                <CopyButton
-                  text={newKeyData.full_key}
-                  className="absolute top-2 right-2"
-                />
+                <button
+                  onClick={() => handleCopy(newKeyData.full_key)}
+                  className="absolute top-2 right-2 text-slate-400 hover:text-white"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
                 <strong>Important :</strong> {t('apiPage.storeSecurely', 'Stockez cette clé dans un gestionnaire de mots de passe. Elle ne sera plus jamais affichée.')}
