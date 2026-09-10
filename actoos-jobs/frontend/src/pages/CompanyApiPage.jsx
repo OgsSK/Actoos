@@ -102,9 +102,10 @@ const CompanyApiPage = () => {
           .single();
         setCompany(companyData);
       } catch (err) {
-        console.error(err);
-        toast.error(t('apiPage.loadError', 'Erreur de chargement'));
-      } finally {
+  console.error(err);
+  alert('ERREUR API: ' + (err.message || 'inconnue'));
+  toast.error(t('apiPage.loadError', 'Erreur de chargement'));
+} finally {
         setLoading(false);
       }
     };
