@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Calendar, Loader2, X, Check } from "lucide-react";
-import { useLanguage } from "../context/LanguageContext";
-import { t } from "../../lib/translations";
+import { useState, useEffect } from 'react';
+import { Calendar, Loader2, X, Check } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { t } from '../../lib/translations';
 
 interface BookingModalProps {
   clientName: string;
@@ -11,7 +11,7 @@ interface BookingModalProps {
   projectName?: string;
   projectId?: string;
   onClose: () => void;
-  onBooked?: () => void; // ⚡ nouvelle prop
+  onBooked?: () => void;
 }
 
 export default function BookingModal({
@@ -23,9 +23,9 @@ export default function BookingModal({
   onBooked,
 }: BookingModalProps) {
   const { language } = useLanguage();
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState('');
   const [slots, setSlots] = useState<string[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState('');
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
@@ -34,7 +34,7 @@ export default function BookingModal({
   useEffect(() => {
     if (!date) {
       setSlots([]);
-      setSelectedSlot("");
+      setSelectedSlot('');
       return;
     }
     const fetchSlots = async () => {
@@ -61,10 +61,10 @@ export default function BookingModal({
     setError(null);
     try {
       const res = await fetch(
-        "https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/book-slot",
+        'https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/book-slot',
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             date,
             time: selectedSlot,
@@ -78,7 +78,7 @@ export default function BookingModal({
       const data = await res.json();
       if (data.success) {
         setBooked(true);
-        if (onBooked) onBooked(); // ⚡ rafraîchir la page parente
+        if (onBooked) onBooked();
       } else {
         setError(data.error || t[language].bookingError);
       }
@@ -95,79 +95,88 @@ export default function BookingModal({
     for (let i = 1; i <= 30; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
-      dates.push(d.toISOString().split("T")[0]);
+      dates.push(d.toISOString().split('T')[0]);
     }
     return dates;
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 relative"
+        className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 md:p-8 relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+          className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-700 transition-colors"
+          aria-label="Close"
         >
-          <X size={20} />
+          <X size={18} />
         </button>
 
         {booked ? (
-          <div className="text-center py-8">
-            <Check size={48} className="text-green-500 mx-auto mb-4" />
-            <h3 className="text-xl font-black mb-2">
+          <div className="text-center py-6">
+            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Check size={22} className="text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">
               {t[language].bookingSuccessTitle}
             </h3>
-            <p className="text-slate-500">
+            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
               {t[language].bookingSuccessMessage}
             </p>
             <button
               onClick={onClose}
-              className="mt-6 bg-[#D4AF37] text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-500 transition-colors"
+              className="bg-slate-900 text-white px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors"
             >
               {t[language].bookingClose}
             </button>
           </div>
         ) : (
           <>
-            <div className="text-center mb-6">
-              <Calendar size={40} className="text-[#D4AF37] mx-auto mb-2" />
-              <h3 className="text-xl font-black">{t[language].bookingTitle}</h3>
+            <div className="text-center mb-7">
+              <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Calendar size={20} className="text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {t[language].bookingTitle}
+              </h3>
             </div>
 
-            <label className="block text-sm font-bold mb-2">
+            {/* Sélection de la date */}
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               {t[language].bookingSelectDate}
             </label>
             <select
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3 mb-6 outline-none focus:border-[#D4AF37]"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm mb-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors bg-white cursor-pointer"
             >
-              <option value="">--</option>
+              <option value="">—</option>
               {generateDates().map((d) => (
                 <option key={d} value={d}>
                   {new Date(d).toLocaleDateString(
-                    language === "fr" ? "fr-FR" : "en-US",
-                    { weekday: "long", day: "numeric", month: "long" }
+                    language === 'fr' ? 'fr-FR' : 'en-US',
+                    { weekday: 'long', day: 'numeric', month: 'long' }
                   )}
                 </option>
               ))}
             </select>
 
+            {/* Créneaux */}
             {date && (
               <>
-                <label className="block text-sm font-bold mb-2">
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
                   {t[language].bookingAvailableSlots}
                 </label>
                 {loadingSlots ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 size={24} className="animate-spin text-slate-400" />
+                  <div className="flex justify-center py-6">
+                    <Loader2 size={20} className="animate-spin text-slate-400" />
                   </div>
                 ) : slots.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2 mb-6">
@@ -175,10 +184,10 @@ export default function BookingModal({
                       <button
                         key={slot}
                         onClick={() => setSelectedSlot(slot)}
-                        className={`py-2 px-3 rounded-xl text-sm font-bold border transition-colors ${
+                        className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
                           selectedSlot === slot
-                            ? "bg-[#D4AF37] text-white border-[#D4AF37]"
-                            : "border-slate-200 hover:border-[#D4AF37] text-slate-700"
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
                         {slot}
@@ -186,26 +195,31 @@ export default function BookingModal({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500 mb-4">
+                  <p className="text-sm text-slate-500 mb-6">
                     {t[language].bookingNoSlots}
                   </p>
                 )}
               </>
             )}
 
+            {/* Erreur */}
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-4">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-lg text-xs mb-4">
                 {error} {t[language].bookingRetry}
               </div>
             )}
 
+            {/* Bouton confirmer */}
             <button
               onClick={handleBooking}
               disabled={!selectedSlot || booking}
-              className="w-full bg-[#D4AF37] text-white py-3 rounded-xl font-bold disabled:opacity-50 hover:bg-amber-500 transition-colors"
+              className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
             >
               {booking ? (
-                <Loader2 size={18} className="animate-spin mx-auto" />
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  {language === 'en' ? 'Booking…' : 'Réservation…'}
+                </>
               ) : (
                 t[language].bookingConfirm
               )}

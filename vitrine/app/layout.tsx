@@ -5,33 +5,33 @@ import { ProjectProvider } from './context/ProjectContext';
 import { LanguageProvider } from './context/LanguageContext';
 
 export const metadata: Metadata = {
-  title: 'ACTOOS - Empowering Action. Delivering Progress.',
-  description: 'Créateur de solutions logicielles sur mesure. Nous concevons et développons des applications, plateformes web et logiciels personnalisés pour les entreprises.',
-  keywords: ['ACTOOS', 'logiciel sur mesure', 'développement', 'application mobile', 'plateforme web'],
-  authors: [{ name: 'ACTOOS Group' }],
-  creator: 'ACTOOS Group',
-  publisher: 'ACTOOS Group',
+  title: 'Actoos — Digital infrastructure for professional activities',
+  description: 'Actoos conçoit les outils, services et connexions numériques qui permettent aux organisations de fonctionner, se développer et interagir avec leur environnement.',
+  keywords: ['Actoos', 'infrastructure numérique', 'outils professionnels', 'logiciels', 'Actoos Jobs'],
+  authors: [{ name: 'Actoos Group' }],
+  creator: 'Actoos Group',
+  publisher: 'Actoos Group',
   metadataBase: new URL('https://actoos.com'),
   openGraph: {
     type: 'website',
     locale: 'fr_FR',
     url: 'https://actoos.com',
-    siteName: 'ACTOOS',
-    title: 'ACTOOS - Empowering Action. Delivering Progress.',
-    description: 'Créateur de solutions logicielles sur mesure. Applications, plateformes web, logiciels personnalisés.',
+    siteName: 'Actoos',
+    title: 'Actoos — Digital infrastructure for professional activities',
+    description: 'Actoos conçoit les outils, services et connexions numériques pour les organisations.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ACTOOS - Créateur de solutions logicielles',
+        alt: 'Actoos',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ACTOOS - Empowering Action. Delivering Progress.',
-    description: 'Créateur de solutions logicielles sur mesure',
+    title: 'Actoos — Digital infrastructure for professional activities',
+    description: 'Actoos conçoit les outils, services et connexions numériques pour les organisations.',
     images: ['/og-image.png'],
   },
   robots: {

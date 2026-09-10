@@ -47,69 +47,76 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900">
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-50 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <a href="/" className="flex items-center space-x-3">
-            <img src="/logo-icon.png" alt="Actoos" className="h-10 w-10 object-contain" />
-            <span className="font-black text-xl tracking-tighter uppercase">
-              ACTOOS<span className="text-[#D4AF37]">.</span>
-            </span>
+    <div className="min-h-screen bg-white font-sans text-slate-900 antialiased">
+
+      {/* NAV */}
+      <nav className="fixed top-0 w-full bg-white/85 backdrop-blur-md z-40 border-b border-slate-200/70">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex justify-between items-center">
+          <a href="/" className="flex items-center gap-2.5">
+            <img src="/logo-icon.png" alt="Actoos" className="h-9 w-9 object-contain" />
+            <span className="font-bold text-lg tracking-tight text-slate-900">Actoos</span>
           </a>
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={() => setLanguage('fr')}
-                className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}
-              >
-                FR
-              </button>
+                className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'fr' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+              >FR</button>
+              <span className="text-slate-300 text-xs">/</span>
               <button
                 onClick={() => setLanguage('en')}
-                className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}
-              >
-                EN
-              </button>
+                className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+              >EN</button>
             </div>
-            <a href="/" className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold">
-              <ArrowLeft size={18} />
+            <a href="/" className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors text-sm font-medium">
+              <ArrowLeft size={16} />
               <span>{t[language].back}</span>
             </a>
           </div>
         </div>
       </nav>
 
-      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+      <main className="pt-32 md:pt-40 pb-20 px-6 max-w-5xl mx-auto">
+
+        {/* HERO */}
         <div className="text-center mb-16">
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-4 block">
+          <span className="inline-block text-xs font-medium text-blue-600 mb-3">
             {t[language].contactTag}
           </span>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-950 mb-6">
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900 mb-4">
             {t[language].contactPageTitle}
-            <span className="text-[#D4AF37]">.</span>
           </h1>
-          <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+          <p className="text-slate-500 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             {t[language].contactPageSubtitle}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-          <div className="space-y-8">
-            <div className="flex items-start space-x-4">
-              <Mail size={24} className="text-[#D4AF37] flex-shrink-0" />
+        {/* CONTENU */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-4xl mx-auto">
+
+          {/* Coordonnées */}
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                <Mail size={18} className="text-blue-600" />
+              </div>
               <div>
-                <h3 className="font-bold text-lg">{t[language].contactEmailLabel}</h3>
-                <a href="mailto:contact@actoos.com" className="text-slate-600 hover:text-[#D4AF37] transition-colors">
+                <h3 className="font-semibold text-base text-slate-900 mb-1">{t[language].contactEmailLabel}</h3>
+                <a
+                  href="mailto:contact@actoos.com"
+                  className="text-slate-500 hover:text-blue-600 transition-colors text-sm"
+                >
                   contact@actoos.com
                 </a>
               </div>
             </div>
           </div>
 
+          {/* Formulaire */}
           {sent ? (
-            <div className="bg-green-50 rounded-2xl p-8 text-center">
-              <h3 className="font-bold text-xl mb-2">{t[language].contactSuccessTitle}</h3>
-              <p className="text-slate-600">{t[language].contactSuccessMessage}</p>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center">
+              <h3 className="font-semibold text-lg text-emerald-900 mb-2">{t[language].contactSuccessTitle}</h3>
+              <p className="text-emerald-700 text-sm">{t[language].contactSuccessMessage}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -118,25 +125,25 @@ export default function ContactPage() {
                 name="name"
                 placeholder={t[language].contactPlaceholderName}
                 required
-                className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37]"
+                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
               />
               <input
                 type="email"
                 name="email"
                 placeholder={t[language].contactPlaceholderEmail}
                 required
-                className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37]"
+                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
               />
               <textarea
                 name="message"
                 placeholder={t[language].contactPlaceholderMessage}
                 rows={5}
                 required
-                className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37]"
+                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors resize-none"
               />
               <button
                 type="submit"
-                className="w-full bg-slate-950 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-[#D4AF37] transition-all"
+                className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors"
               >
                 {t[language].contactSendButton}
               </button>

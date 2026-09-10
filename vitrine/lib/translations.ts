@@ -7,13 +7,56 @@ export const t: Record<string, Record<string, string>> = {
     navProject: "Concevoir votre projet",
     navContact: "Contact",
     heroTag: "Créateur de solutions logicielles",
-    heroTitleLine1: "Vos idées",
-    heroTitleLine2: " prennent forme.",
-    heroDescription: "Actoos conçoit et développe des logiciels sur mesure – applications mobiles, tableaux de bord, plateformes de gestion… De l’idée au produit fini, nous façonnons des solutions numériques puissantes, prêtes à être déployées.",
-    heroButtonExpertise: "Notre expertise",
-    heroButtonProject: "Parlez-nous de votre projet",
-    chatbotTitle: "Votre logiciel sur mesure commence ici.",
-    chatbotSubtitle: "Décrivez votre projet, notre IA vous répond avec une proposition concrète.",
+    heroTitle: "L'infrastructure numérique des activités professionnelles.",
+    heroDescription: "Actoos conçoit les outils, services et connexions numériques qui permettent aux organisations de fonctionner, se développer et interagir avec leur environnement.",
+    heroButtonJobs: "Découvrir Actoos Jobs",
+    heroButtonStudio: "Confier un projet",
+    jobsSectionDesc: "La plateforme de recrutement pour les jobs flexibles.",
+    jobsSectionCta: "Accéder à Actoos Jobs",
+    actoosSectionDesc: "Un écosystème d'outils numériques conçus pour les organisations qui veulent aller vite et travailler proprement.",
+    studioSectionTitle: "Besoin spécifique ?",
+    studioSectionDesc: "Actoos Studio conçoit des logiciels sur mesure pour les entreprises aux besoins uniques.",
+    // ===== NOUVELLES CLÉS HOME =====
+    trustTag: "Ils nous font confiance",
+    trustTitle: "Des entreprises ambitieuses nous confient leurs projets",
+
+    processTag: "Méthode",
+    processTitle: "Un processus simple et transparent",
+    processSubtitle: "Nous structurons chaque projet en quatre phases claires, avec un point de suivi à chaque étape.",
+    processStep1Title: "Découverte",
+    processStep1Desc: "Nous analysons votre besoin, vos objectifs et vos contraintes.",
+    processStep2Title: "Conception",
+    processStep2Desc: "Architecture technique, maquettes et validation des spécifications.",
+    processStep3Title: "Développement",
+    processStep3Desc: "Cycles courts, démos régulières, communication transparente.",
+    processStep4Title: "Déploiement",
+    processStep4Desc: "Mise en production, tests, formation et accompagnement continu.",
+
+    formTag: "Démarrer",
+    formTitle: "Lancez votre projet",
+    formSubtitle: "Décrivez votre besoin en quelques lignes. Vous recevrez immédiatement un lien sécurisé pour suivre l'avancement et échanger avec notre équipe.",
+    formTrust1: "Réponse sous 24h ouvrées",
+    formTrust2: "Échange confidentiel",
+    formTrust3: "Devis gratuit",
+
+    expertiseSectionTag: "Ce que nous faisons",
+    expertiseSectionTitle: "Des solutions logicielles conçues pour durer",
+
+    ctaTag: "Prochaine étape",
+    ctaTitle: "Parlons de votre besoin.",
+    ctaSubtitle: "Un échange de 30 minutes suffit pour cadrer votre besoin.",
+    ctaButtonPrimary: "Démarrer mon projet",
+    ctaButtonSecondary: "Nous contacter",
+    ctaButton: "Nous contacter",
+
+    footerTagline: "Créateur de logiciels sur mesure pour entreprises ambitieuses.",
+    footerColumnProducts: "Produits",
+    footerColumnCompany: "Entreprise",
+    footerColumnLegal: "Légal",
+    footerContact: "contact@actoos.com",
+
+    chatbotTitle: "Démarrer un projet",
+    chatbotSubtitle: "Décrivez votre besoin. Vous recevrez un lien pour suivre l'avancement et échanger avec notre équipe.",
     expertiseTag: "Ce que nous faisons",
     expertiseTitleLine1: "Des solutions logicielles",
     expertiseTitleLine2: "conçues pour durer.",
@@ -555,29 +598,6 @@ export const t: Record<string, Record<string, string>> = {
     paymentRetry: "Réessayer le paiement",
   },
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Section login
 adminLogout: { fr: "Déconnexion", en: "Logout" },
 loginTitle: { fr: "Connexion", en: "Log in" },
@@ -616,41 +636,6 @@ accountSettingsDeleteButton: { fr: "Supprimer mon compte", en: "Delete my accoun
 accountSettingsSuccessEmail: { fr: "Un email de confirmation a été envoyé à votre nouvelle adresse.", en: "A confirmation email has been sent to your new address." },
 accountSettingsSuccessPassword: { fr: "Mot de passe mis à jour avec succès.", en: "Password updated successfully." },
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   en: {
     navProducts: "Products",
     navExpertise: "Expertise",
@@ -659,13 +644,56 @@ accountSettingsSuccessPassword: { fr: "Mot de passe mis à jour avec succès.", 
     navProject: "Design your project",
     navContact: "Contact",
     heroTag: "Custom Software Creator",
-    heroTitleLine1: "Your ideas",
-    heroTitleLine2: " take shape.",
-    heroDescription: "Actoos designs and develops bespoke software – mobile apps, dashboards, management platforms… From concept to finished product, we build powerful digital solutions ready for deployment.",
-    heroButtonExpertise: "Our expertise",
-    heroButtonProject: "Tell us about your project",
-    chatbotTitle: "Your custom software starts here.",
-    chatbotSubtitle: "Describe your project, our AI responds with a concrete proposal.",
+    heroTitle: "The digital infrastructure for professional activities.",
+    heroDescription: "Actoos designs the digital tools, services and connections that allow organizations to operate, grow and interact with their environment.",
+    heroButtonJobs: "Discover Actoos Jobs",
+    heroButtonStudio: "Submit a project",
+    jobsSectionDesc: "The recruitment platform for flexible jobs.",
+    jobsSectionCta: "Go to Actoos Jobs",
+    actoosSectionDesc: "An ecosystem of digital tools designed for organizations that want to move fast and work clean.",
+    studioSectionTitle: "Specific need?",
+    studioSectionDesc: "Actoos Studio designs custom software for companies with unique needs.",
+    // ===== NEW HOME KEYS =====
+    trustTag: "Trusted by",
+    trustTitle: "Ambitious companies trust us with their projects",
+
+    processTag: "Method",
+    processTitle: "A simple, transparent process",
+    processSubtitle: "We structure every project into four clear phases, with a check-in at each step.",
+    processStep1Title: "Discovery",
+    processStep1Desc: "We analyze your need, goals and constraints.",
+    processStep2Title: "Design",
+    processStep2Desc: "Technical architecture, mockups and specification validation.",
+    processStep3Title: "Development",
+    processStep3Desc: "Short cycles, regular demos, transparent communication.",
+    processStep4Title: "Deployment",
+    processStep4Desc: "Go-live, testing, training and continuous support.",
+
+    formTag: "Get started",
+    formTitle: "Launch your project",
+    formSubtitle: "Describe your need in a few lines. You'll instantly receive a secure link to track progress and chat with our team.",
+    formTrust1: "Response within 24 business hours",
+    formTrust2: "Confidential discussion",
+    formTrust3: "Free quote",
+
+    expertiseSectionTag: "What we do",
+    expertiseSectionTitle: "Software solutions built to last",
+
+    ctaTag: "Next step",
+    ctaTitle: "Let's talk about your need.",
+    ctaSubtitle: "A 30-minute discussion is enough to frame your need.",
+    ctaButtonPrimary: "Start my project",
+    ctaButtonSecondary: "Contact us",
+    ctaButton: "Contact us",
+
+    footerTagline: "Custom software creator for ambitious companies.",
+    footerColumnProducts: "Products",
+    footerColumnCompany: "Company",
+    footerColumnLegal: "Legal",
+    footerContact: "contact@actoos.com",
+
+    chatbotTitle: "Start a project",
+    chatbotSubtitle: "Describe your need. You'll receive a link to track progress and chat with our team.",
     expertiseTag: "What we do",
     expertiseTitleLine1: "Software solutions",
     expertiseTitleLine2: "built to last.",

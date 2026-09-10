@@ -8,56 +8,43 @@ export default function LegalPage() {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900">
-      {/* Header */}
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-50 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <a href="/" className="flex items-center space-x-3">
-            <img src="/logo-icon.png" alt="Actoos" className="h-10 w-10 object-contain" />
-            <div className="flex flex-col">
-              <span className="font-black text-xl md:text-2xl tracking-tighter uppercase leading-none">
-                ACTOOS<span className="text-[#D4AF37]">.</span>
-              </span>
-              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 hidden sm:block">
-                Technology Group
-              </span>
-            </div>
+    <div className="min-h-screen bg-white font-sans text-slate-900 antialiased">
+
+      {/* NAV */}
+      <nav className="fixed top-0 w-full bg-white/85 backdrop-blur-md z-40 border-b border-slate-200/70">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex justify-between items-center">
+          <a href="/" className="flex items-center gap-2.5">
+            <img src="/logo-icon.png" alt="Actoos" className="h-9 w-9 object-contain" />
+            <span className="font-bold text-lg tracking-tight text-slate-900">Actoos</span>
           </a>
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={() => setLanguage('fr')}
-                className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}
-              >
-                FR
-              </button>
+                className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'fr' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+              >FR</button>
+              <span className="text-slate-300 text-xs">/</span>
               <button
                 onClick={() => setLanguage('en')}
-                className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}
-              >
-                EN
-              </button>
+                className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+              >EN</button>
             </div>
-            <a
-              href="/"
-              className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold"
-            >
-              <ArrowLeft size={18} />
+            <a href="/" className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors text-sm font-medium">
+              <ArrowLeft size={16} />
               <span>{t[language].back}</span>
             </a>
           </div>
         </div>
       </nav>
 
-      {/* Content */}
-      <main className="pt-32 pb-20 px-6 max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
+      {/* CONTENT */}
+      <main className="pt-32 md:pt-40 pb-20 px-6 max-w-3xl mx-auto">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-3">
           {t[language].legalTitle}
-          <span className="text-[#D4AF37]">.</span>
         </h1>
         <p className="text-slate-400 text-sm mb-12">{t[language].legalLastUpdate}</p>
 
-        <div className="prose prose-slate max-w-none">
+        <div className="prose prose-slate max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-relaxed prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-900 prose-li:text-slate-600">
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].legalSection1 }} />
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].legalSection2 }} />
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].legalSection3 }} />
@@ -70,13 +57,13 @@ export default function LegalPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-50 py-8 px-6 border-t border-slate-100">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
+      {/* FOOTER */}
+      <footer className="border-t border-slate-200 py-8 px-6">
+        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-400">
           <p>{t[language].footerCopy}</p>
-          <div className="flex space-x-8">
-            <a href="/privacy" className="hover:text-black transition-colors">{t[language].footerPrivacy}</a>
-            <span className="text-slate-600">{t[language].footerLegal}</span>
+          <div className="flex gap-6">
+            <a href="/privacy" className="hover:text-slate-700 transition-colors">{t[language].footerPrivacy}</a>
+            <span className="text-slate-500">{t[language].footerLegal}</span>
           </div>
         </div>
       </footer>

@@ -9,7 +9,6 @@ export default function CookieConsent() {
   const { language } = useLanguage();
   const [showBanner, setShowBanner] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  // Consentements pour chaque catégorie (essentiels = toujours activé)
   const [consent, setConsent] = useState({
     essential: true,
     analytics: false,
@@ -33,21 +32,15 @@ export default function CookieConsent() {
     }
   }, []);
 
-  // Appliquer le consentement (exemple : bloquer Google Analytics si analytics = false)
   useEffect(() => {
     if (!showBanner) {
       if (consent.analytics) {
-        // Charger Google Analytics / scripts marketing
-        // gtag('consent', 'update', { analytics_storage: 'granted' });
         console.log('✅ Cookies analytiques acceptés – scripts chargés');
       } else {
-        // Bloquer ou désactiver les scripts
-        // gtag('consent', 'update', { analytics_storage: 'denied' });
         console.log('❌ Cookies analytiques refusés – scripts bloqués');
       }
 
       if (consent.preferences) {
-        // Activer les cookies de préférences (thème, langue, etc.)
         console.log('✅ Cookies de préférences acceptés');
       } else {
         console.log('❌ Cookies de préférences refusés');
@@ -122,49 +115,51 @@ export default function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 md:p-6">
-      <div className="max-w-4xl mx-auto bg-white/70 backdrop-blur-2xl text-slate-900 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 ring-1 ring-black/5 overflow-hidden">
-        <div className="p-6 md:p-8">
+      <div className="max-w-2xl mx-auto bg-white/95 backdrop-blur-md text-slate-900 rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <div className="p-5 md:p-6">
+
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200">
-                <Cookie size={20} className="text-white" />
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                <Cookie size={18} className="text-blue-600" />
               </div>
               <div>
-                <h3 className="font-black text-lg tracking-tight">{t[language].cookieTitle}</h3>
-                <p className="text-slate-500 text-xs">ACTOOS Group</p>
+                <h3 className="font-semibold text-base tracking-tight text-slate-900">
+                  {t[language].cookieTitle}
+                </h3>
+                <p className="text-slate-400 text-xs">Actoos</p>
               </div>
             </div>
             <button
               onClick={acceptEssential}
-              className="text-slate-400 hover:text-slate-600 transition-colors p-1"
-              aria-label="Fermer"
+              className="text-slate-400 hover:text-slate-700 transition-colors p-1 -mr-1"
+              aria-label="Close"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
-          <p className="text-slate-600 text-sm leading-relaxed mb-6">
+          <p className="text-slate-500 text-sm leading-relaxed mb-5">
             {t[language].cookieDescription}
           </p>
 
-          {/* Panneau de détails interactif */}
+          {/* Panneau de détails */}
           {showDetails && (
-            <div className="bg-slate-50 rounded-xl p-4 mb-6 space-y-3">
+            <div className="bg-slate-50 rounded-xl p-4 mb-5 space-y-3 border border-slate-100">
               {cookieTypes.map((item) => (
-                <div key={item.type} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-sm">{item.label}</p>
-                    <p className="text-slate-400 text-xs">{item.desc}</p>
+                <div key={item.type} className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm text-slate-900">{item.label}</p>
+                    <p className="text-slate-400 text-xs mt-0.5">{item.desc}</p>
                   </div>
-                  {/* Interrupteur cliquable */}
                   <button
                     onClick={() => {
                       if (item.type !== 'essential') toggleConsent(item.type);
                     }}
-                    className={`w-10 h-6 rounded-full flex items-center px-1 transition-colors ${
-                      item.enabled ? 'bg-[#D4AF37] justify-end' : 'bg-slate-300 justify-start'
-                    } ${item.type === 'essential' ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+                    className={`relative w-9 h-5 rounded-full flex items-center px-0.5 transition-colors shrink-0 ${
+                      item.enabled ? 'bg-slate-900 justify-end' : 'bg-slate-300 justify-start'
+                    } ${item.type === 'essential' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                     disabled={item.type === 'essential'}
                     aria-label={item.label}
                   >
@@ -174,7 +169,7 @@ export default function CookieConsent() {
               ))}
               <button
                 onClick={saveCustomConsent}
-                className="w-full mt-2 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-amber-500 transition-colors"
+                className="w-full mt-2 bg-slate-900 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors"
               >
                 {t[language].cookieSavePreferences || 'Enregistrer mes préférences'}
               </button>
@@ -182,34 +177,34 @@ export default function CookieConsent() {
           )}
 
           {/* Boutons principaux */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={acceptAll}
-              className="flex-1 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200 flex items-center justify-center space-x-2"
+              className="flex-1 bg-slate-900 text-white px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
             >
-              <Check size={16} />
+              <Check size={15} />
               <span>{t[language].cookieAcceptAll}</span>
             </button>
             <button
               onClick={acceptEssential}
-              className="flex-1 bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+              className="flex-1 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-slate-50 transition-colors"
             >
               {t[language].cookieAcceptEssential}
             </button>
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="sm:flex-none bg-white border border-slate-200 text-slate-500 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:text-slate-700 transition-all"
+              className="sm:flex-none bg-transparent text-slate-500 px-4 py-2.5 rounded-lg font-medium text-sm hover:text-slate-900 hover:bg-slate-50 transition-colors"
             >
               {showDetails ? t[language].cookieHide : t[language].cookieCustomize}
             </button>
           </div>
 
           {/* Liens légaux */}
-          <div className="mt-4 pt-4 border-t border-slate-200 flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            <a href="/privacy" className="hover:text-[#D4AF37] transition-colors">
+          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-4 text-xs text-slate-400">
+            <a href="/privacy" className="hover:text-blue-600 transition-colors">
               {t[language].cookiePrivacyLink}
             </a>
-            <a href="/legal" className="hover:text-[#D4AF37] transition-colors">
+            <a href="/legal" className="hover:text-blue-600 transition-colors">
               {t[language].cookieLegalLink}
             </a>
           </div>

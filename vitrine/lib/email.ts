@@ -43,27 +43,27 @@ export async function sendActoosEmail({
     <!DOCTYPE html>
     <html lang="${lang}">
     <head><meta charset="UTF-8"></head>
-    <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial,Helvetica,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:40px 0;">
+    <body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; padding:40px 20px;">
         <tr>
           <td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e2e8f0;">
               <!-- Logo -->
               <tr>
-                <td style="padding:28px 30px 20px; text-align:left;">
-                  <img src="${logoUrl}" alt="Actoos" style="width:90px; height:auto; border:none; display:block;" />
+                <td style="padding:28px 32px 20px; text-align:left;">
+                  <img src="${logoUrl}" alt="Actoos" style="width:80px; height:auto; border:none; display:block;" />
                 </td>
               </tr>
               <!-- Contenu -->
               <tr>
-                <td style="padding:0 30px 24px;">
-                  <h2 style="font-size:20px; font-weight:700; margin:0 0 12px; color:#1a1a1a;">${title}</h2>
-                  <p style="font-size:15px; line-height:1.6; color:#4a4a4a; margin:0 0 24px;">
+                <td style="padding:0 32px 28px;">
+                  <h2 style="font-size:19px; font-weight:600; margin:0 0 14px; color:#0f172a; letter-spacing:-0.01em; line-height:1.3;">${title}</h2>
+                  <p style="font-size:15px; line-height:1.65; color:#475569; margin:0 0 24px;">
                     ${message}
                   </p>
                   ${buttonText && buttonUrl ? `
-                  <div style="text-align:left; margin-bottom:24px;">
-                    <a href="${buttonUrl}" style="display:inline-block; background-color:#D4AF37; color:#ffffff; padding:12px 28px; border-radius:6px; font-weight:600; text-decoration:none; font-size:15px;">
+                  <div style="text-align:left; margin-bottom:8px;">
+                    <a href="${buttonUrl}" style="display:inline-block; background-color:#0f172a; color:#ffffff; padding:11px 24px; border-radius:8px; font-weight:500; text-decoration:none; font-size:14px;">
                       ${buttonText}
                     </a>
                   </div>
@@ -72,12 +72,14 @@ export async function sendActoosEmail({
               </tr>
               <!-- Footer -->
               <tr>
-                <td style="padding:16px 30px; background-color:#f9fafb; border-top:1px solid #e5e7eb; font-size:12px; color:#6b7280;">
-                  <p style="margin:0 0 8px;">${ft.copyright}</p>
+                <td style="padding:18px 32px; background-color:#f8fafc; border-top:1px solid #e2e8f0; font-size:12px; color:#94a3b8;">
+                  <p style="margin:0 0 6px;">${ft.copyright}</p>
                   <p style="margin:0;">
-                    <a href="https://actoos.com/legal" style="color:#6b7280; text-decoration:underline;">${ft.terms}</a> ·
-                    <a href="https://actoos.com/privacy" style="color:#6b7280; text-decoration:underline;">${ft.privacy}</a> ·
-                    <a href="mailto:contact@actoos.com" style="color:#6b7280; text-decoration:underline;">${ft.contact}</a>
+                    <a href="https://actoos.com/legal" style="color:#64748b; text-decoration:none;">${ft.terms}</a>
+                    <span style="color:#cbd5e1;"> · </span>
+                    <a href="https://actoos.com/privacy" style="color:#64748b; text-decoration:none;">${ft.privacy}</a>
+                    <span style="color:#cbd5e1;"> · </span>
+                    <a href="mailto:contact@actoos.com" style="color:#64748b; text-decoration:none;">${ft.contact}</a>
                   </p>
                 </td>
               </tr>

@@ -8,12 +8,29 @@ const nextConfig = {
   experimental: {
     // Aucune fonctionnalité expérimentale nécessaire
   },
-  // Redirection 301 /actoos-jobs vers jobs.actoos.com
+  // Redirections 301
   async redirects() {
     return [
+      // Redirection existante : /actoos-jobs → jobs.actoos.com
       {
         source: '/actoos-jobs',
         destination: 'https://jobs.actoos.com',
+        permanent: true,
+      },
+      // Nouvelle structure : anciennes routes → nouvelles
+      {
+        source: '/produits',
+        destination: '/jobs',
+        permanent: true,
+      },
+      {
+        source: '/expertise',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/philosophie',
+        destination: '/a-propos',
         permanent: true,
       },
     ];
