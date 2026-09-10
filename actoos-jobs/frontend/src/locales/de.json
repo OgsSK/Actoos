@@ -192,6 +192,7 @@
             "2": "Verifiziertes Profil"
           },
           "limitations": {
+            "noApi": "Kein API-Zugang",
             "noInterviewTools": "Keine Interview-Planungstools",
             "noAiNotes": "Keine Interview-Notizen oder KI",
             "noCvBank": "Keine CV-Datenbank",
@@ -202,6 +203,7 @@
           "name": "Pro",
           "description": "Für aktive Personalvermittler",
           "features": {
+            "api": "API-Zugang — {{limit}} Anf./Min.",
             "0": "{{count}} aktive Stelle(n)",
             "expiration": "{{days}} Tage vor Ablauf",
             "interviewTools": "Interview-Planungstools",
@@ -217,6 +219,7 @@
           "name": "Business",
           "description": "Für wachsende Unternehmen",
           "features": {
+            "api": "Erweiterter API-Zugang — {{limit}} Anf./Min.",
             "0": "Unbegrenzt aktive Stellen",
             "expiration": "{{days}} Tage vor Ablauf",
             "interviewTools": "Interview-Planungstools",
@@ -241,6 +244,7 @@
         "subscribeAnnual": "Jährlich abonnieren"
       },
       "comparison": {
+
         "title": "Pläne vergleichen",
         "subtitle": "Funktionen nach Plan",
         "featureColumn": "Funktion",
@@ -248,11 +252,14 @@
         "proColumn": "Pro",
         "businessColumn": "Business",
         "values": {
+          "apiPro": "60 Anf./Min.",
+          "apiBusiness": "600 Anf./Min.",
           "days": "{{count}} Tage",
           "perMonth": "1 / Monat",
           "premium": "✓ (Premium)"
         },
         "rows": {
+          "apiAccess": "API-Zugang",
           "activeOffers": "Aktive Stellen",
           "expiration": "Ablauf",
           "interviewTools": "Interview-Tools",

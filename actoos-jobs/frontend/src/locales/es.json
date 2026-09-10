@@ -192,6 +192,7 @@
             "2": "Perfil verificado"
           },
           "limitations": {
+            "noApi": "Sin acceso a la API",
             "noInterviewTools": "Sin herramientas de planificación de entrevistas",
             "noAiNotes": "Sin notas de entrevista ni IA",
             "noCvBank": "Sin banco de CV",
@@ -202,6 +203,7 @@
           "name": "Pro",
           "description": "Para reclutadores activos",
           "features": {
+            "api": "Acceso a la API — {{limit}} solicitudes/min",
             "0": "{{count}} oferta(s) activa(s)",
             "expiration": "{{days}} días antes del vencimiento",
             "interviewTools": "Herramientas de planificación de entrevistas",
@@ -217,6 +219,7 @@
           "name": "Business",
           "description": "Para empresas en crecimiento",
           "features": {
+            "api": "Acceso ampliado a la API — {{limit}} solicitudes/min",
             "0": "Ofertas ilimitadas",
             "expiration": "{{days}} días antes del vencimiento",
             "interviewTools": "Herramientas de planificación de entrevistas",
@@ -248,11 +251,14 @@
         "proColumn": "Pro",
         "businessColumn": "Business",
         "values": {
+          "apiPro": "60 solicitudes/min",
+          "apiBusiness": "600 solicitudes/min",
           "days": "{{count}} días",
           "perMonth": "1 / mes",
           "premium": "✓ (Premium)"
         },
         "rows": {
+          "apiAccess": "Acceso a la API",
           "activeOffers": "Ofertas activas",
           "expiration": "Vencimiento",
           "interviewTools": "Herramientas de entrevista",

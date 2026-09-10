@@ -192,6 +192,7 @@
             "2": "Geverifieerd profiel"
           },
           "limitations": {
+            "noApi": "Geen API-toegang",
             "noInterviewTools": "Geen tools voor interviewplanning",
             "noAiNotes": "Geen interviewnotities of AI",
             "noCvBank": "Geen cv-bank",
@@ -202,6 +203,7 @@
           "name": "Pro",
           "description": "Voor actieve recruiters",
           "features": {
+            "api": "API-toegang — {{limit}} verzoeken/min",
             "0": "{{count}} actieve vacature(s)",
             "expiration": "{{days}} dagen voor verloop",
             "interviewTools": "Tools voor interviewplanning",
@@ -217,6 +219,7 @@
           "name": "Business",
           "description": "Voor groeiende bedrijven",
           "features": {
+            "api": "Uitgebreide API-toegang — {{limit}} verzoeken/min",
             "0": "Onbeperkt vacatures",
             "expiration": "{{days}} dagen voor verloop",
             "interviewTools": "Tools voor interviewplanning",
@@ -248,11 +251,14 @@
         "proColumn": "Pro",
         "businessColumn": "Business",
         "values": {
+          "apiPro": "60 verzoeken/min",
+          "apiBusiness": "600 verzoeken/min",
           "days": "{{count}} dagen",
           "perMonth": "1 / maand",
           "premium": "✓ (Premium)"
         },
         "rows": {
+          "apiAccess": "API-toegang",
           "activeOffers": "Actieve vacatures",
           "expiration": "Verloop",
           "interviewTools": "Interviewtools",

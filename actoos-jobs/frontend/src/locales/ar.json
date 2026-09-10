@@ -192,6 +192,7 @@
             "2": "ملف موثق"
           },
           "limitations": {
+            "noApi": "لا يوجد وصول API",
             "noInterviewTools": "لا توجد أدوات جدولة للمقابلات",
             "noAiNotes": "لا توجد ملاحظات مقابلة أو ذكاء اصطناعي",
             "noCvBank": "لا بنك للسير الذاتية",
@@ -202,6 +203,7 @@
           "name": "برو",
           "description": "لمسؤولي التوظيف النشطين",
           "features": {
+            "api": "وصول API — {{limit}} طلب/دقيقة",
             "0": "{{count}} عرض (عروض) نشط(ة)",
             "expiration": "{{days}} يومًا قبل انتهاء الصلاحية",
             "interviewTools": "أدوات جدولة المقابلات",
@@ -217,6 +219,7 @@
           "name": "الأعمال",
           "description": "للشركات النامية",
           "features": {
+            "api": "وصول API موسع — {{limit}} طلب/دقيقة",
             "0": "عروض غير محدودة",
             "expiration": "{{days}} يومًا قبل انتهاء الصلاحية",
             "interviewTools": "أدوات جدولة المقابلات",
@@ -248,11 +251,14 @@
         "proColumn": "برو",
         "businessColumn": "الأعمال",
         "values": {
+          "apiPro": "60 طلب/دقيقة",
+          "apiBusiness": "600 طلب/دقيقة",
           "days": "{{count}} يومًا",
           "perMonth": "1 / شهر",
           "premium": "✓ (بريميوم)"
         },
         "rows": {
+          "apiAccess": "وصول API",
           "activeOffers": "العروض النشطة",
           "expiration": "انتهاء الصلاحية",
           "interviewTools": "أدوات المقابلة",

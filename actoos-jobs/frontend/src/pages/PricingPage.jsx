@@ -12,7 +12,7 @@ import { PLAN_LIMITS } from '../lib/planLimits';
 import {
   Loader2, Zap, Crown, Building2, ArrowRight, AlertCircle,
   ChevronDown, ChevronUp, X, Shield, Briefcase, Clock, Sparkles,
-  FileText, Search, Users, Gift, HelpCircle
+  FileText, Search, Users, Gift, HelpCircle, Code2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -255,6 +255,7 @@ const PricingPage = () => {
       limitations: [
         t('pricing.plans.free.limitations.noCvBank'),
         t('pricing.plans.free.limitations.noMultiCompany'),
+        t('pricing.plans.free.limitations.noApi'), // ← NOUVEAU
       ],
       icon: Building2,
       borderColor: 'border-slate-200',
@@ -272,6 +273,7 @@ const PricingPage = () => {
         { icon: Clock, text: t('pricing.plans.pro.features.expiration', { days: PLAN_LIMITS.pro.expirationDays }) },
         { icon: FileText, text: t('pricing.plans.pro.features.interviewTools') },
         { icon: Shield, text: t('pricing.plans.pro.features.verifiedProfile') },
+        { icon: Code2, text: t('pricing.plans.pro.features.api', { limit: 60 }) }, // ← NOUVEAU
       ],
       limitations: [
         t('pricing.plans.pro.limitations.noCvBank'),
@@ -296,6 +298,7 @@ const PricingPage = () => {
         { icon: Search, text: t('pricing.plans.business.features.cvBank') },
         { icon: Users, text: t('pricing.plans.business.features.multiCompany') },
         { icon: Shield, text: t('pricing.plans.business.features.premiumBadge') },
+        { icon: Code2, text: t('pricing.plans.business.features.api', { limit: 600 }) }, // ← NOUVEAU
       ],
       limitations: [],
       icon: Crown,
@@ -307,7 +310,6 @@ const PricingPage = () => {
     },
   ];
 
-  // currentPlan vaut null tant que company n'est pas chargé
   const currentPlan = company?.subscription_plan ?? null;
   const currentBillingCycle = company?.billing_cycle;
 
@@ -338,6 +340,7 @@ const PricingPage = () => {
     { key: 'multiCompany', free: '-', pro: '-', business: '✓' },
     { key: 'freeBoost', free: '-', pro: '-', business: t('pricing.comparison.values.perMonth') },
     { key: 'verifiedProfile', free: '-', pro: '✓', business: t('pricing.comparison.values.premium') },
+    { key: 'apiAccess', free: '-', pro: t('pricing.comparison.values.apiPro'), business: t('pricing.comparison.values.apiBusiness') }, // ← NOUVEAU
   ];
 
   return (
@@ -466,7 +469,6 @@ const PricingPage = () => {
                   </div>
                 )}
 
-                {/* 🔥 Spinner affiché uniquement pour les plans payants pendant le chargement */}
                 {companyLoading && plan.planKey !== 'free' ? (
                   <div className="absolute top-4 left-4 bg-slate-100 text-slate-500 text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
                     <Loader2 className="w-3 h-3 animate-spin" />

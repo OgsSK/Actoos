@@ -3538,6 +3538,7 @@
             "2": "Verified profile"
           },
           "limitations": {
+            "noApi": "No API access",
             "noInterviewTools": "No interview scheduling tools",
             "noAiNotes": "No interview notes or AI",
             "noCvBank": "No CV bank",
@@ -3548,6 +3549,7 @@
           "name": "Pro",
           "description": "For active recruiters",
           "features": {
+            "api": "API access — {{limit}} req/min",
             "0": "{{count}} active offer(s)",
             "expiration": "{{days}} days before expiration",
             "interviewTools": "Interview scheduling tools",
@@ -3563,6 +3565,7 @@
           "name": "Business",
           "description": "For growing companies",
           "features": {
+            "api": "Extended API access — {{limit}} req/min",
             "0": "Unlimited offers",
             "expiration": "{{days}} days before expiration",
             "interviewTools": "Interview scheduling tools",
@@ -3594,11 +3597,14 @@
         "proColumn": "Pro",
         "businessColumn": "Business",
         "values": {
+          "apiPro": "60 req/min",
+        "apiBusiness": "600 req/min",
           "days": "{{count}} days",
           "perMonth": "1 / month",
           "premium": "✓ (Premium)"
         },
         "rows": {
+          "apiAccess": "API access",
           "activeOffers": "Active offers",
           "expiration": "Expiration",
           "interviewTools": "Interview tools",
