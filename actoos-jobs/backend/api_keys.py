@@ -31,7 +31,8 @@ _http_client = httpx.Client(
 _cache_keys: dict = {}       # key_hash -> (key_data, expire_at)
 _cache_companies: dict = {}  # company_id -> (company_data, expire_at)
 _cache_rate: dict = {}       # api_key_id -> (count, expire_at)
-CACHE_TTL = 60
+CACHE_TTL_PRO = 60
+CACHE_TTL_BUSINESS = 300
 RATE_CACHE_TTL = 5
 
 
@@ -108,7 +109,7 @@ async def get_api_key_context(
     now = time.time()
 
     # ============================================================
-    # 1) CLÉ API (avec cache 60s)
+    # 1) CLÉ API (avec cache)
     # ============================================================
     key_data = None
     cached = _cache_keys.get(key_hash)
@@ -129,10 +130,11 @@ async def get_api_key_context(
             raise HTTPException(status_code=401, detail="Invalid or revoked API key")
 
         key_data = key_data_list[0]
-        _cache_keys[key_hash] = (key_data, now + CACHE_TTL)
+        # Cache initial (sera écrasé après avoir connu le plan)
+        _cache_keys[key_hash] = (key_data, now + CACHE_TTL_PRO)
 
     # ============================================================
-    # 2) ENTREPRISE (avec cache 60s)
+    # 2) ENTREPRISE (avec cache)
     # ============================================================
     company = None
     cached_comp = _cache_companies.get(key_data['company_id'])
@@ -153,7 +155,8 @@ async def get_api_key_context(
             raise HTTPException(status_code=403, detail="Company not found")
 
         company = comp_list[0]
-        _cache_companies[key_data['company_id']] = (company, now + CACHE_TTL)
+        # Cache initial (sera ajusté après avoir connu le plan)
+        _cache_companies[key_data['company_id']] = (company, now + CACHE_TTL_PRO)
 
     if not company.get("is_active"):
         raise HTTPException(status_code=403, detail="Company is suspended")
@@ -164,6 +167,13 @@ async def get_api_key_context(
             status_code=403,
             detail="API access requires a Pro or Business plan",
         )
+
+    # ============================================================
+    # ✅ CACHE ADAPTÉ AU PLAN (Pro = 60s, Business = 300s)
+    # ============================================================
+    ttl = CACHE_TTL_BUSINESS if plan in ("business", "enterprise") else CACHE_TTL_PRO
+    _cache_keys[key_hash] = (key_data, now + ttl)
+    _cache_companies[key_data['company_id']] = (company, now + ttl)
 
     # Expiration de la clé
     if key_data.get("expires_at"):
@@ -240,8 +250,6 @@ async def get_api_key_context(
         plan=plan,
         company=company,
     )
-
-
 def require_scope(scope: str):
     async def _check(ctx: ApiKeyContext = Depends(get_api_key_context)):
         if scope not in ctx.scopes:
