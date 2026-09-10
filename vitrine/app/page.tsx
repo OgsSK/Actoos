@@ -205,9 +205,9 @@ export default function HomePage() {
 
       {/* ========== 4. COMMENT NOUS TRAVAILLONS ========== */}
       <FadeInSection>
-        <section className="py-16 md:py-20 px-6 bg-slate-50/70 border-y border-slate-100">
+        <section className="py-16 md:py-24 px-6">
           <div className="max-w-5xl mx-auto">
-            <div className="mb-12 max-w-2xl">
+            <div className="mb-16 max-w-2xl">
               <span className="inline-block text-xs font-medium text-blue-600 mb-3">
                 {isEn ? 'Method' : 'Méthode'}
               </span>
@@ -221,43 +221,58 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {[
-                {
-                  num: '01',
-                  title: isEn ? 'Framing' : 'Cadrage',
-                  desc: isEn
-                    ? 'Understand the need, the usage, the constraints.'
-                    : 'Comprendre le besoin, l\'usage, les contraintes.',
-                },
-                {
-                  num: '02',
-                  title: isEn ? 'Design' : 'Conception',
-                  desc: isEn
-                    ? 'Architecture, design, validation before the first line of code.'
-                    : 'Architecture, design, validation avant la première ligne de code.',
-                },
-                {
-                  num: '03',
-                  title: isEn ? 'Building' : 'Réalisation',
-                  desc: isEn
-                    ? 'Short cycles, regular demos, no surprises.'
-                    : 'Cycles courts, démos régulières, pas de surprise.',
-                },
-                {
-                  num: '04',
-                  title: isEn ? 'Go live' : 'Mise en service',
-                  desc: isEn
-                    ? 'Deployment, support, adjustments.'
-                    : 'Déploiement, suivi, ajustements.',
-                },
-              ].map((step, i) => (
-                <div key={i} className="bg-white rounded-xl p-5 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-400 mb-3">{step.num}</div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">{step.title}</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
-                </div>
-              ))}
+            {/* Timeline horizontale */}
+            <div className="relative">
+              {/* Ligne continue desktop */}
+              <div className="hidden md:block absolute top-[5px] left-0 right-0 h-px bg-slate-200" />
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-8">
+                {[
+                  {
+                    num: '01',
+                    title: isEn ? 'Framing' : 'Cadrage',
+                    desc: isEn
+                      ? 'Understand the need, the usage, the constraints.'
+                      : 'Comprendre le besoin, l\'usage, les contraintes.',
+                  },
+                  {
+                    num: '02',
+                    title: isEn ? 'Design' : 'Conception',
+                    desc: isEn
+                      ? 'Architecture, design, validation before the first line of code.'
+                      : 'Architecture, design, validation avant la première ligne de code.',
+                  },
+                  {
+                    num: '03',
+                    title: isEn ? 'Building' : 'Réalisation',
+                    desc: isEn
+                      ? 'Short cycles, regular demos, no surprises.'
+                      : 'Cycles courts, démos régulières, pas de surprise.',
+                  },
+                  {
+                    num: '04',
+                    title: isEn ? 'Go live' : 'Mise en service',
+                    desc: isEn
+                      ? 'Deployment, support, adjustments.'
+                      : 'Déploiement, suivi, ajustements.',
+                  },
+                ].map((step, i) => (
+                  <div key={i} className="relative">
+                    {/* Dot sur la ligne */}
+                    <div className="flex items-center gap-3 md:block mb-4">
+                      <div className="w-[11px] h-[11px] rounded-full bg-white border-2 border-slate-900 relative z-10 shrink-0" />
+                      <span className="md:hidden text-xs font-medium text-slate-400">{step.num}</span>
+                    </div>
+
+                    {/* Numéro desktop */}
+                    <p className="hidden md:block text-xs font-medium text-slate-400 mb-3 mt-4">{step.num}</p>
+
+                    {/* Titre + description */}
+                    <h3 className="text-sm font-semibold text-slate-900 mb-2">{step.title}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">{step.desc}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -265,7 +280,7 @@ export default function HomePage() {
 
       {/* ========== 5. POUR QUI ========== */}
       <FadeInSection>
-        <section className="py-16 md:py-20 px-6">
+        <section className="py-16 md:py-20 px-6 bg-slate-50/70 border-y border-slate-100">
           <div className="max-w-4xl mx-auto">
             <div className="mb-10 max-w-2xl">
               <span className="inline-block text-xs font-medium text-blue-600 mb-3">
