@@ -17,6 +17,7 @@ import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import './index.css';
 
 // ---------- Lazy-loaded pages ----------
+const CompanyApiPage = lazy(() => import('./pages/CompanyApiPage'));
 const Homepage = lazy(() => import('./pages/Homepage'));
 const JobsPage = lazy(() => import('./pages/JobsPage'));
 const JobDetailPage = lazy(() => import('./pages/JobDetailPage'));
@@ -173,9 +174,7 @@ const AppContent = () => {
 
               {/* ✅ Remplacer /blog par /newsletter */}
               <Route path="/newsletter" element={<NewsletterPage />} />
-              <Route path="/blog" element={<Navigate to="/newsletter" replace />} /> {/* redirection */}
-
-              {/* ❌ Supprimer la route /blog/:id (plus d'articles) */}
+              <Route path="/blog" element={<Navigate to="/newsletter" replace />} />
 
               <Route path="/preparation-entretien" element={<InterviewPrep />} />
               <Route path="/lettre-motivation" element={<CoverLetter />} />
@@ -226,6 +225,8 @@ const AppContent = () => {
               <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/cv-bank" element={<ProtectedRoute><CandidateBankPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/abonnes" element={<ProtectedRoute><CompanyFollowersPage /></ProtectedRoute>} />
+              {/* ✅ Nouvelle route API */}
+              <Route path="/dashboard/entreprise/api" element={<ProtectedRoute><CompanyApiPage /></ProtectedRoute>} />
 
               {/* ---------- Voir profil candidat (public) ---------- */}
               <Route path="/candidat/:id" element={<CandidatePublicProfilePage />} />

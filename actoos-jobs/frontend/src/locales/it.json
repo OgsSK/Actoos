@@ -3024,6 +3024,8 @@
       }
     },
     "companyDashboard": {
+      "apiButton": "API",
+    
        "removeAsPrimary": "Rimuovi come azienda principale",
     "primaryCompanyRemoved": "Azienda principale rimossa",
       "setAsPrimary": "Imposta come azienda principale",
@@ -3767,7 +3769,55 @@
         "subscribeSuccess": "Iscrizione riuscita!",
         "subscribeError": "Errore durante l'iscrizione."
       }
-    }
+    },
+    "apiPage": {
+      "createDesc": "Dai un nome alla tua chiave per ritrovarla facilmente.",
+    "title": "API Actoos Jobs",
+    "subtitle": "Integra Actoos Jobs nei tuoi strumenti HR, ATS o sistemi interni.",
+    "upgradeRequired": "Piano Pro o Business richiesto",
+    "upgradeMessage": "L'accesso all'API è riservato ai piani Pro e Business.",
+    "seePlans": "Vedi i piani",
+    "feat1Title": "REST API",
+    "feat1Desc": "Endpoint JSON per gestire offerte e candidature",
+    "feat2Title": "Sicuro",
+    "feat2Desc": "Autenticazione tramite chiave API, scope granulari",
+    "feat3Title": "Rate limit",
+    "feat3Desc": "Limite: {{limit}} req/min",
+    "yourKeys": "Le tue chiavi API",
+    "createKey": "Crea una chiave",
+    "noKeys": "Nessuna chiave API",
+    "noKeysHint": "Crea la tua prima chiave per iniziare.",
+    "active": "Attiva",
+    "revoked": "Revocata",
+    "created": "Creata",
+    "lastUsed": "Ultimo utilizzo",
+    "revoke": "Revoca",
+    "revokeConfirm": "Vuoi davvero revocare questa chiave? Questa azione è irreversibile.",
+    "revokeSuccess": "Chiave revocata",
+    "revokeError": "Errore durante la revoca",
+    "createSuccess": "Chiave creata con successo",
+    "createError": "Errore di creazione",
+    "nameRequired": "Il nome è obbligatorio",
+    "loadError": "Errore di caricamento",
+    "copied": "Copiato negli appunti",
+    "accessDenied": "Accesso riservato alle aziende",
+    "name": "Nome",
+    "namePlaceholder": "Es: Il mio ATS, Zapier, ecc.",
+    "scopes": "Autorizzazioni",
+    "scopeRead": "Lettura (GET)",
+    "scopeWrite": "Scrittura (POST/PATCH/DELETE)",
+    "create": "Crea",
+    "keyCreated": "Chiave creata con successo",
+    "keyCreatedWarning": "⚠️ Copia questa chiave ora. Non potrai più vederla.",
+    "storeSecurely": "Conserva questa chiave in un gestore di password.",
+    "copyAndClose": "Copia e chiudi",
+    "docTitle": "Documentazione rapida",
+    "docDesc": "Alcuni esempi per iniziare",
+    "docBase": "URL di base",
+    "docAuth": "Autenticazione",
+    "docExample": "Esempio: elenca offerte",
+    "docEndpoints": "Endpoint disponibili"
+  }
  
 
 }

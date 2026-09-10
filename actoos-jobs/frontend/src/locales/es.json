@@ -3022,6 +3022,8 @@
       }
     },
 "companyDashboard": {
+  "apiButton": "API",
+    
   "removeAsPrimary": "Eliminar como empresa principal",
     "primaryCompanyRemoved": "Empresa principal eliminada",
   "setAsPrimary": "Establecer como empresa principal",
@@ -3765,6 +3767,54 @@
         "subscribeSuccess": "¡Suscripción exitosa!",
         "subscribeError": "Error al suscribirse."
       }
-    }
+    },
+    "apiPage": {
+      "createDesc": "Dale un nombre a tu clave para encontrarla fácilmente.",
+    "title": "API Actoos Jobs",
+    "subtitle": "Integre Actoos Jobs en sus herramientas de RRHH, ATS o sistemas internos.",
+    "upgradeRequired": "Se requiere plan Pro o Business",
+    "upgradeMessage": "El acceso a la API está reservado a los planes Pro y Business.",
+    "seePlans": "Ver planes",
+    "feat1Title": "REST API",
+    "feat1Desc": "Endpoints JSON para gestionar ofertas y candidaturas",
+    "feat2Title": "Seguro",
+    "feat2Desc": "Autenticación por clave API, scopes granulares",
+    "feat3Title": "Rate limit",
+    "feat3Desc": "Límite: {{limit}} req/min",
+    "yourKeys": "Tus claves API",
+    "createKey": "Crear una clave",
+    "noKeys": "Ninguna clave API",
+    "noKeysHint": "Crea tu primera clave para empezar.",
+    "active": "Activa",
+    "revoked": "Revocada",
+    "created": "Creada",
+    "lastUsed": "Último uso",
+    "revoke": "Revocar",
+    "revokeConfirm": "¿Seguro que quieres revocar esta clave? Esta acción es irreversible.",
+    "revokeSuccess": "Clave revocada",
+    "revokeError": "Error al revocar",
+    "createSuccess": "Clave creada con éxito",
+    "createError": "Error de creación",
+    "nameRequired": "El nombre es obligatorio",
+    "loadError": "Error de carga",
+    "copied": "Copiado al portapapeles",
+    "accessDenied": "Acceso reservado a empresas",
+    "name": "Nombre",
+    "namePlaceholder": "Ej: Mi ATS, Zapier, etc.",
+    "scopes": "Permisos",
+    "scopeRead": "Lectura (GET)",
+    "scopeWrite": "Escritura (POST/PATCH/DELETE)",
+    "create": "Crear",
+    "keyCreated": "Clave creada con éxito",
+    "keyCreatedWarning": "⚠️ Copia esta clave ahora. No podrás verla de nuevo.",
+    "storeSecurely": "Guarda esta clave en un gestor de contraseñas.",
+    "copyAndClose": "Copiar y cerrar",
+    "docTitle": "Documentación rápida",
+    "docDesc": "Algunos ejemplos para empezar",
+    "docBase": "URL base",
+    "docAuth": "Autenticación",
+    "docExample": "Ejemplo: listar ofertas",
+    "docEndpoints": "Endpoints disponibles"
+  }
 
 }

@@ -3091,6 +3091,8 @@
       }
     },
    "companyDashboard": {
+    "apiButton": "API",
+    
      "removeAsPrimary": "Verwijderen als hoofdonderneming",
     "primaryCompanyRemoved": "Hoofdonderneming verwijderd",
     "setAsPrimary": "Instellen als hoofdonderneming",
@@ -3833,7 +3835,55 @@
         "subscribeSuccess": "Abonnement geslaagd!",
         "subscribeError": "Fout bij abonneren."
       }
-    }
+    },
+    "apiPage": {
+      "createDesc": "Geef uw sleutel een naam zodat u deze gemakkelijk terugvindt.",
+    "title": "Actoos Jobs API",
+    "subtitle": "Integreer Actoos Jobs in uw HR-tools, ATS of interne systemen.",
+    "upgradeRequired": "Pro- of Business-abonnement vereist",
+    "upgradeMessage": "API-toegang is voorbehouden aan de Pro- en Business-abonnementen.",
+    "seePlans": "Bekijk abonnementen",
+    "feat1Title": "REST API",
+    "feat1Desc": "JSON-endpoints voor het beheren van vacatures en sollicitaties",
+    "feat2Title": "Veilig",
+    "feat2Desc": "Authenticatie via API-sleutel, granulaire scopes",
+    "feat3Title": "Rate limit",
+    "feat3Desc": "Limiet: {{limit}} verzoeken/min",
+    "yourKeys": "Uw API-sleutels",
+    "createKey": "Een sleutel aanmaken",
+    "noKeys": "Geen API-sleutels",
+    "noKeysHint": "Maak uw eerste sleutel aan om te beginnen.",
+    "active": "Actief",
+    "revoked": "Ingetrokken",
+    "created": "Aangemaakt",
+    "lastUsed": "Laatst gebruikt",
+    "revoke": "Intrekken",
+    "revokeConfirm": "Weet u zeker dat u deze sleutel wilt intrekken? Deze actie is onomkeerbaar.",
+    "revokeSuccess": "Sleutel ingetrokken",
+    "revokeError": "Fout bij intrekken",
+    "createSuccess": "Sleutel succesvol aangemaakt",
+    "createError": "Aanmaakfout",
+    "nameRequired": "Naam is vereist",
+    "loadError": "Laadfout",
+    "copied": "Gekopieerd naar klembord",
+    "accessDenied": "Toegang voorbehouden aan bedrijven",
+    "name": "Naam",
+    "namePlaceholder": "Bijv. Mijn ATS, Zapier, enz.",
+    "scopes": "Machtigingen",
+    "scopeRead": "Lezen (GET)",
+    "scopeWrite": "Schrijven (POST/PATCH/DELETE)",
+    "create": "Aanmaken",
+    "keyCreated": "Sleutel succesvol aangemaakt",
+    "keyCreatedWarning": "⚠️ Kopieer deze sleutel nu. U kunt hem later niet meer zien.",
+    "storeSecurely": "Bewaar deze sleutel in een wachtwoordbeheerder.",
+    "copyAndClose": "Kopiëren en sluiten",
+    "docTitle": "Snelle documentatie",
+    "docDesc": "Enkele voorbeelden om te beginnen",
+    "docBase": "Basis-URL",
+    "docAuth": "Authenticatie",
+    "docExample": "Voorbeeld: vacatures weergeven",
+    "docEndpoints": "Beschikbare endpoints"
+  }
  
 
 

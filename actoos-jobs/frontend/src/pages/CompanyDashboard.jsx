@@ -17,7 +17,7 @@ import {
   ChevronRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2,
   Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar,
   AlertTriangle, X, Send, Undo2, CreditCard, Layers, Banknote, Sparkles,
-  Crown, Search, RefreshCw, Zap, UserPlus, ArrowRight, Star,
+  Crown, Search, RefreshCw, Zap, UserPlus, ArrowRight, Star, Code2,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { getPlanLimit, getExpirationDays, planHasFeature } from '../lib/planLimits';
@@ -457,6 +457,7 @@ const [activeCountResult, appsResult, docsResult] = await Promise.all([
 
   const plan = company?.subscription_plan || 'free';
   const isBusinessPlan = plan === 'business' || plan === 'enterprise';
+  const hasApiAccess = plan === 'pro' || isBusinessPlan;
   const showFollowersWidget = plan === 'pro' || isBusinessPlan;
 
   const fetchFollowersSummary = useCallback(async () => {
@@ -663,9 +664,17 @@ const [activeCountResult, appsResult, docsResult] = await Promise.all([
             </div>
             <div className="min-w-0"><h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1><p className="text-slate-600">{t('companyDashboard.header.title')}</p></div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full lg:w-auto">
             <Link to="/dashboard/entreprise/profil" className="w-full"><Button variant="outline" className="w-full min-h-[44px]"><Settings className="w-4 h-4 mr-2" />{t('companyDashboard.profileButton')}</Button></Link>
             <Link to={`/entreprises/${activeCompanyId}?from=company-dashboard`} className="w-full"><Button variant="outline" className="w-full min-h-[44px]"><Eye className="w-4 h-4 mr-2" />{t('candidateDashboard.quickActions.viewPublicProfile', 'Voir ma vitrine')}</Button></Link>
+            {hasApiAccess && (
+              <Link to="/dashboard/entreprise/api" className="w-full">
+                <Button variant="outline" className="w-full min-h-[44px] border-slate-300">
+                  <Code2 className="w-4 h-4 mr-2" />
+                  {t('companyDashboard.apiButton', 'API')}
+                </Button>
+              </Link>
+            )}
             <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full"><Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" />{t('companyDashboard.newOfferButton')}</Button></Link>
           </div>
         </div>

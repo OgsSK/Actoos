@@ -2865,6 +2865,8 @@
       }
     },
      "companyDashboard": {
+      "apiButton": "API",
+    
       "removeAsPrimary": "Remove as primary company",
     "primaryCompanyRemoved": "Primary company removed",
       "setAsPrimary": "Set as primary company",
@@ -3844,7 +3846,55 @@
         "subscribeSuccess": "Subscription successful!",
         "subscribeError": "Error while subscribing."
       }
-    }
+    },
+    "apiPage": {
+       "createDesc": "Give your key a name so you can easily find it again.",
+    "title": "Actoos Jobs API",
+    "subtitle": "Integrate Actoos Jobs with your HR tools, ATS or internal systems.",
+    "upgradeRequired": "Pro or Business plan required",
+    "upgradeMessage": "API access is reserved for Pro and Business plans.",
+    "seePlans": "See plans",
+    "feat1Title": "REST API",
+    "feat1Desc": "JSON endpoints to manage jobs and applications",
+    "feat2Title": "Secure",
+    "feat2Desc": "API key authentication, granular scopes",
+    "feat3Title": "Rate limit",
+    "feat3Desc": "Limit: {{limit}} req/min",
+    "yourKeys": "Your API keys",
+    "createKey": "Create a key",
+    "noKeys": "No API keys",
+    "noKeysHint": "Create your first key to get started.",
+    "active": "Active",
+    "revoked": "Revoked",
+    "created": "Created",
+    "lastUsed": "Last used",
+    "revoke": "Revoke",
+    "revokeConfirm": "Are you sure you want to revoke this key? This action is irreversible.",
+    "revokeSuccess": "Key revoked",
+    "revokeError": "Revocation error",
+    "createSuccess": "Key created successfully",
+    "createError": "Creation error",
+    "nameRequired": "Name is required",
+    "loadError": "Loading error",
+    "copied": "Copied to clipboard",
+    "accessDenied": "Access reserved for companies",
+    "name": "Name",
+    "namePlaceholder": "e.g. My ATS, Zapier, etc.",
+    "scopes": "Permissions",
+    "scopeRead": "Read (GET)",
+    "scopeWrite": "Write (POST/PATCH/DELETE)",
+    "create": "Create",
+    "keyCreated": "Key created successfully",
+    "keyCreatedWarning": "⚠️ Copy this key now. You will not be able to see it again.",
+    "storeSecurely": "Store this key in a password manager.",
+    "copyAndClose": "Copy and close",
+    "docTitle": "Quick documentation",
+    "docDesc": "A few examples to get started",
+    "docBase": "Base URL",
+    "docAuth": "Authentication",
+    "docExample": "Example: list jobs",
+    "docEndpoints": "Available endpoints"
+  }
 
 
   

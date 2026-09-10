@@ -19,7 +19,10 @@ import re
 import unicodedata
 import time
 import hashlib
+import secrets
 from typing import List, Optional
+from routers.api_v1 import router as api_v1_router
+from api_keys import generate_api_key
 
 LOGO_URL = "https://anfamlpwootbrzswnpyp.supabase.co/storage/v1/object/public/logos/actoos.png"
 
@@ -103,6 +106,9 @@ STATUS_TRANSLATIONS = {
 
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
+# ⚠️ DEBUG TEMPORAIRE
+print("SUPABASE_JWT_SECRET présent :", "oui" if os.getenv("SUPABASE_JWT_SECRET") else "NON ❌")
+print("Longueur du secret :", len(os.getenv("SUPABASE_JWT_SECRET", "")))
 print(f"✅ Chargement du .env depuis : {env_path}")
 print(f"   STRIPE_SECRET_KEY présente : {'oui' if os.getenv('STRIPE_SECRET_KEY') else 'non'}")
 print(f"   RESEND_API_KEY présente : {'oui' if os.getenv('RESEND_API_KEY') else 'non'}")
@@ -251,6 +257,9 @@ app = FastAPI(title="Actoos Jobs API")
 BUILD_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
 ALLOWED_ORIGINS = ["http://localhost:3000", "https://jobs.actoos.com"]
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.include_router(api_v1_router)
+
+
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
@@ -849,14 +858,28 @@ async def get_current_active_user(request: Request) -> str:
     auth_header = request.headers.get("authorization")
     if not auth_header:
         raise HTTPException(status_code=401, detail="Non authentifié")
-    token = auth_header.replace("Bearer ", "")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
     user_resp = httpx.get(
-        f"{SUPABASE_URL}/auth/v1/user",
-        headers={"Authorization": f"Bearer {token}"}
+        f"{supabase_url}/auth/v1/user",
+        headers={
+            "apikey": supabase_key,
+            "Authorization": f"Bearer {token}",
+        },
+        timeout=10.0,
     )
+
     if user_resp.status_code != 200:
+        print(f"[auth] Supabase {user_resp.status_code}: {user_resp.text[:200]}")
         raise HTTPException(status_code=401, detail="Token invalide ou expiré")
-    user_id = user_resp.json()["id"]
+
+    user_id = user_resp.json().get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+
     return user_id
 
 def get_user_role_in_company(user_id: str, company_id: str) -> str:
@@ -4525,6 +4548,114 @@ async def contact_follower(request: Request):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+# ==================== API KEYS (dashboard entreprise) ====================
+@app.post("/api/company/api-keys")
+async def create_api_key(payload: dict, request: Request, user_id: str = Depends(get_current_active_user)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    company_id = payload.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="company_id requis")
+
+    comp_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=owner_id,subscription_plan",
+        headers=headers
+    )
+    if comp_resp.status_code != 200 or not comp_resp.json():
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    company = comp_resp.json()[0]
+
+    if company["owner_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+
+    plan = company.get("subscription_plan", "free")
+    if plan not in ("pro", "business", "enterprise"):
+        raise HTTPException(status_code=403, detail="L'API nécessite un plan Pro ou Business")
+
+    env = payload.get("environment", "live")
+    full_key, prefix, key_hash = generate_api_key(env)
+    rate_limit = 600 if plan in ("business", "enterprise") else 60
+
+    insert_resp = httpx.post(
+        f"{supabase_url}/rest/v1/api_keys",
+        json={
+            "company_id": company_id,
+            "name": payload.get("name", "Default key"),
+            "key_prefix": prefix,
+            "key_hash": key_hash,
+            "scopes": payload.get("scopes", ["read"]),
+            "environment": env,
+            "rate_limit_per_minute": rate_limit,
+            "created_by": user_id,
+        },
+        headers={**headers, "Prefer": "return=representation"}
+    )
+    if insert_resp.status_code not in (200, 201):
+        raise HTTPException(status_code=500, detail="Erreur création clé API")
+
+    return {
+        "data": insert_resp.json()[0],
+        "full_key": full_key,
+    }
+
+
+@app.get("/api/company/api-keys")
+async def list_api_keys(company_id: str, request: Request, user_id: str = Depends(get_current_active_user)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    comp_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=owner_id",
+        headers=headers
+    )
+    if comp_resp.status_code != 200 or not comp_resp.json():
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    if comp_resp.json()[0]["owner_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+
+    keys_resp = httpx.get(
+        f"{supabase_url}/rest/v1/api_keys"
+        f"?company_id=eq.{company_id}"
+        f"&select=id,name,key_prefix,scopes,environment,rate_limit_per_minute,last_used_at,created_at,revoked_at"
+        f"&order=created_at.desc",
+        headers=headers
+    )
+    return {"data": keys_resp.json()}
+
+
+@app.delete("/api/company/api-keys/{key_id}")
+async def revoke_api_key(key_id: str, request: Request, user_id: str = Depends(get_current_active_user)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    key_resp = httpx.get(
+        f"{supabase_url}/rest/v1/api_keys?id=eq.{key_id}&select=company_id",
+        headers=headers
+    )
+    if key_resp.status_code != 200 or not key_resp.json():
+        raise HTTPException(status_code=404, detail="Clé introuvable")
+
+    company_id = key_resp.json()[0]["company_id"]
+    comp_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=owner_id",
+        headers=headers
+    )
+    if not comp_resp.json() or comp_resp.json()[0]["owner_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+
+    httpx.patch(
+        f"{supabase_url}/rest/v1/api_keys?id=eq.{key_id}",
+        json={"revoked_at": datetime.utcnow().isoformat()},
+        headers=headers
+    )
+    return {"success": True}
+
+
+
 
 
 if os.path.isdir(BUILD_DIR):

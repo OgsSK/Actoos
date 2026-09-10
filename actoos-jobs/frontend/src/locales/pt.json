@@ -3022,6 +3022,8 @@
       }
     },
  "companyDashboard": {
+  "apiButton": "API",
+    
   "removeAsPrimary": "Remover como empresa principal",
     "primaryCompanyRemoved": "Empresa principal removida",
    "setAsPrimary": "Definir como empresa principal",
@@ -3764,5 +3766,53 @@
         "subscribeSuccess": "Subscrição bem-sucedida!",
         "subscribeError": "Erro ao subscrever."
       }
-    }
+    },
+    "apiPage": {
+      "createDesc": "Dê um nome à sua chave para a encontrar facilmente.",
+    "title": "API Actoos Jobs",
+    "subtitle": "Integre o Actoos Jobs nas suas ferramentas de RH, ATS ou sistemas internos.",
+    "upgradeRequired": "Plano Pro ou Business necessário",
+    "upgradeMessage": "O acesso à API é reservado aos planos Pro e Business.",
+    "seePlans": "Ver planos",
+    "feat1Title": "REST API",
+    "feat1Desc": "Endpoints JSON para gerir ofertas e candidaturas",
+    "feat2Title": "Seguro",
+    "feat2Desc": "Autenticação por chave API, scopes granulares",
+    "feat3Title": "Rate limit",
+    "feat3Desc": "Limite: {{limit}} pedidos/min",
+    "yourKeys": "As suas chaves API",
+    "createKey": "Criar uma chave",
+    "noKeys": "Nenhuma chave API",
+    "noKeysHint": "Crie a sua primeira chave para começar.",
+    "active": "Ativa",
+    "revoked": "Revogada",
+    "created": "Criada",
+    "lastUsed": "Última utilização",
+    "revoke": "Revogar",
+    "revokeConfirm": "Tem a certeza de que deseja revogar esta chave? Esta ação é irreversível.",
+    "revokeSuccess": "Chave revogada",
+    "revokeError": "Erro ao revogar",
+    "createSuccess": "Chave criada com sucesso",
+    "createError": "Erro de criação",
+    "nameRequired": "O nome é obrigatório",
+    "loadError": "Erro de carregamento",
+    "copied": "Copiado para a área de transferência",
+    "accessDenied": "Acesso reservado a empresas",
+    "name": "Nome",
+    "namePlaceholder": "Ex: O meu ATS, Zapier, etc.",
+    "scopes": "Permissões",
+    "scopeRead": "Leitura (GET)",
+    "scopeWrite": "Escrita (POST/PATCH/DELETE)",
+    "create": "Criar",
+    "keyCreated": "Chave criada com sucesso",
+    "keyCreatedWarning": "⚠️ Copie esta chave agora. Não a poderá ver novamente.",
+    "storeSecurely": "Guarde esta chave num gestor de palavras-passe.",
+    "copyAndClose": "Copiar e fechar",
+    "docTitle": "Documentação rápida",
+    "docDesc": "Alguns exemplos para começar",
+    "docBase": "URL base",
+    "docAuth": "Autenticação",
+    "docExample": "Exemplo: listar ofertas",
+    "docEndpoints": "Endpoints disponíveis"
+  }
 }

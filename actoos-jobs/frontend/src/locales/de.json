@@ -3129,6 +3129,8 @@
       }
     },
    "companyDashboard": {
+     "apiButton": "API",
+    
     "removeAsPrimary": "Als Hauptunternehmen entfernen",
     "primaryCompanyRemoved": "Hauptunternehmen entfernt",
     "setAsPrimary": "Als Hauptunternehmen festlegen",
@@ -3871,7 +3873,55 @@
         "subscribeSuccess": "Abonnement erfolgreich!",
         "subscribeError": "Fehler beim Abonnieren."
       }
-    }
+    },
+    "apiPage": {
+      "createDesc": "Geben Sie Ihrem Schlüssel einen Namen, damit Sie ihn leicht wiederfinden.",
+    "title": "Actoos Jobs API",
+    "subtitle": "Integrieren Sie Actoos Jobs in Ihre HR-Tools, ATS oder internen Systeme.",
+    "upgradeRequired": "Pro- oder Business-Tarif erforderlich",
+    "upgradeMessage": "Der API-Zugang ist den Tarifen Pro und Business vorbehalten.",
+    "seePlans": "Tarife ansehen",
+    "feat1Title": "REST API",
+    "feat1Desc": "JSON-Endpunkte zur Verwaltung von Stellen und Bewerbungen",
+    "feat2Title": "Sicher",
+    "feat2Desc": "API-Schlüssel-Authentifizierung, granulare Scopes",
+    "feat3Title": "Rate Limit",
+    "feat3Desc": "Limit: {{limit}} Anf./Min.",
+    "yourKeys": "Ihre API-Schlüssel",
+    "createKey": "Schlüssel erstellen",
+    "noKeys": "Keine API-Schlüssel",
+    "noKeysHint": "Erstellen Sie Ihren ersten Schlüssel, um zu beginnen.",
+    "active": "Aktiv",
+    "revoked": "Widerrufen",
+    "created": "Erstellt",
+    "lastUsed": "Zuletzt verwendet",
+    "revoke": "Widerrufen",
+    "revokeConfirm": "Möchten Sie diesen Schlüssel wirklich widerrufen? Diese Aktion ist unumkehrbar.",
+    "revokeSuccess": "Schlüssel widerrufen",
+    "revokeError": "Fehler beim Widerrufen",
+    "createSuccess": "Schlüssel erfolgreich erstellt",
+    "createError": "Erstellungsfehler",
+    "nameRequired": "Name ist erforderlich",
+    "loadError": "Ladefehler",
+    "copied": "In die Zwischenablage kopiert",
+    "accessDenied": "Zugang nur für Unternehmen",
+    "name": "Name",
+    "namePlaceholder": "z. B. Mein ATS, Zapier usw.",
+    "scopes": "Berechtigungen",
+    "scopeRead": "Lesen (GET)",
+    "scopeWrite": "Schreiben (POST/PATCH/DELETE)",
+    "create": "Erstellen",
+    "keyCreated": "Schlüssel erfolgreich erstellt",
+    "keyCreatedWarning": "⚠️ Kopieren Sie diesen Schlüssel jetzt. Sie können ihn später nicht mehr sehen.",
+    "storeSecurely": "Speichern Sie diesen Schlüssel in einem Passwort-Manager.",
+    "copyAndClose": "Kopieren und schließen",
+    "docTitle": "Kurzdokumentation",
+    "docDesc": "Einige Beispiele für den Einstieg",
+    "docBase": "Basis-URL",
+    "docAuth": "Authentifizierung",
+    "docExample": "Beispiel: Stellen auflisten",
+    "docEndpoints": "Verfügbare Endpunkte"
+  }
 
 
 }

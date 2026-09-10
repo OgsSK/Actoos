@@ -3018,6 +3018,8 @@
       }
     },
 "companyDashboard": {
+  "apiButton": "واجهة برمجية",
+    
   "removeAsPrimary": "إزالة كشركة رئيسية",
     "primaryCompanyRemoved": "تمت إزالة الشركة الرئيسية",
    "setAsPrimary": "تعيين كشركة رئيسية",
@@ -3843,7 +3845,55 @@
         "subscribeSuccess": "تم الاشتراك بنجاح!",
         "subscribeError": "خطأ أثناء الاشتراك."
       }
-    }
+    },
+     "apiPage": {
+      "createDesc": "أعط مفتاحك اسماً لتجده بسهولة.",
+    "title": "واجهة أكتوس جوبز",
+    "subtitle": "قم بدمج أكتوس جوبز مع أدوات الموارد البشرية أو أنظمة التوظيف أو الأنظمة الداخلية.",
+    "upgradeRequired": "مطلوب خطة برو أو بزنس",
+    "upgradeMessage": "الوصول إلى الواجهة البرمجية مخصص لخطط برو وبزنس.",
+    "seePlans": "عرض الخطط",
+    "feat1Title": "REST API",
+    "feat1Desc": "نقاط نهاية JSON لإدارة الوظائف والطلبات",
+    "feat2Title": "آمن",
+    "feat2Desc": "مصادقة بمفتاح API، نطاقات دقيقة",
+    "feat3Title": "حد المعدل",
+    "feat3Desc": "الحد: {{limit}} طلب/دقيقة",
+    "yourKeys": "مفاتيح API الخاصة بك",
+    "createKey": "إنشاء مفتاح",
+    "noKeys": "لا توجد مفاتيح API",
+    "noKeysHint": "أنشئ مفتاحك الأول للبدء.",
+    "active": "نشط",
+    "revoked": "ملغى",
+    "created": "تاريخ الإنشاء",
+    "lastUsed": "آخر استخدام",
+    "revoke": "إلغاء",
+    "revokeConfirm": "هل تريد بالتأكيد إلغاء هذا المفتاح؟ هذا الإجراء غير قابل للتراجع.",
+    "revokeSuccess": "تم إلغاء المفتاح",
+    "revokeError": "خطأ أثناء الإلغاء",
+    "createSuccess": "تم إنشاء المفتاح بنجاح",
+    "createError": "خطأ في الإنشاء",
+    "nameRequired": "الاسم مطلوب",
+    "loadError": "خطأ في التحميل",
+    "copied": "تم النسخ إلى الحافظة",
+    "accessDenied": "الوصول مخصص للشركات",
+    "name": "الاسم",
+    "namePlaceholder": "مثال: نظام التوظيف الخاص بي، Zapier، إلخ.",
+    "scopes": "الأذونات",
+    "scopeRead": "قراءة (GET)",
+    "scopeWrite": "كتابة (POST/PATCH/DELETE)",
+    "create": "إنشاء",
+    "keyCreated": "تم إنشاء المفتاح بنجاح",
+    "keyCreatedWarning": "⚠️ انسخ هذا المفتاح الآن. لن تتمكن من رؤيته مرة أخرى.",
+    "storeSecurely": "احفظ هذا المفتاح في مدير كلمات المرور.",
+    "copyAndClose": "نسخ وإغلاق",
+    "docTitle": "وثائق سريعة",
+    "docDesc": "بعض الأمثلة للبدء",
+    "docBase": "عنوان URL الأساسي",
+    "docAuth": "المصادقة",
+    "docExample": "مثال: قائمة الوظائف",
+    "docEndpoints": "نقاط النهاية المتاحة"
+  }
 
 
 
