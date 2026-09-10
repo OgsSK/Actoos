@@ -2,7 +2,9 @@
 import { supabase } from './supabase';
 
 // ⚠️ MÊME base URL que lib/api.js (ton backend)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+// En dev → localhost, en prod → Render
+const API_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8001' : 'https://actoos-jobs-api.onrender.com');
 
 export const apiFetchAuth = async (path, options = {}) => {
   // 1. Récupérer la session (getSession rafraîchit auto si proche expiration)
