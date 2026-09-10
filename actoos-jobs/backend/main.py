@@ -106,6 +106,29 @@ STATUS_TRANSLATIONS = {
 
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
+
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[
+        StarletteIntegration(transaction_style="endpoint"),
+        FastApiIntegration(transaction_style="endpoint"),
+    ],
+    traces_sample_rate=0.1,
+    send_default_pii=False,
+    environment=os.getenv("ENVIRONMENT", "development"),
+    
+)
+    print("✅ Sentry initialisé")
+else:
+    print("⚠️  SENTRY_DSN non configuré — Sentry désactivé")
+
+
 # ⚠️ DEBUG TEMPORAIRE
 print("SUPABASE_JWT_SECRET présent :", "oui" if os.getenv("SUPABASE_JWT_SECRET") else "NON ❌")
 print("Longueur du secret :", len(os.getenv("SUPABASE_JWT_SECRET", "")))
