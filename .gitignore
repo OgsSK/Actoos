@@ -67,3 +67,11 @@ Thumbs.db
 .pnp.js
 .yarn/install-state.gz
 next-env.d.ts
+
+# Next.js build cache
+.next/
+**/.next/
+vitrine/.next/
+
+# Supabase cache (généré par supabase link)
+vitrine/supabase/

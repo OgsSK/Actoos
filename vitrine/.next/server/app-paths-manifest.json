@@ -1,6 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/client/[token]/page": "app/client/[token]/page.js",
-  "/api/send-project-email/route": "app/api/send-project-email/route.js",
-  "/admin/page": "app/admin/page.js"
-}
