@@ -1792,301 +1792,406 @@ const AdminDashboard = () => {
   if (!isAdmin) return null;
 
   // Nouveau composant ReportsContent avec pagination
-  const ReportsContent = () => {
-    const { t } = useTranslation();
-    const [localReports, setLocalReports] = useState([]);
-    const [localLoading, setLocalLoading] = useState(false);
-    const [localFilter, setLocalFilter] = useState('all');
-    const [localPage, setLocalPage] = useState(1);
-    const [localHasMore, setLocalHasMore] = useState(true);
-    const ITEMS_PER_PAGE = 20;
+  // Nouveau composant ReportsContent avec pagination et logique corrigée
+const ReportsContent = () => {
+  const { t } = useTranslation();
+  const [localReports, setLocalReports] = useState([]);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localFilter, setLocalFilter] = useState('all');
+  const [localPage, setLocalPage] = useState(1);
+  const [localHasMore, setLocalHasMore] = useState(true);
+  const ITEMS_PER_PAGE = 20;
 
-    const fetchReports = async (reset = true) => {
-      if (reset) {
-        setLocalLoading(true);
-        setLocalPage(1);
+  const fetchReports = async (reset = true) => {
+    if (reset) {
+      setLocalLoading(true);
+      setLocalPage(1);
+    }
+    const from = reset ? 0 : (localPage - 1) * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
+    try {
+      let query = supabase
+        .from('reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (localFilter !== 'all') {
+        query = query.eq('status', localFilter);
       }
-      const from = reset ? 0 : (localPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
 
-      try {
-        let query = supabase
-          .from('reports')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(from, to);
+      const { data: reportsData, error: reportsError } = await query;
+      if (reportsError) throw reportsError;
 
-        if (localFilter !== 'all') {
-          query = query.eq('status', localFilter);
-        }
+      if (!reportsData || reportsData.length === 0) {
+        if (reset) setLocalReports([]);
+        setLocalHasMore(false);
+        setLocalLoading(false);
+        return;
+      }
 
-        const { data: reportsData, error: reportsError } = await query;
-        if (reportsError) throw reportsError;
+      const reporterIds = [...new Set(reportsData.map(r => r.reporter_id))];
+      const { data: reporters } = await supabase
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .in('id', reporterIds);
 
-        if (!reportsData || reportsData.length === 0) {
-          if (reset) setLocalReports([]);
-          setLocalHasMore(false);
-          setLocalLoading(false);
-          return;
-        }
+      const reporterMap = {};
+      (reporters || []).forEach(u => { reporterMap[u.id] = u; });
 
-        // Récupérer les reporters
-        const reporterIds = [...new Set(reportsData.map(r => r.reporter_id))];
-        const { data: reporters, error: reportersError } = await supabase
+      const jobIds = reportsData.filter(r => r.reported_item_type === 'job').map(r => r.reported_item_id);
+      const companyIds = reportsData.filter(r => r.reported_item_type === 'company').map(r => r.reported_item_id);
+      const candidateIds = reportsData.filter(r => r.reported_item_type === 'candidate' || r.reported_item_type === 'user').map(r => r.reported_item_id);
+
+      let jobsMap = {};
+      if (jobIds.length > 0) {
+        const { data: jobs } = await supabase
+          .from('jobs')
+          .select('id, title, status, company:companies(name), posted_by_user:users(email, first_name, last_name)')
+          .in('id', jobIds);
+        (jobs || []).forEach(j => { jobsMap[j.id] = j; });
+      }
+
+      let companiesMap = {};
+      if (companyIds.length > 0) {
+        const { data: companies } = await supabase
+          .from('companies')
+          .select('id, name, is_active, is_verified, owner:users(email, first_name, last_name)')
+          .in('id', companyIds);
+        (companies || []).forEach(c => { companiesMap[c.id] = c; });
+      }
+
+      let candidatesMap = {};
+      if (candidateIds.length > 0) {
+        const { data: candidates } = await supabase
           .from('users')
           .select('id, email, first_name, last_name')
-          .in('id', reporterIds);
-
-        const reporterMap = {};
-        (reporters || []).forEach(u => {
-          reporterMap[u.id] = u;
-        });
-
-        // Grouper les IDs par type pour enrichir les détails
-        const jobIds = reportsData.filter(r => r.reported_item_type === 'job').map(r => r.reported_item_id);
-        const companyIds = reportsData.filter(r => r.reported_item_type === 'company').map(r => r.reported_item_id);
-        const candidateIds = reportsData.filter(r => r.reported_item_type === 'candidate' || r.reported_item_type === 'user').map(r => r.reported_item_id);
-
-        let jobsMap = {};
-        if (jobIds.length > 0) {
-          const { data: jobs } = await supabase
-            .from('jobs')
-            .select('id, title, company:companies(name), posted_by_user:users(email, first_name, last_name)')
-            .in('id', jobIds);
-          (jobs || []).forEach(j => { jobsMap[j.id] = j; });
-        }
-
-        let companiesMap = {};
-        if (companyIds.length > 0) {
-          const { data: companies } = await supabase
-            .from('companies')
-            .select('id, name, owner:users(email, first_name, last_name)')
-            .in('id', companyIds);
-          (companies || []).forEach(c => { companiesMap[c.id] = c; });
-        }
-
-        let candidatesMap = {};
-        if (candidateIds.length > 0) {
-          const { data: candidates } = await supabase
-            .from('users')
-            .select('id, email, first_name, last_name')
-            .in('id', candidateIds);
-          (candidates || []).forEach(u => { candidatesMap[u.id] = u; });
-        }
-
-        const enriched = reportsData.map(report => {
-          const reporter = reporterMap[report.reporter_id] || { email: 'Inconnu', first_name: '', last_name: '' };
-          let details = null;
-          if (report.reported_item_type === 'job') {
-            details = jobsMap[report.reported_item_id] || { title: 'Offre introuvable', company: { name: 'Inconnue' }, posted_by_user: { email: 'Inconnu' } };
-          } else if (report.reported_item_type === 'company') {
-            details = companiesMap[report.reported_item_id] || { name: 'Entreprise introuvable', owner: { email: 'Inconnu' } };
-          } else if (report.reported_item_type === 'candidate' || report.reported_item_type === 'user') {
-            details = candidatesMap[report.reported_item_id] || { email: 'Inconnu', first_name: 'Candidat', last_name: '' };
-          }
-          return { ...report, reporter, details };
-        });
-
-        if (reset) {
-          setLocalReports(enriched);
-        } else {
-          setLocalReports(prev => [...prev, ...enriched]);
-        }
-        setLocalHasMore(reportsData.length === ITEMS_PER_PAGE);
-      } catch (error) {
-        console.error('Erreur fetchReports:', error);
-        toast.error(t('adminDashboard.reports.loadError'));
-      } finally {
-        setLocalLoading(false);
+          .in('id', candidateIds);
+        (candidates || []).forEach(u => { candidatesMap[u.id] = u; });
       }
-    };
 
-    useEffect(() => {
+      const enriched = reportsData.map(report => {
+        const reporter = reporterMap[report.reporter_id] || { email: 'Inconnu', first_name: '', last_name: '' };
+        let details = null;
+        if (report.reported_item_type === 'job') {
+          details = jobsMap[report.reported_item_id] || { title: 'Offre introuvable', status: null, company: { name: 'Inconnue' }, posted_by_user: { email: 'Inconnu' } };
+        } else if (report.reported_item_type === 'company') {
+          details = companiesMap[report.reported_item_id] || { name: 'Entreprise introuvable', is_active: true, owner: { email: 'Inconnu' } };
+        } else if (report.reported_item_type === 'candidate' || report.reported_item_type === 'user') {
+          details = candidatesMap[report.reported_item_id] || { email: 'Inconnu', first_name: 'Candidat', last_name: '' };
+        }
+        return { ...report, reporter, details };
+      });
+
+      if (reset) {
+        setLocalReports(enriched);
+      } else {
+        setLocalReports(prev => [...prev, ...enriched]);
+      }
+      setLocalHasMore(reportsData.length === ITEMS_PER_PAGE);
+    } catch (error) {
+      console.error('Erreur fetchReports:', error);
+      toast.error(t('adminDashboard.reports.loadError'));
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports(true);
+  }, [localFilter]);
+
+  const handleUpdateStatus = async (reportId, newStatus) => {
+    const { error } = await supabase.rpc('update_report_status', {
+      report_id: reportId,
+      new_status: newStatus,
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setLocalReports(prev => prev.map(r => (r.id === reportId ? { ...r, status: newStatus } : r)));
+      toast.success(t('adminDashboard.reports.updatedToast'));
+    }
+  };
+
+  const handleSuspendItem = async (report) => {
+    const reason = window.prompt(t('adminDashboard.jobs.reasonLabel'));
+    if (reason === null) return;
+    try {
+      if (report.reported_item_type === 'job') {
+        await apiFetch('/api/admin/suspend-job', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, reason, language: i18n.language }),
+        });
+        toast.success(t('adminDashboard.reports.suspendedToast'));
+      } else if (report.reported_item_type === 'company') {
+        await apiFetch('/api/admin/suspend-company', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, reason, language: i18n.language }),
+        });
+        toast.success(t('adminDashboard.reports.companySuspendedToast'));
+      }
       fetchReports(true);
-    }, [localFilter]);
-
-    const typeLabels = {
-      job: t('adminDashboard.reports.badges.job', 'Offre'),
-      company: t('adminDashboard.reports.badges.company', 'Entreprise'),
-      candidate: t('adminDashboard.reports.badges.candidate', 'Candidat'),
-      user: t('adminDashboard.reports.badges.candidate', 'Candidat'),
-    };
-
-    const statusLabels = {
-      pending: t('adminDashboard.reports.status.pending', 'En attente'),
-      reviewed: t('adminDashboard.reports.status.reviewed', 'Examiné'),
-      resolved: t('adminDashboard.reports.status.resolved', 'Résolu'),
-    };
-
-    if (localLoading && localReports.length === 0) {
-      return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
+    } catch (error) {
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
     }
+  };
 
-    if (localReports.length === 0) {
-      return <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>;
+  const handleReactivateItem = async (report) => {
+    try {
+      if (report.reported_item_type === 'job') {
+        await apiFetch('/api/admin/reactivate-job', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, language: i18n.language }),
+        });
+        toast.success(t('adminDashboard.reports.jobReactivatedToast', 'Offre réactivée'));
+      } else if (report.reported_item_type === 'company') {
+        await apiFetch('/api/admin/reactivate-company', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, language: i18n.language }),
+        });
+        toast.success(t('adminDashboard.reports.companyReactivatedToast', 'Entreprise réactivée'));
+      }
+      fetchReports(true);
+    } catch (error) {
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
     }
+  };
 
-    return (
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-            <select
-              value={localFilter}
-              onChange={(e) => setLocalFilter(e.target.value)}
-              className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white w-full sm:w-auto"
-            >
-              <option value="all">{t('adminDashboard.reports.filterAll', 'Tous')}</option>
-              <option value="pending">{t('adminDashboard.reports.filterPending', 'En attente')}</option>
-              <option value="reviewed">{t('adminDashboard.reports.filterReviewed', 'Examinés')}</option>
-              <option value="resolved">{t('adminDashboard.reports.filterResolved', 'Résolus')}</option>
-            </select>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => fetchReports(true)} disabled={localLoading} className="w-full sm:w-auto">
-            <RefreshCw className={cn('w-4 h-4 mr-2', localLoading && 'animate-spin')} />
-            {t('adminDashboard.refresh')}
-          </Button>
+  const handleDeleteItem = async (report) => {
+    const itemLabel = report.reported_item_type === 'job' ? "l'offre" : "l'entreprise";
+    if (!window.confirm(`Supprimer définitivement ${itemLabel} ?`)) return;
+    try {
+      if (report.reported_item_type === 'job') {
+        await apiFetch('/api/admin/delete-job', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, reason: 'Signalement traité', language: i18n.language }),
+        });
+        toast.success(t('adminDashboard.reports.deletedToast'));
+      } else {
+        await apiFetch(`/api/admin/delete-company/${report.reported_item_id}?language=${i18n.language}`, { method: 'DELETE' });
+        toast.success(t('adminDashboard.reports.companyDeletedToast'));
+      }
+      setLocalReports(prev => prev.filter(r => r.id !== report.id));
+    } catch (error) {
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
+    }
+  };
+
+  const handleDeleteReportItem = async (reportId) => {
+    if (!window.confirm(t('adminDashboard.reports.deleteReportConfirm'))) return;
+    try {
+      await apiFetch(`/api/admin/reports/${reportId}`, { method: 'DELETE' });
+      setLocalReports(prev => prev.filter(r => r.id !== reportId));
+      toast.success(t('adminDashboard.reports.deleteReportToast'));
+    } catch (error) {
+      console.error('Erreur suppression signalement:', error);
+      toast.error(t('adminDashboard.jobs.genericError'));
+    }
+  };
+
+  const typeLabels = {
+    job: t('adminDashboard.reports.badges.job', 'Offre'),
+    company: t('adminDashboard.reports.badges.company', 'Entreprise'),
+    candidate: t('adminDashboard.reports.badges.candidate', 'Candidat'),
+    user: t('adminDashboard.reports.badges.candidate', 'Candidat'),
+  };
+
+  const statusLabels = {
+    pending: t('adminDashboard.reports.status.pending', 'En attente'),
+    reviewed: t('adminDashboard.reports.status.reviewed', 'Examiné'),
+    resolved: t('adminDashboard.reports.status.resolved', 'Résolu'),
+  };
+
+  if (localLoading && localReports.length === 0) {
+    return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
+  }
+
+  if (localReports.length === 0) {
+    return <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>;
+  }
+
+  return (
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+          <select
+            value={localFilter}
+            onChange={(e) => setLocalFilter(e.target.value)}
+            className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white w-full sm:w-auto"
+          >
+            <option value="all">{t('adminDashboard.reports.filterAll', 'Tous')}</option>
+            <option value="pending">{t('adminDashboard.reports.filterPending', 'En attente')}</option>
+            <option value="reviewed">{t('adminDashboard.reports.filterReviewed', 'Examinés')}</option>
+            <option value="resolved">{t('adminDashboard.reports.filterResolved', 'Résolus')}</option>
+          </select>
         </div>
+        <Button variant="outline" size="sm" onClick={() => fetchReports(true)} disabled={localLoading} className="w-full sm:w-auto">
+          <RefreshCw className={cn('w-4 h-4 mr-2', localLoading && 'animate-spin')} />
+          {t('adminDashboard.refresh')}
+        </Button>
+      </div>
 
-        <div className="space-y-4">
-          {localReports.map((report) => {
-            const isJob = report.reported_item_type === 'job';
-            const isCompany = report.reported_item_type === 'company';
-            const isCandidate = report.reported_item_type === 'candidate' || report.reported_item_type === 'user';
-            const details = report.details;
+      <div className="space-y-4">
+        {localReports.map((report) => {
+          const isJob = report.reported_item_type === 'job';
+          const isCompany = report.reported_item_type === 'company';
+          const isCandidate = report.reported_item_type === 'candidate' || report.reported_item_type === 'user';
+          const details = report.details;
 
-            return (
-              <div key={report.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={
-                        isJob ? 'bg-blue-100 text-blue-700' :
-                        isCompany ? 'bg-purple-100 text-purple-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }>
-                        {typeLabels[report.reported_item_type] || report.reported_item_type}
+          // Déterminer si l'élément est suspendu (basé sur l'état réel)
+          let isItemSuspended = false;
+          if (isJob) {
+            isItemSuspended = details?.status === 'suspended';
+          } else if (isCompany) {
+            isItemSuspended = details?.is_active === false;
+          }
+
+          return (
+            <div key={report.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className={
+                      isJob ? 'bg-blue-100 text-blue-700' :
+                      isCompany ? 'bg-purple-100 text-purple-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }>
+                      {typeLabels[report.reported_item_type] || report.reported_item_type}
+                    </Badge>
+                    <Badge className={
+                      report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
+                      'bg-green-100 text-green-700'
+                    }>
+                      {statusLabels[report.status] || report.status}
+                    </Badge>
+                    {!isCandidate && (
+                      <Badge className={isItemSuspended ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}>
+                        {isItemSuspended 
+                          ? (isJob ? t('adminDashboard.jobs.status.suspended', 'Suspendue') : t('adminDashboard.companies.status.suspended', 'Suspendue'))
+                          : (isJob ? t('adminDashboard.jobs.status.active', 'Active') : t('adminDashboard.companies.status.verified', 'Active'))
+                        }
                       </Badge>
-                      <Badge className={
-                        report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
-                        'bg-green-100 text-green-700'
-                      }>
-                        {statusLabels[report.status] || report.status}
-                      </Badge>
-                    </div>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">
-                      {new Date(report.created_at).toLocaleString('fr-FR')}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">{t('adminDashboard.reports.reportedBy')}</span>{' '}
-                      {report.reporter?.email || t('adminDashboard.reports.unknownUser', 'Inconnu')}
-                      {report.reporter?.first_name && report.reporter?.last_name && (
-                        <span className="text-slate-500"> ({report.reporter.first_name} {report.reporter.last_name})</span>
-                      )}
-                    </p>
-                    <p>
-                      <span className="font-medium">{t('adminDashboard.reports.reason')}</span>{' '}
-                      {report.reason}
-                    </p>
-                    {report.description && (
-                      <p className="text-slate-600 italic">« {report.description} »</p>
                     )}
                   </div>
+                  <span className="text-xs text-slate-400 whitespace-nowrap">
+                    {new Date(report.created_at).toLocaleString('fr-FR')}
+                  </span>
+                </div>
 
-                  {details && (
-                    <div className="mt-1 p-3 bg-slate-50 rounded-xl text-sm border border-slate-100 space-y-1">
-                      <p className="font-medium">
-                        {isJob ? t('adminDashboard.reports.jobDetails') :
-                         isCompany ? t('adminDashboard.reports.companyDetails') :
-                         t('adminDashboard.reports.candidateDetails')}
-                      </p>
-                      {isJob && (
-                        <>
-                          <p><span className="font-medium">{t('adminDashboard.reports.jobTitle')}</span> {details.title}</p>
-                          <p><span className="font-medium">{t('adminDashboard.reports.company')}</span> {details.company?.name}</p>
-                          <p><span className="font-medium">{t('adminDashboard.reports.postedBy')}</span> {details.posted_by_user?.email}</p>
-                        </>
-                      )}
-                      {isCompany && (
-                        <>
-                          <p><span className="font-medium">{t('adminDashboard.reports.companyName')}</span> {details.name}</p>
-                          <p><span className="font-medium">{t('adminDashboard.reports.owner')}</span> {details.owner?.email}</p>
-                        </>
-                      )}
-                      {isCandidate && (
-                        <>
-                          <p><span className="font-medium">{t('adminDashboard.reports.candidateName')}</span> {details.first_name} {details.last_name}</p>
-                          <p><span className="font-medium">{t('adminDashboard.reports.candidateEmail')}</span> {details.email}</p>
-                        </>
-                      )}
-                    </div>
+                <div className="space-y-1 text-sm">
+                  <p>
+                    <span className="font-medium">{t('adminDashboard.reports.reportedBy')}</span>{' '}
+                    {report.reporter?.email || t('adminDashboard.reports.unknownUser', 'Inconnu')}
+                    {report.reporter?.first_name && report.reporter?.last_name && (
+                      <span className="text-slate-500"> ({report.reporter.first_name} {report.reporter.last_name})</span>
+                    )}
+                  </p>
+                  <p>
+                    <span className="font-medium">{t('adminDashboard.reports.reason')}</span>{' '}
+                    {report.reason}
+                  </p>
+                  {report.description && (
+                    <p className="text-slate-600 italic">« {report.description} »</p>
                   )}
+                </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-                    {report.status === 'pending' && (
+                {details && (
+                  <div className="mt-1 p-3 bg-slate-50 rounded-xl text-sm border border-slate-100 space-y-1">
+                    <p className="font-medium">
+                      {isJob ? t('adminDashboard.reports.jobDetails') :
+                       isCompany ? t('adminDashboard.reports.companyDetails') :
+                       t('adminDashboard.reports.candidateDetails')}
+                    </p>
+                    {isJob && (
                       <>
-                        <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} className="flex-1 sm:flex-none">
-                          {t('adminDashboard.reports.markReviewed', 'Marquer comme examiné')}
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
-                          {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
-                        </Button>
+                        <p><span className="font-medium">{t('adminDashboard.reports.jobTitle')}</span> {details.title}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.company')}</span> {details.company?.name}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.postedBy')}</span> {details.posted_by_user?.email}</p>
                       </>
                     )}
-                    {report.status === 'reviewed' && (
-                      <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
+                    {isCompany && (
+                      <>
+                        <p><span className="font-medium">{t('adminDashboard.reports.companyName')}</span> {details.name}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.owner')}</span> {details.owner?.email}</p>
+                      </>
+                    )}
+                    {isCandidate && (
+                      <>
+                        <p><span className="font-medium">{t('adminDashboard.reports.candidateName')}</span> {details.first_name} {details.last_name}</p>
+                        <p><span className="font-medium">{t('adminDashboard.reports.candidateEmail')}</span> {details.email}</p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                  {/* Boutons de statut du signalement */}
+                  {report.status === 'pending' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(report.id, 'reviewed')} className="flex-1 sm:flex-none">
+                        {t('adminDashboard.reports.markReviewed', 'Marquer comme examiné')}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
                         {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
                       </Button>
-                    )}
-
-                    {!isCandidate && (
-                      <>
-                        {report.status === 'resolved' || report.status === 'reviewed' ? (
-                          <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 flex-1 sm:flex-none" onClick={() => handleReactivateReportedItem(report)}>
-                            <Check className="w-4 h-4 mr-1" />
-                            {isJob ? t('adminDashboard.jobs.reactivate', 'Réactiver l\'offre') : t('adminDashboard.companies.reactivate', 'Réactiver l\'entreprise')}
-                          </Button>
-                        ) : (
-                          <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 flex-1 sm:flex-none" onClick={() => handleSuspendReportedItem(report)}>
-                            <Ban className="w-4 h-4 mr-1" />
-                            {isJob ? t('adminDashboard.reports.suspendJob', 'Suspendre l\'offre') : t('adminDashboard.reports.suspendCompany', 'Suspendre l\'entreprise')}
-                          </Button>
-                        )}
-                        <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleDeleteReportedItem(report)}>
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          {isJob ? t('adminDashboard.reports.deleteJob', 'Supprimer l\'offre') : t('adminDashboard.reports.deleteCompany', 'Supprimer l\'entreprise')}
-                        </Button>
-                      </>
-                    )}
-                    <Button size="sm" variant="outline" className="text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none" onClick={() => handleDeleteReport(report.id)}>
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      {t('adminDashboard.reports.deleteReport', 'Supprimer le signalement')}
+                    </>
+                  )}
+                  {report.status === 'reviewed' && (
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(report.id, 'resolved')} className="flex-1 sm:flex-none">
+                      {t('adminDashboard.reports.markResolved', 'Marquer comme résolu')}
                     </Button>
-                  </div>
+                  )}
+
+                  {/* Actions sur l'élément signalé */}
+                  {!isCandidate && details && (
+                    <>
+                      {isItemSuspended ? (
+                        <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 flex-1 sm:flex-none" onClick={() => handleReactivateItem(report)}>
+                          <Check className="w-4 h-4 mr-1" />
+                          {isJob ? t('adminDashboard.jobs.reactivate', 'Réactiver l\'offre') : t('adminDashboard.companies.reactivate', 'Réactiver l\'entreprise')}
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 flex-1 sm:flex-none" onClick={() => handleSuspendItem(report)}>
+                          <Ban className="w-4 h-4 mr-1" />
+                          {isJob ? t('adminDashboard.reports.suspendJob', 'Suspendre l\'offre') : t('adminDashboard.reports.suspendCompany', 'Suspendre l\'entreprise')}
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleDeleteItem(report)}>
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        {isJob ? t('adminDashboard.reports.deleteJob', 'Supprimer l\'offre') : t('adminDashboard.reports.deleteCompany', 'Supprimer l\'entreprise')}
+                      </Button>
+                    </>
+                  )}
+
+                  <Button size="sm" variant="outline" className="text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none" onClick={() => handleDeleteReportItem(report.id)}>
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    {t('adminDashboard.reports.deleteReport', 'Supprimer le signalement')}
+                  </Button>
                 </div>
               </div>
-            );
-          })}
-        </div>
-
-        {localHasMore && (
-          <div className="text-center mt-4">
-            <Button onClick={() => {
-              setLocalPage(prev => prev + 1);
-              fetchReports(false);
-            }} disabled={localLoading}>
-              {localLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {t('adminDashboard.reports.loadMore')}
-            </Button>
-          </div>
-        )}
+            </div>
+          );
+        })}
       </div>
-    );
-  };
+
+      {localHasMore && (
+        <div className="text-center mt-4">
+          <Button onClick={() => {
+            setLocalPage(prev => prev + 1);
+            fetchReports(false);
+          }} disabled={localLoading}>
+            {localLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            {t('adminDashboard.reports.loadMore')}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="admin-dashboard">
