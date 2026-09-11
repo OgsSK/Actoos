@@ -8,6 +8,16 @@ const nextConfig = {
   experimental: {
     // Aucune fonctionnalité expérimentale nécessaire
   },
+  // ✅ Transpiler le package partagé @actoos/auth-client
+  transpilePackages: ['@actoos/auth-client'],
+  // ✅ Résoudre les imports `.js` en essayant `.ts` d'abord
+  // (nécessaire car le package utilise node16 qui exige `.js` dans les imports)
+  webpack: (config) => {
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js', '.jsx'],
+    };
+    return config;
+  },
   // Redirections 301
   async redirects() {
     return [

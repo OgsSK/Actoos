@@ -15,6 +15,8 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
 import BookingModal from '../components/BookingModal';
+import StepPickerModal from '../components/StepPickerModal';
+import { SUPABASE_FUNCTIONS_URL } from '../../lib/supabase-functions';
 
 const COLORS = ['#0F172A', '#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'];
 
@@ -57,12 +59,29 @@ function getStatusColor(status: string) {
   return map[normalizeStatus(status)] || 'bg-gray-50 text-gray-700';
 }
 
-function getPaymentColor(status: string) {
-  const map: Record<string, string> = {
-    aucun: 'bg-slate-50 text-slate-700', acompte_payé: 'bg-amber-50 text-amber-700',
-    complet: 'bg-green-50 text-green-700', devis_envoyé: 'bg-purple-50 text-purple-700',
+function getClientPaymentStatus(status: string, lang: string) {
+  const normalized = normalizeStatus(status);
+  const labels: Record<string, Record<string, string>> = {
+    aucun: { fr: 'Non payé', en: 'Unpaid' },
+    devis_envoyé: { fr: 'Devis envoyé', en: 'Quote sent' },
+    acompte_payé: { fr: 'Acompte payé', en: 'Deposit paid' },
+    partiel: { fr: 'Partiellement payé', en: 'Partially paid' },
+    complet: { fr: 'Payé', en: 'Paid' },
   };
-  return map[normalizeStatus(status)] || 'bg-slate-50 text-slate-700';
+  return labels[normalized]?.[lang] || (lang === 'fr' ? 'Non payé' : 'Unpaid');
+}
+
+// Retourne le titre du projet en essayant tous les champs possibles
+function getProjectTitle(projet: any, untitled: string): string {
+  if (!projet) return untitled;
+  return (
+    projet.project_name ||
+    projet.projectName ||
+    projet.brief?.projectName ||
+    projet.brief?.project_name ||
+    projet.brief?.title ||
+    untitled
+  );
 }
 
 export default function AdminPage() {
@@ -79,12 +98,11 @@ export default function AdminPage() {
   const [emailForm, setEmailForm] = useState<any>(null);
   const [emailSending, setEmailSending] = useState(false);
   const [token, setToken] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'projets' | 'decision' | 'corbeille' | 'messages' | 'fichiers'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'projets' | 'decision' | 'termines' | 'corbeille' | 'messages' | 'fichiers'>('dashboard');
   const [mounted, setMounted] = useState(false);
 
   const [showAddStepsModal, setShowAddStepsModal] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [multiStepsInput, setMultiStepsInput] = useState('');
 
   const [showBooking, setShowBooking] = useState(false);
   const [bookingProject, setBookingProject] = useState<any>(null);
@@ -95,6 +113,39 @@ export default function AdminPage() {
   );
   const [unreadCount, setUnreadCount] = useState(0);
   const [allFiles, setAllFiles] = useState<any[]>([]);
+
+  // Suivi des projets déjà vus par l'admin (persisté dans localStorage)
+  const [viewedProjectIds, setViewedProjectIds] = useState<Set<string>>(new Set());
+
+  // Charger depuis localStorage au démarrage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('admin_viewed_projects');
+      const arr = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(arr)) setViewedProjectIds(new Set(arr));
+    } catch { /* ignore */ }
+  }, []);
+
+  const markProjectAsViewed = (id: string) => {
+    if (!id) return;
+    setViewedProjectIds(prev => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem('admin_viewed_projects', JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  };
+
+  const isProjectUnviewed = (id: string) => !!id && !viewedProjectIds.has(id);
+
+  // Filtres onglet "Terminés"
+  const [completedSearch, setCompletedSearch] = useState('');
+  const [completedPaymentFilter, setCompletedPaymentFilter] = useState<'all' | 'aucun' | 'acompte_payé' | 'complet'>('all');
+  const [completedDateFrom, setCompletedDateFrom] = useState('');
+  const [completedDateTo, setCompletedDateTo] = useState('');
+  const [completedSort, setCompletedSort] = useState<'recent' | 'oldest' | 'name' | 'amount'>('recent');
 
   const [detailTab, setDetailTab] = useState('details');
   const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
@@ -120,7 +171,7 @@ export default function AdminPage() {
     setLoading(true);
     const unique = Date.now() + '-' + Math.random().toString(36).slice(2);
     try {
-      const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-projects?_=${unique}`, {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-projects?_=${unique}`, {
         headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
       });
       const data = await res.json();
@@ -128,7 +179,7 @@ export default function AdminPage() {
       const now = new Date();
       for (const p of projectsData) {
         if (p.booking_id && p.booking_start && new Date(p.booking_start) < now) {
-          fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/clean-booking', {
+          fetch(`${SUPABASE_FUNCTIONS_URL}/clean-booking`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ project_id: p.id }),
@@ -144,7 +195,7 @@ export default function AdminPage() {
 
   const loadComments = async () => {
     try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-all-comments');
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-all-comments`);
       const data = await res.json();
       setAllComments(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -152,7 +203,7 @@ export default function AdminPage() {
 
   const loadAllFiles = async () => {
     try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-all-files');
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-all-files`);
       const data = await res.json();
       setAllFiles(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
@@ -184,10 +235,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (selectedProject) {
-      fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-files?project_id=${selectedProject.id}`)
+      fetch(`${SUPABASE_FUNCTIONS_URL}/get-files?project_id=${selectedProject.id}`)
         .then(res => res.json())
         .then(data => setSelectedFiles(Array.isArray(data) ? data : []));
-      fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-comments?project_id=${selectedProject.id}`)
+      fetch(`${SUPABASE_FUNCTIONS_URL}/get-comments?project_id=${selectedProject.id}`)
         .then(res => res.json())
         .then(data => setSelectedComments(Array.isArray(data) ? data : []));
     }
@@ -209,7 +260,7 @@ export default function AdminPage() {
   const updateStatus = async (id: string, status: string) => {
     setActionLoading(id);
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id, status: normalizeStatus(status) }),
       });
@@ -238,7 +289,7 @@ export default function AdminPage() {
         }
       }
 
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id, ...updates }),
@@ -254,7 +305,7 @@ export default function AdminPage() {
 
   const updateMaturity = async (id: string, value: number) => {
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id, maturityScore: value }),
       });
@@ -271,7 +322,7 @@ export default function AdminPage() {
       if (!confirm(t[language].adminRefuseConfirm)) return;
       setActionLoading(projet.id);
       try {
-        await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+        await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: projet.id, action: 'refuse', decision_message: reason }),
         });
@@ -284,8 +335,8 @@ export default function AdminPage() {
             subject: projLang === 'en' ? 'Update about your project' : 'Suite de votre projet',
             title: projLang === 'en' ? 'Project update' : 'Suite de votre projet',
             message: projLang === 'en'
-              ? `Hello ${projet.client_name},<br><br>After careful review, we regret to inform you that we cannot move forward with your project <strong>${projet.brief?.projectName || 'your project'}</strong> at this time.<br><br>Reason: ${reason}<br><br>Feel free to reach out if you have any questions.`
-              : `Bonjour ${projet.client_name},<br><br>Après étude approfondie, nous sommes au regret de ne pas donner suite à votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong> pour le moment.<br><br>Motif : ${reason}<br><br>N'hésitez pas à nous contacter si vous avez des questions.`,
+              ? `Hello ${projet.client_name},<br><br>After careful review, we regret to inform you that we cannot move forward with your project <strong>${getProjectTitle(projet, 'your project')}</strong> at this time.<br><br>Reason: ${reason}<br><br>Feel free to reach out if you have any questions.`
+              : `Bonjour ${projet.client_name},<br><br>Après étude approfondie, nous sommes au regret de ne pas donner suite à votre projet <strong>${getProjectTitle(projet, 'votre projet')}</strong> pour le moment.<br><br>Motif : ${reason}<br><br>N'hésitez pas à nous contacter si vous avez des questions.`,
             buttonText: projLang === 'en' ? 'Contact us' : 'Nous contacter',
             buttonUrl: 'mailto:contact@actoos.com',
             language: projLang,
@@ -298,7 +349,7 @@ export default function AdminPage() {
     } else if (action === 'accept') {
       setActionLoading(projet.id);
       try {
-        await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+        await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: projet.id, action: 'accept' }),
         });
@@ -312,8 +363,8 @@ export default function AdminPage() {
             subject: projLang === 'en' ? 'Your project has been accepted!' : 'Votre projet a été accepté !',
             title: projLang === 'en' ? 'Project accepted!' : 'Projet accepté !',
             message: projLang === 'en'
-              ? `Hello ${projet.client_name},<br><br>We are pleased to inform you that your project <strong>${projet.brief?.projectName || 'your project'}</strong> has been accepted!<br><br>Our team will contact you shortly to discuss the next steps.`
-              : `Bonjour ${projet.client_name},<br><br>Nous avons le plaisir de vous annoncer que votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong> a été accepté !<br><br>Notre équipe vous contactera très prochainement pour échanger sur les prochaines étapes.`,
+              ? `Hello ${projet.client_name},<br><br>We are pleased to inform you that your project <strong>${getProjectTitle(projet, 'your project')}</strong> has been accepted!<br><br>Our team will contact you shortly to discuss the next steps.`
+              : `Bonjour ${projet.client_name},<br><br>Nous avons le plaisir de vous annoncer que votre projet <strong>${getProjectTitle(projet, 'votre projet')}</strong> a été accepté !<br><br>Notre équipe vous contactera très prochainement pour échanger sur les prochaines étapes.`,
             buttonText: projLang === 'en' ? 'View my project' : 'Voir mon projet',
             buttonUrl: clientLink,
             language: projLang,
@@ -327,7 +378,7 @@ export default function AdminPage() {
       if (!confirm(t[language].adminArchiveConfirm)) return;
       setActionLoading(projet.id);
       try {
-        await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+        await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: projet.id, action: 'archive' }),
         });
@@ -339,7 +390,7 @@ export default function AdminPage() {
   const handleRestore = async (id: string) => {
     setActionLoading(id);
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id, action: 'restore' }),
       });
@@ -359,8 +410,8 @@ export default function AdminPage() {
           subject: projLang === 'en' ? 'Follow-up - Actoos' : 'Relance - Actoos',
           title: projLang === 'en' ? 'Follow-up' : 'Relance',
           message: projLang === 'en'
-            ? `Hello ${projet.client_name},<br><br>${t[projLang].adminFollowUpBody} <strong>${projet.brief?.projectName || t[projLang].adminYourProject}</strong>.`
-            : `Bonjour ${projet.client_name},<br><br>${t[projLang].adminFollowUpBody} <strong>${projet.brief?.projectName || t[projLang].adminYourProject}</strong>.`,
+            ? `Hello ${projet.client_name},<br><br>${t[projLang].adminFollowUpBody} <strong>${getProjectTitle(projet, t[projLang].adminYourProject)}</strong>.`
+            : `Bonjour ${projet.client_name},<br><br>${t[projLang].adminFollowUpBody} <strong>${getProjectTitle(projet, t[projLang].adminYourProject)}</strong>.`,
           buttonText: projLang === 'en' ? 'View project' : 'Voir le projet',
           buttonUrl: `https://actoos.com/client/${projet.client_token}`,
           language: projLang,
@@ -375,18 +426,18 @@ export default function AdminPage() {
     if (!amount) return;
     setActionLoading(projet.id);
     try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/create-payment-link', {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-link`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: parseFloat(amount),
           currency: 'eur',
-          description: projet.brief?.projectName || t[language].adminProject,
+          description: getProjectTitle(projet, t[language].adminProject),
           metadata: { projet_id: projet.id },
         }),
       });
       const data = await res.json();
       if (data.url) {
-        await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+        await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: projet.id, payment_link: data.url, payment_amount: parseFloat(amount), payment_status: 'devis_envoyé' }),
         });
@@ -414,7 +465,7 @@ export default function AdminPage() {
     } catch { alert(t[language].adminError); } finally { setActionLoading(null); }
   };
 
-  const openEmailForm = (projet: any) => setEmailForm({ projet, subject: `${t[language].adminEmailDefaultSubject} ${projet.brief?.projectName || t[language].adminProject}`, body: '' });
+  const openEmailForm = (projet: any) => setEmailForm({ projet, subject: `${t[language].adminEmailDefaultSubject} ${getProjectTitle(projet, t[language].adminProject)}`, body: '' });
 
   const sendEmailToClient = async () => {
     if (!emailForm) return;
@@ -441,7 +492,7 @@ export default function AdminPage() {
   const handleCancelBooking = async (projectId: string, bookingId: string) => {
     if (!confirm(t[language].adminCancelAppointmentConfirm)) return;
     try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/cancel-booking', {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/cancel-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ booking_id: bookingId, project_id: projectId }),
@@ -464,7 +515,7 @@ export default function AdminPage() {
     if (!confirm(t[language].adminResetDecisionConfirm)) return;
     setActionLoading(projet.id);
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id: projet.id, status: 'nouveau' }),
       });
@@ -480,9 +531,8 @@ export default function AdminPage() {
     if (!confirm(t[language].adminDeletePermanentlyConfirm)) return;
     setActionLoading(projet.id);
     try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id: projet.id, action: 'delete' }),
       });
       const data = await res.json();
@@ -502,12 +552,12 @@ export default function AdminPage() {
     if (!adminComment.trim() || !selectedProject) return;
     setCommentSending(true);
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/add-comment', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/add-comment`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ project_id: selectedProject.id, author: 'agent', content: adminComment }),
       });
       setAdminComment('');
-      const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-comments?project_id=${selectedProject.id}`);
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-comments?project_id=${selectedProject.id}`);
       const data = await res.json();
       setSelectedComments(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); } finally { setCommentSending(false); }
@@ -515,13 +565,13 @@ export default function AdminPage() {
 
   const handleEditAdminComment = async (id: string, content: string) => {
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/edit-comment', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/edit-comment`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, content, author: 'agent' }),
       });
       setEditingCommentId(null);
       setEditCommentContent('');
-      const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-comments?project_id=${selectedProject.id}`);
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-comments?project_id=${selectedProject.id}`);
       const data = await res.json();
       setSelectedComments(Array.isArray(data) ? data : []);
     } catch (err) { alert(t[language].adminErrorEditingComment); }
@@ -530,11 +580,11 @@ export default function AdminPage() {
   const handleDeleteAdminComment = async (id: string) => {
     if (!confirm(t[language].adminDeleteCommentConfirm)) return;
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-comment', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/delete-comment`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
-      const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-comments?project_id=${selectedProject.id}`);
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-comments?project_id=${selectedProject.id}`);
       const data = await res.json();
       setSelectedComments(Array.isArray(data) ? data : []);
     } catch (err) { alert(t[language].adminErrorDeletingComment); }
@@ -543,12 +593,12 @@ export default function AdminPage() {
   const handleDeleteFile = async (fileId: string) => {
     if (!confirm(t[language].adminDeleteFileConfirm)) return;
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-file', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/delete-file`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: fileId }),
       });
       if (selectedProject) {
-        const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-files?project_id=${selectedProject.id}`);
+        const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-files?project_id=${selectedProject.id}`);
         const data = await res.json();
         setSelectedFiles(Array.isArray(data) ? data : []);
       }
@@ -556,22 +606,18 @@ export default function AdminPage() {
     } catch (err) { console.error(err); }
   };
 
-  const handleAddMultipleSteps = async () => {
-    if (!currentProjectId) return;
-    const lines = multiStepsInput.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-    if (lines.length === 0) {
-      alert(t[language].adminNoStepsEntered || 'Veuillez saisir au moins une étape.');
-      return;
-    }
+  // ⬇️ Nouveau : ajout d'étapes depuis la bibliothèque
+  const handleAddStepsFromLibrary = async (stepNames: string[]) => {
+    if (!currentProjectId || stepNames.length === 0) return;
     const projet = projets.find(p => p.id === currentProjectId);
     if (!projet) return;
 
-    const existingSteps = projet.steps || [];
-    const newSteps = lines.map(name => ({ name, status: 'à_faire' }));
+    const existingSteps = Array.isArray(projet.steps) ? projet.steps : [];
+    const newSteps = stepNames.map(name => ({ name, status: 'à_faire' }));
     const updatedSteps = [...existingSteps, ...newSteps];
 
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id: currentProjectId, steps: updatedSteps }),
@@ -581,80 +627,61 @@ export default function AdminPage() {
         setSelectedProject({ ...selectedProject, steps: updatedSteps });
       }
       setShowAddStepsModal(false);
-      setMultiStepsInput('');
       setCurrentProjectId(null);
     } catch (err) {
       alert(t[language].adminError);
     }
   };
 
-  const generateAISteps = async (projet: any) => {
-    if (!confirm(t[language].adminAiPlanConfirm)) return;
-    setActionLoading(projet.id);
-    try {
-      const brief = projet.brief || {};
-      const projectType = brief.type || projet.project_type || '';
-      const sector = brief.sector || '';
-      const features = brief.features ? brief.features.join(', ') : '';
-      const pages = brief.pages ? brief.pages.join(', ') : '';
-      const objective = brief.objective || projet.client_message || '';
-      const projectName = brief.projectName || projet.project_name || '';
-
-      const contextMessage = `
-        Projet : ${projectName}
-        Type : ${projectType}
-        Secteur : ${sector}
-        Objectif : ${objective}
-        Fonctionnalités : ${features}
-        Pages : ${pages}
-      `;
-
-      const res = await fetch('/api/generate-proposal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'plan-steps',
-          role: 'step_planner',
-          messages: [
-            { role: 'user', content: `Génère une séquence d'étapes concrètes pour ce projet. Les étapes doivent être des phases de travail (ex: Analyse des besoins, Conception UI/UX, Développement front-end, Développement back-end, Tests, Déploiement, Formation, etc.). Chaque étape doit avoir un nom court et clair. Réponds uniquement avec un tableau JSON. ${contextMessage}` }
-          ],
-          language: language,
-        }),
-      });
-      const data = await res.json();
-      if (data.steps) {
-        const steps = data.steps.map((s: any) => ({ name: s.name || s.title || 'Étape', status: 'à_faire' }));
-        const existingSteps = projet.steps || [];
-        const updatedSteps = [...existingSteps, ...steps];
-        await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id: projet.id, steps: updatedSteps }),
-        });
-        setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, steps: updatedSteps } : p));
-        if (selectedProject && selectedProject.id === projet.id) {
-          setSelectedProject({ ...selectedProject, steps: updatedSteps });
-        }
-      } else {
-        alert(t[language].adminAiPlanFailed || "L'IA n'a pas pu générer d'étapes.");
-      }
-    } catch (err) {
-      alert(t[language].adminError);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const filteredProjets = projets.filter(p => {
     const search = searchTerm.toLowerCase();
-    const matchSearch = p.client_name?.toLowerCase().includes(search) || p.client_email?.toLowerCase().includes(search) || p.brief?.projectName?.toLowerCase().includes(search) || p.brief?.sector?.toLowerCase().includes(search);
-    const decisionStatuses = ['nouveau', 'perdu'];
-    const matchStatus = !decisionStatuses.includes(p.status) && (statusFilter === 'all' || p.status === statusFilter);
+    const matchSearch = p.client_name?.toLowerCase().includes(search) || p.client_email?.toLowerCase().includes(search) || getProjectTitle(p, '').toLowerCase().includes(search) || p.brief?.sector?.toLowerCase().includes(search);
+    const excludedStatuses = ['nouveau', 'perdu', 'terminé'];
+    const matchStatus = !excludedStatuses.includes(normalizeStatus(p.status)) && (statusFilter === 'all' || p.status === statusFilter);
     return matchSearch && matchStatus;
   });
 
   const archivedProjets = projets.filter(p => p.archived === true);
   const activeProjets = projets.filter(p => !p.archived);
+
+  const completedProjets = activeProjets.filter(p => normalizeStatus(p.status) === 'terminé');
+  const completedCount = completedProjets.length;
+
+  const filteredCompletedProjets = (() => {
+    const q = completedSearch.trim().toLowerCase();
+    let list = activeProjets.filter(p => normalizeStatus(p.status) === 'terminé');
+
+    if (q) {
+      list = list.filter(p =>
+        p.client_name?.toLowerCase().includes(q) ||
+        p.client_email?.toLowerCase().includes(q) ||
+        getProjectTitle(p, '').toLowerCase().includes(q)
+      );
+    }
+
+    if (completedPaymentFilter !== 'all') {
+      list = list.filter(p => normalizeStatus(p.payment_status || 'aucun') === completedPaymentFilter);
+    }
+
+    if (completedDateFrom) {
+      const from = new Date(completedDateFrom).getTime();
+      list = list.filter(p => new Date(p.created_at).getTime() >= from);
+    }
+    if (completedDateTo) {
+      const to = new Date(completedDateTo).getTime() + 24 * 60 * 60 * 1000;
+      list = list.filter(p => new Date(p.created_at).getTime() <= to);
+    }
+
+    list = [...list].sort((a, b) => {
+      if (completedSort === 'recent') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (completedSort === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (completedSort === 'name') return getProjectTitle(a, '').localeCompare(getProjectTitle(b, ''));
+      if (completedSort === 'amount') return (b.payment_amount || 0) - (a.payment_amount || 0);
+      return 0;
+    });
+
+    return list;
+  })();
 
   const stats = {
     total: activeProjets.length,
@@ -662,8 +689,17 @@ export default function AdminPage() {
     avgMaturity: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.maturityScore || 0), 0) / activeProjets.length) : 0,
     avgPriority: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.priorityScore || 0), 0) / activeProjets.length) : 0,
   };
-  const pendingDecisions = activeProjets.filter(p => p.status === 'nouveau').length;
-  const pendingProjects = activeProjets.filter(p => p.status === 'gagné' || p.status === 'en_cours' || p.status === 'livré').length;
+
+  const pendingDecisions = activeProjets.filter(p =>
+    p.status === 'nouveau' && isProjectUnviewed(p.id)
+  ).length;
+
+  const pendingProjects = activeProjets.filter(p => {
+    const s = normalizeStatus(p.status);
+    const isActiveStatus = s === 'gagné' || s === 'en_cours' || s === 'livré' || s === 'contacté' || s === 'devis_envoyé';
+    return isActiveStatus && isProjectUnviewed(p.id);
+  }).length;
+
   const archivedCount = archivedProjets.length;
 
   const trendData = (() => {
@@ -780,6 +816,7 @@ export default function AdminPage() {
                 { id: 'dashboard', label: t[language].adminTabDashboard, badge: 0 },
                 { id: 'projets', label: t[language].adminTabProjects, badge: pendingProjects },
                 { id: 'decision', label: t[language].adminTabDecision, badge: pendingDecisions },
+                { id: 'termines', label: `${t[language].adminTabCompleted || (language === 'fr' ? 'Terminés' : 'Completed')} (${completedCount})`, badge: 0 },
                 { id: 'corbeille', label: `${t[language].adminTabTrash} (${archivedCount})`, badge: 0 },
                 { id: 'messages', label: t[language].adminTabMessages, badge: unreadCount },
                 { id: 'fichiers', label: t[language].adminTabFiles, badge: 0 },
@@ -909,12 +946,10 @@ export default function AdminPage() {
                 className="bg-white rounded-lg px-3 py-2.5 text-sm border border-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer"
               >
                 <option value="all">{t[language].adminAllStatuses}</option>
-                <option value="nouveau">{getStatusLabel('nouveau', language)}</option>
                 <option value="contacté">{getStatusLabel('contacté', language)}</option>
                 <option value="devis_envoyé">{getStatusLabel('devis_envoyé', language)}</option>
                 <option value="en_cours">{getStatusLabel('en_cours', language)}</option>
                 <option value="livré">{getStatusLabel('livré', language)}</option>
-                <option value="terminé">{getStatusLabel('terminé', language)}</option>
               </select>
               <button
                 onClick={loadProjects}
@@ -938,7 +973,12 @@ export default function AdminPage() {
                 <div key={projet.id} className="bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-colors">
                   <div className="flex items-start justify-between mb-3">
                     <div className="min-w-0 flex-1 mr-2">
-                      <h3 className="font-semibold text-base truncate text-slate-900">{projet.brief?.projectName || t[language].adminUntitled}</h3>
+                      <div className="flex items-center gap-2">
+                        {isProjectUnviewed(projet.id) && (
+                          <span className="shrink-0 w-2 h-2 rounded-full bg-blue-500 animate-pulse" title={language === 'fr' ? 'Nouveau' : 'New'} />
+                        )}
+                        <h3 className="font-semibold text-base truncate text-slate-900">{getProjectTitle(projet, t[language].adminUntitled)}</h3>
+                      </div>
                       <p className="text-sm text-slate-500 mt-0.5">{projet.client_name}</p>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(projet.status)}`}>
@@ -995,7 +1035,7 @@ export default function AdminPage() {
                           onClick={async () => {
                             const newSteps = [...(projet.steps || [])];
                             newSteps[idx] = { ...newSteps[idx], status: newSteps[idx].status === 'terminé' ? 'à_faire' : newSteps[idx].status === 'en_cours' ? 'terminé' : 'en_cours' };
-                            await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+                            await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
                               method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                               body: JSON.stringify({ id: projet.id, steps: newSteps }),
                             });
@@ -1018,7 +1058,7 @@ export default function AdminPage() {
                             setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, steps: newSteps } : p));
                           }}
                           onBlur={async () => {
-                            await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+                            await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
                               method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                               body: JSON.stringify({ id: projet.id, steps: projet.steps }),
                             });
@@ -1028,7 +1068,7 @@ export default function AdminPage() {
                         <button
                           onClick={async () => {
                             const newSteps = (projet.steps || []).filter((_: any, i: number) => i !== idx);
-                            await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+                            await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
                               method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                               body: JSON.stringify({ id: projet.id, steps: newSteps }),
                             });
@@ -1044,19 +1084,12 @@ export default function AdminPage() {
                       <button
                         onClick={() => {
                           setCurrentProjectId(projet.id);
-                          setMultiStepsInput('');
                           setShowAddStepsModal(true);
                         }}
                         className="text-xs text-blue-600 font-medium hover:text-blue-700 flex items-center gap-1"
                       >
                         <Plus size={12} />
-                        {t[language].adminAddMultipleSteps || 'Ajouter plusieurs étapes'}
-                      </button>
-                      <button
-                        onClick={() => generateAISteps(projet)}
-                        className="text-xs text-slate-500 font-medium hover:text-slate-700 flex items-center gap-1"
-                      >
-                        {t[language].adminAiPlan}
+                        {t[language].adminAddMultipleSteps || 'Ajouter des étapes'}
                       </button>
                     </div>
                   </div>
@@ -1112,7 +1145,7 @@ export default function AdminPage() {
                       )}
                       <button onClick={() => createPaymentLink(projet)} title={t[language].adminPaymentLink} className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><DollarSign size={14} /></button>
                       <button onClick={() => openEmailForm(projet)} title={t[language].adminSendEmail} className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><Mail size={14} /></button>
-                      <button onClick={() => setSelectedProject(projet)} title={t[language].adminViewDetails} className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><EyeIcon size={14} /></button>
+                      <button onClick={() => { setSelectedProject(projet); markProjectAsViewed(projet.id); }} title={t[language].adminViewDetails} className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><EyeIcon size={14} /></button>
                       <button
                         onClick={() => handleResetDecision(projet)}
                         disabled={projet.status === 'en_cours' || projet.status === 'livré'}
@@ -1138,22 +1171,204 @@ export default function AdminPage() {
 
         {/* ========== DÉCISION ========== */}
         {activeTab === 'decision' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {activeProjets.filter(p => p.status === 'nouveau').map(projet => (
-              <div key={projet.id} className="bg-white rounded-xl p-5 border border-slate-200">
-                <h3 className="font-semibold text-base mb-1 text-slate-900">{projet.brief?.projectName || t[language].adminUntitled}</h3>
-                <p className="text-sm text-slate-500 mb-4">{projet.client_name} · {projet.client_email}</p>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handleDecision(projet, 'accept')} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors"><CheckCircle size={13} /> {t[language].adminAccept}</button>
-                  <button onClick={() => handleDecision(projet, 'archive')} className="flex-1 bg-amber-500 text-white py-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 hover:bg-amber-600 transition-colors"><Archive size={13} /> {t[language].adminArchive}</button>
-                  <button onClick={() => handleDecision(projet, 'refuse')} className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 hover:bg-red-700 transition-colors"><Trash2 size={13} /> {t[language].adminRefuse}</button>
-                </div>
+          <>
+            {pendingDecisions > 0 && (
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={() => {
+                    const unseenIds = activeProjets.filter(p => p.status === 'nouveau' && isProjectUnviewed(p.id)).map(p => p.id);
+                    unseenIds.forEach(id => markProjectAsViewed(id));
+                  }}
+                  className="text-xs text-slate-500 hover:text-slate-800 underline transition-colors"
+                >
+                  {language === 'fr' ? 'Tout marquer comme vu' : 'Mark all as viewed'}
+                </button>
               </div>
-            ))}
-            {activeProjets.filter(p => p.status === 'nouveau').length === 0 && (
-              <div className="col-span-full text-center py-12 text-slate-400 text-sm">{t[language].adminNoDecision}</div>
             )}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {activeProjets.filter(p => p.status === 'nouveau').map(projet => (
+                <div key={projet.id} className="bg-white rounded-xl p-5 border border-slate-200">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="font-semibold text-base text-slate-900">{getProjectTitle(projet, t[language].adminUntitled)}</h3>
+                    {isProjectUnviewed(projet.id) && (
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500 text-white">
+                        {language === 'fr' ? 'NOUVEAU' : 'NEW'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-500 mb-4">{projet.client_name} · {projet.client_email}</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setSelectedProject(projet); markProjectAsViewed(projet.id); }}
+                      className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 hover:bg-slate-200 transition-colors"
+                    >
+                      <EyeIcon size={13} /> {language === 'fr' ? 'Voir' : 'View'}
+                    </button>
+                    <button onClick={() => handleDecision(projet, 'accept')} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors"><CheckCircle size={13} /> {t[language].adminAccept}</button>
+                    <button onClick={() => handleDecision(projet, 'archive')} className="flex-1 bg-amber-500 text-white py-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 hover:bg-amber-600 transition-colors"><Archive size={13} /> {t[language].adminArchive}</button>
+                    <button onClick={() => handleDecision(projet, 'refuse')} className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 hover:bg-red-700 transition-colors"><Trash2 size={13} /> {t[language].adminRefuse}</button>
+                  </div>
+                </div>
+              ))}
+              {activeProjets.filter(p => p.status === 'nouveau').length === 0 && (
+                <div className="col-span-full text-center py-12 text-slate-400 text-sm">{t[language].adminNoDecision}</div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ========== TERMINÉS ========== */}
+        {activeTab === 'termines' && (
+          <>
+            {/* Barre de filtres */}
+            <div className="bg-white rounded-xl p-4 border border-slate-200 space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 w-full">
+                  <Search size={16} className="text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={completedSearch}
+                    onChange={e => setCompletedSearch(e.target.value)}
+                    placeholder={language === 'fr' ? 'Rechercher un client, un projet…' : 'Search a client, a project…'}
+                    className="flex-1 bg-slate-50 rounded-lg px-3 py-2.5 text-sm outline-none border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
+                  />
+                </div>
+                <select
+                  value={completedSort}
+                  onChange={e => setCompletedSort(e.target.value as any)}
+                  className="bg-white rounded-lg px-3 py-2.5 text-sm border border-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer w-full sm:w-auto"
+                >
+                  <option value="recent">{language === 'fr' ? 'Plus récents' : 'Most recent'}</option>
+                  <option value="oldest">{language === 'fr' ? 'Plus anciens' : 'Oldest'}</option>
+                  <option value="name">{language === 'fr' ? 'Nom du projet' : 'Project name'}</option>
+                  <option value="amount">{language === 'fr' ? 'Montant' : 'Amount'}</option>
+                </select>
+              </div>
+
+              <div className="flex flex-wrap gap-2 items-center">
+                <select
+                  value={completedPaymentFilter}
+                  onChange={e => setCompletedPaymentFilter(e.target.value as any)}
+                  className="bg-white rounded-lg px-3 py-2 text-sm border border-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer"
+                >
+                  <option value="all">{language === 'fr' ? 'Tous paiements' : 'All payments'}</option>
+                  <option value="aucun">{language === 'fr' ? 'Non payé' : 'Unpaid'}</option>
+                  <option value="acompte_payé">{language === 'fr' ? 'Acompte payé' : 'Deposit paid'}</option>
+                  <option value="complet">{language === 'fr' ? 'Payé' : 'Paid'}</option>
+                </select>
+
+                <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                  <span className="text-xs text-slate-400">{language === 'fr' ? 'Du' : 'From'}</span>
+                  <input
+                    type="date"
+                    value={completedDateFrom}
+                    onChange={e => setCompletedDateFrom(e.target.value)}
+                    className="bg-white rounded-lg px-2.5 py-2 text-sm border border-slate-200 outline-none focus:border-blue-500 transition-colors"
+                  />
+                  <span className="text-xs text-slate-400">{language === 'fr' ? 'au' : 'to'}</span>
+                  <input
+                    type="date"
+                    value={completedDateTo}
+                    onChange={e => setCompletedDateTo(e.target.value)}
+                    className="bg-white rounded-lg px-2.5 py-2 text-sm border border-slate-200 outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+
+                {(completedSearch || completedPaymentFilter !== 'all' || completedDateFrom || completedDateTo) && (
+                  <button
+                    onClick={() => {
+                      setCompletedSearch('');
+                      setCompletedPaymentFilter('all');
+                      setCompletedDateFrom('');
+                      setCompletedDateTo('');
+                    }}
+                    className="px-3 py-2 text-xs text-slate-500 hover:text-slate-800 underline transition-colors"
+                  >
+                    {language === 'fr' ? 'Réinitialiser les filtres' : 'Reset filters'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Résultat */}
+            <div className="text-xs text-slate-400">
+              {filteredCompletedProjets.length === 0
+                ? (language === 'fr' ? 'Aucun projet terminé ne correspond.' : 'No completed project matches.')
+                : `${filteredCompletedProjets.length} ${language === 'fr'
+                    ? (filteredCompletedProjets.length > 1 ? 'projets' : 'projet')
+                    : (filteredCompletedProjets.length > 1 ? 'projects' : 'project')}`}
+            </div>
+
+            {/* Liste */}
+            <div className="space-y-3">
+              {filteredCompletedProjets.map(projet => (
+                <div
+                  key={projet.id}
+                  className="bg-white rounded-xl p-4 border border-slate-200 flex flex-col md:flex-row md:items-center gap-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-semibold text-sm text-slate-900 truncate">
+                        {getProjectTitle(projet, t[language].adminUntitled)}
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700">
+                        {getStatusLabel(projet.status, language)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 truncate">{projet.client_name} · {projet.client_email}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'fr' ? 'Créé le' : 'Created on'}{' '}
+                      {new Date(projet.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <div>
+                      <span className="text-slate-400">Paiement :</span>{' '}
+                      <span className="font-medium text-slate-700">{getClientPaymentStatus(projet.payment_status, language)}</span>
+                    </div>
+                    {projet.payment_amount && (
+                      <div>
+                        <span className="text-slate-400">Montant :</span>{' '}
+                        <span className="font-medium text-slate-700">{projet.payment_amount} €</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => { setSelectedProject(projet); markProjectAsViewed(projet.id); }}
+                      title={t[language].adminViewDetails}
+                      className="p-2 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      <EyeIcon size={15} />
+                    </button>
+                    <button
+                      onClick={() => openEmailForm(projet)}
+                      title={t[language].adminSendEmail}
+                      className="p-2 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      <Mail size={15} />
+                    </button>
+                    <button
+                      onClick={() => handleResetDecision(projet)}
+                      title={language === 'fr' ? 'Remettre en cours' : 'Back to in progress'}
+                      className="p-2 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      <RefreshCw size={15} />
+                    </button>
+                    <button
+                      onClick={() => handleDeletePermanently(projet)}
+                      title={t[language].adminDeletePermanently}
+                      className="p-2 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* ========== CORBEILLE ========== */}
@@ -1161,7 +1376,7 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {archivedProjets.map(projet => (
               <div key={projet.id} className="bg-white rounded-xl p-5 border border-slate-200 opacity-75">
-                <h3 className="font-semibold text-base mb-1 text-slate-900">{projet.brief?.projectName || t[language].adminUntitled}</h3>
+                <h3 className="font-semibold text-base mb-1 text-slate-900">{getProjectTitle(projet, t[language].adminUntitled)}</h3>
                 <p className="text-sm text-slate-500 mb-4">{projet.client_name} · {projet.client_email}</p>
                 <div className="flex items-center gap-2">
                   <button onClick={() => handleRestore(projet.id)} className="flex-1 bg-slate-900 text-white py-2 rounded-lg font-medium text-xs hover:bg-slate-800 transition-colors">{t[language].adminRestore}</button>
@@ -1202,7 +1417,7 @@ export default function AdminPage() {
                     onClick={async () => {
                       const reply = prompt(t[language].adminReplyPrompt);
                       if (!reply) return;
-                      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/add-comment', {
+                      await fetch(`${SUPABASE_FUNCTIONS_URL}/add-comment`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ project_id: projectId, author: 'agent', content: reply }),
                       });
@@ -1276,7 +1491,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedProject(null)}>
           <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-slate-900">{selectedProject.brief?.projectName || t[language].adminDetailsTitle}</h2>
+              <h2 className="text-xl font-semibold text-slate-900">{getProjectTitle(selectedProject, t[language].adminDetailsTitle)}</h2>
               <button onClick={() => setSelectedProject(null)} className="p-1 text-slate-400 hover:text-slate-700 transition-colors"><X size={20} /></button>
             </div>
 
@@ -1291,7 +1506,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Onglets détails */}
             <div className="border-b border-slate-200 mb-6">
               <div className="flex items-center gap-1 -mb-px overflow-x-auto">
                 {['details', 'fichiers', 'commentaires'].map(tab => {
@@ -1488,7 +1702,7 @@ export default function AdminPage() {
                 rows={3}
                 placeholder={t[language].adminAddNote}
                 defaultValue={selectedProject.notes || ''}
-                onBlur={e => fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+                onBlur={e => fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                   body: JSON.stringify({ id: selectedProject.id, notes: e.target.value })
@@ -1527,50 +1741,20 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ========== MODALE AJOUT MULTIPLE ÉTAPES ========== */}
-      {showAddStepsModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAddStepsModal(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900">
-              <Plus size={18} className="text-blue-600" />
-              {t[language].adminAddMultipleSteps || 'Ajouter plusieurs étapes'}
-            </h2>
-            <p className="text-sm text-slate-500 mb-4">
-              {language === 'en' ? 'Enter one step per line.' : 'Saisissez une étape par ligne.'}
-            </p>
-            <textarea
-              value={multiStepsInput}
-              onChange={e => setMultiStepsInput(e.target.value)}
-              rows={6}
-              className="w-full border border-slate-200 rounded-lg p-3 text-sm resize-none outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
-              placeholder={language === 'en'
-                ? 'Ex:\nRequirement analysis\nUI/UX design\nFrontend development'
-                : 'Ex:\nAnalyse des besoins\nConception UI/UX\nDéveloppement frontend'}
-            />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={handleAddMultipleSteps}
-                className="flex-1 bg-slate-900 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors"
-              >
-                {t[language].adminAdd}
-              </button>
-              <button
-                onClick={() => { setShowAddStepsModal(false); setMultiStepsInput(''); setCurrentProjectId(null); }}
-                className="flex-1 bg-white text-slate-700 border border-slate-200 py-2.5 rounded-lg font-medium text-sm hover:bg-slate-50 transition-colors"
-              >
-                {t[language].adminCancel}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ========== MODALE SÉLECTION D'ÉTAPES ========== */}
+      <StepPickerModal
+        isOpen={showAddStepsModal}
+        onClose={() => { setShowAddStepsModal(false); setCurrentProjectId(null); }}
+        onAdd={handleAddStepsFromLibrary}
+        language={language}
+      />
 
       {/* BookingModal */}
       {showBooking && bookingProject && (
         <BookingModal
           clientName={bookingProject.client_name}
           clientEmail={bookingProject.client_email}
-          projectName={bookingProject.brief?.projectName}
+          projectName={getProjectTitle(bookingProject, '')}
           projectId={bookingProject.id}
           onClose={() => { setShowBooking(false); setBookingProject(null); }}
           onBooked={() => { loadProjects(); setShowBooking(false); setBookingProject(null); }}

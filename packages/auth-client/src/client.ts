@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { AuthClientConfig } from './types';
+import type { AuthClientConfig } from './types.js';
 
 export function createAuthClient(config: AuthClientConfig) {
   const supabase: SupabaseClient = createClient(

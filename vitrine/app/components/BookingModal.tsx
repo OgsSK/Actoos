@@ -1,5 +1,5 @@
 'use client';
-
+import { SUPABASE_FUNCTIONS_URL } from '../../lib/supabase-functions';
 import { useState, useEffect } from 'react';
 import { Calendar, Loader2, X, Check } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -42,7 +42,7 @@ export default function BookingModal({
       setError(null);
       try {
         const res = await fetch(
-          `https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-available-slots?date=${date}`
+          `${SUPABASE_FUNCTIONS_URL}/get-available-slots?date=${date}`
         );
         const data = await res.json();
         setSlots(data?.[0]?.slots || []);
@@ -61,7 +61,7 @@ export default function BookingModal({
     setError(null);
     try {
       const res = await fetch(
-        'https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/book-slot',
+        `${SUPABASE_FUNCTIONS_URL}/book-slot`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

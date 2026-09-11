@@ -6,7 +6,8 @@ import { LanguageProvider } from './context/LanguageContext';
 
 export const metadata: Metadata = {
   title: 'Actoos — Digital infrastructure for professional activities',
-  description: 'Actoos conçoit les outils, services et connexions numériques qui permettent aux organisations de fonctionner, se développer et interagir avec leur environnement.',
+  description:
+    'Actoos conçoit les outils, services et connexions numériques qui permettent aux organisations de fonctionner, se développer et interagir avec leur environnement.',
   keywords: ['Actoos', 'infrastructure numérique', 'outils professionnels', 'logiciels', 'Actoos Jobs'],
   authors: [{ name: 'Actoos Group' }],
   creator: 'Actoos Group',
@@ -18,7 +19,8 @@ export const metadata: Metadata = {
     url: 'https://actoos.com',
     siteName: 'Actoos',
     title: 'Actoos — Digital infrastructure for professional activities',
-    description: 'Actoos conçoit les outils, services et connexions numériques pour les organisations.',
+    description:
+      'Actoos conçoit les outils, services et connexions numériques pour les organisations.',
     images: [
       {
         url: '/og-image.png',
@@ -31,7 +33,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Actoos — Digital infrastructure for professional activities',
-    description: 'Actoos conçoit les outils, services et connexions numériques pour les organisations.',
+    description:
+      'Actoos conçoit les outils, services et connexions numériques pour les organisations.',
     images: ['/og-image.png'],
   },
   robots: {

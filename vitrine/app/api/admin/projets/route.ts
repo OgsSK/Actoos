@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SUPABASE_FUNCTIONS_URL } from '../../../../lib/supabase-functions';
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Appeler l'Edge Function Supabase (données toujours fraîches)
-    const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-projects');
+    const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-projects`);
 
     if (!res.ok) {
       return new NextResponse(JSON.stringify({ error: 'Erreur récupération projets' }), {

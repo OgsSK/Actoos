@@ -2,13 +2,14 @@ export type UserRole = 'candidate' | 'company' | 'admin';
 
 export interface AuthUser {
   id: string;
-  email: string;
+  email: string | undefined;
   user_metadata?: {
     role?: UserRole;
     first_name?: string;
     last_name?: string;
     language?: string;
   };
+  [key: string]: any; // Compatible avec le type User de Supabase
 }
 
 export interface Profile {

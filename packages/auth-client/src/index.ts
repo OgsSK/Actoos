@@ -1,14 +1,14 @@
-export { createAuthClient } from './client';
-export type { AuthClient } from './client';
+export { createAuthClient } from './client.js';
+export type { AuthClient } from './client.js';
 
-export { createAuthCore } from './core';
-export type { AuthCore } from './core';
+export { createAuthCore } from './core.js';
+export type { AuthCore } from './core.js';
 
-export { createApiAuth } from './apiAuth';
-export type { ApiAuth } from './apiAuth';
+export { createApiAuth } from './apiAuth.js';
+export type { ApiAuth } from './apiAuth.js';
 
-export { buildBaseProfile, enrichProfile } from './enrich';
-export { isCandidate, isCompany, isAdmin } from './roles';
+export { buildBaseProfile, enrichProfile } from './enrich.js';
+export { isCandidate, isCompany, isAdmin } from './roles.js';
 
 export type {
   AuthUser,
@@ -17,4 +17,4 @@ export type {
   AuthClientConfig,
   SignUpParams,
   SignInParams,
-} from './types';
+} from './types.js';

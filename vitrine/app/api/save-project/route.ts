@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SUPABASE_FUNCTIONS_URL } from '../../../lib/supabase-functions';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
+    const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/handle-request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

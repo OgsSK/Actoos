@@ -1,14 +1,15 @@
 'use client';
-
+import { SUPABASE_FUNCTIONS_URL } from '../../../lib/supabase-functions';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft, Calendar, MessageSquare, RefreshCw,
-  Upload, FileText, Send, Download, Eye, Trash2, Edit3, X
+  Upload, FileText, Send, Download, Eye, Trash2, Edit3, X, Clock
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { t } from '../../../lib/translations';
 import BookingModal from '../../components/BookingModal';
+
 
 // ----- Helpers -----
 function normalizeStatus(value: string) {
@@ -55,6 +56,9 @@ function normalizeConversation(value: any) {
   if (Array.isArray(value.chat)) return value.chat;
   return [];
 }
+
+// Statuts pour lesquels le client a un accès complet (RDV, messages, fichiers, commentaires)
+const ACCEPTED_STATUSES = ['gagné', 'en_cours', 'livré', 'terminé'];
 
 const PROJECT_TYPE_LABELS: Record<string, { fr: string; en: string }> = {
   'site-vitrine': { fr: 'Site vitrine', en: 'Showcase website' },
@@ -116,7 +120,7 @@ export default function ClientSpacePage() {
     else setLoading(true);
     const uniqueParam = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     try {
-      const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-client-project?token=${encodeURIComponent(token)}&_=${uniqueParam}`, {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-client-project?token=${encodeURIComponent(token)}&_=${uniqueParam}`, {
         headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
       });
       const data = await res.json().catch(() => null);
@@ -124,7 +128,7 @@ export default function ClientSpacePage() {
         setProjet(null);
       } else {
         if (data.booking_id && data.booking_start && new Date(data.booking_start) < new Date()) {
-          fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/clean-booking', {
+          fetch(`${SUPABASE_FUNCTIONS_URL}/clean-booking`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ project_id: data.id }),
@@ -145,7 +149,7 @@ export default function ClientSpacePage() {
 
   const loadComments = async (projectId: string) => {
     try {
-      const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-comments?project_id=${projectId}`);
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-comments?project_id=${projectId}`);
       const data = await res.json();
       setComments(Array.isArray(data) ? data : []);
     } catch { setComments([]); }
@@ -153,7 +157,7 @@ export default function ClientSpacePage() {
 
   const loadFiles = async (projectId: string) => {
     try {
-      const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-files?project_id=${projectId}`);
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-files?project_id=${projectId}`);
       const data = await res.json();
       setFiles(Array.isArray(data) ? data : []);
     } catch { setFiles([]); }
@@ -180,7 +184,7 @@ export default function ClientSpacePage() {
   const handleCancelBooking = async (projectId: string, bookingId: string) => {
     if (!confirm(t[language].clientCancelAppointmentConfirm)) return;
     try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/cancel-booking', {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/cancel-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ booking_id: bookingId, project_id: projectId }),
@@ -216,7 +220,7 @@ export default function ClientSpacePage() {
     if (!commentText.trim()) return;
     setCommentSending(true);
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/add-comment', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/add-comment`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ project_id: projet?.id, author: 'client', content: commentText }),
       });
@@ -234,7 +238,7 @@ export default function ClientSpacePage() {
       formData.append('file', file);
       formData.append('project_id', projet?.id);
       if (uploadMessage.trim()) formData.append('message', uploadMessage.trim());
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/upload-file', {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/upload-file`, {
         method: 'POST', body: formData,
       });
       if (res.ok) {
@@ -247,7 +251,7 @@ export default function ClientSpacePage() {
   const handleDeleteFile = async (fileId: string) => {
     if (!confirm(t[language].clientDeleteFileConfirm)) return;
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-file', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/delete-file`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: fileId }),
       });
@@ -258,7 +262,7 @@ export default function ClientSpacePage() {
   const handleEditComment = async (id: string, content: string) => {
     if (!content.trim()) return;
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/edit-comment', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/edit-comment`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, content, author: 'client' }),
       });
@@ -271,7 +275,7 @@ export default function ClientSpacePage() {
   const handleDeleteComment = async (id: string) => {
     if (!confirm(t[language].clientDeleteCommentConfirm)) return;
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-comment', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/delete-comment`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
@@ -307,6 +311,12 @@ export default function ClientSpacePage() {
   const projectBudget = projet.budget || '';
   const hasBrief = !!projet.brief;
   const hasGeneralInfo = !!(projectTitle || projectTypeLabel || projectBudget);
+
+  // 🔒 Verrou d'accès : RDV, messages, fichiers, commentaires uniquement si accepté
+  const statusNormalized = normalizeStatus(projet.status || '');
+  const isAccepted = ACCEPTED_STATUSES.includes(statusNormalized);
+  const isRefused = statusNormalized === 'perdu';
+  const isPending = !isAccepted && !isRefused;
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 antialiased">
@@ -359,57 +369,76 @@ export default function ClientSpacePage() {
           </button>
         </div>
 
-        {/* Rendez-vous */}
-        <div>
-          {projet.booking_id ? (
-            <div className="bg-white rounded-2xl p-5 border border-blue-200">
-              <h3 className="font-semibold text-base flex items-center gap-2 mb-4 text-slate-900">
-                <Calendar size={16} className="text-blue-600" />
-                {t[language].clientUpcomingAppointment}
-              </h3>
-              <div className="space-y-1.5 text-sm text-slate-600">
-                <p>
-                  <strong className="text-slate-900">{t[language].clientDate} :</strong>{" "}
-                  {new Date(projet.booking_start).toLocaleDateString(
-                    language === 'fr' ? 'fr-FR' : 'en-US',
-                    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
-                  )}
-                </p>
-                <p>
-                  <strong className="text-slate-900">{t[language].clientTime} :</strong>{" "}
-                  {new Date(projet.booking_start).toLocaleTimeString(
-                    language === 'fr' ? 'fr-FR' : 'en-US',
-                    { hour: '2-digit', minute: '2-digit' }
-                  )}
-                </p>
-                {projet.booking_link && (
-                  <a
-                    href={projet.booking_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 font-medium hover:text-blue-700"
-                  >
-                    {t[language].clientJoinMeeting}
-                  </a>
-                )}
-              </div>
-              <button
-                onClick={() => handleCancelBooking(projet.id, projet.booking_id)}
-                className="mt-4 bg-red-50 text-red-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors"
-              >
-                {t[language].clientCancelAppointment}
-              </button>
+        {/* 🟡 Bandeau d'attente (projet pas encore accepté) */}
+        {isPending && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+            <Clock size={18} className="text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-800">
+                {language === 'en' ? 'Project under review' : "Projet en cours d'étude"}
+              </p>
+              <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                {language === 'en'
+                  ? 'Our team is reviewing your project. Detailed tracking (messages, files, appointments) will be available once your project is accepted.'
+                  : "Notre équipe étudie votre projet. Le suivi détaillé (messages, fichiers, rendez-vous) sera disponible dès que votre projet sera accepté."}
+              </p>
             </div>
-          ) : (
-            <button
-              onClick={() => setShowBooking(true)}
-              className="inline-flex items-center gap-2 bg-white rounded-full px-5 py-2.5 text-sm font-medium text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors"
-            >
-              <Calendar size={15} className="text-blue-600" />
-              {t[language].clientSchedule}
-            </button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* 🔒 Rendez-vous — uniquement si projet accepté */}
+        {isAccepted && (
+          <div>
+            {projet.booking_id ? (
+              <div className="bg-white rounded-2xl p-5 border border-blue-200">
+                <h3 className="font-semibold text-base flex items-center gap-2 mb-4 text-slate-900">
+                  <Calendar size={16} className="text-blue-600" />
+                  {t[language].clientUpcomingAppointment}
+                </h3>
+                <div className="space-y-1.5 text-sm text-slate-600">
+                  <p>
+                    <strong className="text-slate-900">{t[language].clientDate} :</strong>{" "}
+                    {new Date(projet.booking_start).toLocaleDateString(
+                      language === 'fr' ? 'fr-FR' : 'en-US',
+                      { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+                    )}
+                  </p>
+                  <p>
+                    <strong className="text-slate-900">{t[language].clientTime} :</strong>{" "}
+                    {new Date(projet.booking_start).toLocaleTimeString(
+                      language === 'fr' ? 'fr-FR' : 'en-US',
+                      { hour: '2-digit', minute: '2-digit' }
+                    )}
+                  </p>
+                  {projet.booking_link && (
+                    <a
+                      href={projet.booking_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-blue-600 font-medium hover:text-blue-700"
+                    >
+                      {t[language].clientJoinMeeting}
+                    </a>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleCancelBooking(projet.id, projet.booking_id)}
+                  className="mt-4 bg-red-50 text-red-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors"
+                >
+                  {t[language].clientCancelAppointment}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowBooking(true)}
+                className="inline-flex items-center gap-2 bg-white rounded-full px-5 py-2.5 text-sm font-medium text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors"
+              >
+                <Calendar size={15} className="text-blue-600" />
+                {t[language].clientSchedule}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Étapes */}
         {projet.steps && Array.isArray(projet.steps) && projet.steps.length > 0 && (
@@ -486,36 +515,40 @@ export default function ClientSpacePage() {
           </div>
         </div>
 
-        {/* Onglets */}
-        <div className="border-b border-slate-200">
-          <div className="flex items-center gap-1 -mb-px">
-            {[
-              { id: 'dashboard', label: t[language].clientTabDashboard, badge: null },
-              { id: 'fichiers', label: t[language].clientTabFiles, badge: null },
-              { id: 'commentaires', label: t[language].clientTabComments, badge: unreadCount },
-            ].map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`relative px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    isActive ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  {tab.label}
-                  {tab.badge !== null && tab.badge > 0 && (
-                    <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* 🔒 Onglets — Fichiers/Commentaires uniquement si projet accepté */}
+        {isAccepted && (
+          <>
+            <div className="border-b border-slate-200">
+              <div className="flex items-center gap-1 -mb-px">
+                {[
+                  { id: 'dashboard', label: t[language].clientTabDashboard, badge: null },
+                  { id: 'fichiers', label: t[language].clientTabFiles, badge: null },
+                  { id: 'commentaires', label: t[language].clientTabComments, badge: unreadCount },
+                ].map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`relative px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                        isActive ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      {tab.label}
+                      {tab.badge !== null && tab.badge > 0 && (
+                        <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                          {tab.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
 
-        {/* Dashboard */}
+        {/* Dashboard (toujours visible) */}
         {activeTab === 'dashboard' && (
           <>
             {projectDescription ? (
@@ -598,34 +631,37 @@ export default function ClientSpacePage() {
               </div>
             )}
 
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
-              <h2 className="font-semibold text-base flex items-center gap-2 text-slate-900">
-                <MessageSquare size={16} className="text-blue-600" />
-                {t[language].clientSendMessage}
-              </h2>
-              {messageSent && (
-                <p className="text-emerald-600 text-xs font-medium">{t[language].clientMessageSent}</p>
-              )}
-              <textarea
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                placeholder={t[language].clientMessagePlaceholder}
-                className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none transition-colors"
-                rows={4}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!message.trim() || messageLoading}
-                className="bg-slate-900 text-white px-5 py-2.5 rounded-lg font-medium text-sm disabled:opacity-50 hover:bg-slate-800 transition-colors"
-              >
-                {messageLoading ? t[language].clientSending : t[language].clientSend}
-              </button>
-            </div>
+            {/* 🔒 Formulaire d'envoi de message — uniquement si projet accepté */}
+            {isAccepted && (
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
+                <h2 className="font-semibold text-base flex items-center gap-2 text-slate-900">
+                  <MessageSquare size={16} className="text-blue-600" />
+                  {t[language].clientSendMessage}
+                </h2>
+                {messageSent && (
+                  <p className="text-emerald-600 text-xs font-medium">{t[language].clientMessageSent}</p>
+                )}
+                <textarea
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  placeholder={t[language].clientMessagePlaceholder}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none transition-colors"
+                  rows={4}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || messageLoading}
+                  className="bg-slate-900 text-white px-5 py-2.5 rounded-lg font-medium text-sm disabled:opacity-50 hover:bg-slate-800 transition-colors"
+                >
+                  {messageLoading ? t[language].clientSending : t[language].clientSend}
+                </button>
+              </div>
+            )}
           </>
         )}
 
-        {/* Fichiers */}
-        {activeTab === 'fichiers' && (
+        {/* Fichiers (uniquement si accepté) */}
+        {isAccepted && activeTab === 'fichiers' && (
           <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
             <h2 className="font-semibold text-base flex items-center gap-2 text-slate-900">
               <Upload size={16} className="text-blue-600" />
@@ -679,8 +715,8 @@ export default function ClientSpacePage() {
           </div>
         )}
 
-        {/* Commentaires */}
-        {activeTab === 'commentaires' && (
+        {/* Commentaires (uniquement si accepté) */}
+        {isAccepted && activeTab === 'commentaires' && (
           <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
             <h2 className="font-semibold text-base flex items-center gap-2 text-slate-900">
               <MessageSquare size={16} className="text-blue-600" />
@@ -795,8 +831,8 @@ export default function ClientSpacePage() {
         </div>
       )}
 
-      {/* BookingModal */}
-      {showBooking && projet && (
+      {/* BookingModal (uniquement si accepté) */}
+      {isAccepted && showBooking && projet && (
         <BookingModal
           clientName={projet.client_name}
           clientEmail={projet.client_email}

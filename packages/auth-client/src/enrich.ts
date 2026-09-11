@@ -1,11 +1,11 @@
-import type { AuthUser, Profile, UserRole } from './types';
-import type { AuthClient } from './client';
+import type { AuthUser, Profile, UserRole } from './types.js';
+import type { AuthClient } from './client.js';
 
 export function buildBaseProfile(authUser: AuthUser | null): Profile | null {
   if (!authUser) return null;
   return {
     id: authUser.id,
-    email: authUser.email,
+    email: authUser.email || '',
     role: (authUser.user_metadata?.role as UserRole) || 'candidate',
     first_name: authUser.user_metadata?.first_name || '',
     last_name: authUser.user_metadata?.last_name || '',

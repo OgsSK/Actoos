@@ -1,5 +1,5 @@
 'use client';
-
+import { SUPABASE_FUNCTIONS_URL } from '../../lib/supabase-functions';
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
@@ -93,7 +93,7 @@ export default function SimpleProjectForm() {
 
     try {
       const saveRes = await fetch(
-        'https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request',
+        `${SUPABASE_FUNCTIONS_URL}/handle-request`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

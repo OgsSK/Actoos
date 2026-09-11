@@ -7,6 +7,7 @@ import SimpleProjectForm from './components/SimpleProjectForm';
 import FadeInSection from './components/FadeInSection';
 import { useLanguage } from './context/LanguageContext';
 import { t } from '../lib/translations';
+import AuthButton from './components/AuthButton';
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,6 +49,8 @@ export default function HomePage() {
                 className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
               >EN</button>
             </div>
+
+            <AuthButton />
 
             <a href="#projet" className="px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors">
               {t[language].heroButtonStudio}

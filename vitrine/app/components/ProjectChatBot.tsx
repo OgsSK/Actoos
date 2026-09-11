@@ -1,5 +1,5 @@
 'use client';
-
+import { SUPABASE_FUNCTIONS_URL } from '../../lib/supabase-functions';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Send, Loader2, Copy, Check, Edit3, ChevronRight,
@@ -510,7 +510,7 @@ export default function ProjectChatBot() {
     const clientToken = generateUUID();
 
     try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
+      await fetch(`${SUPABASE_FUNCTIONS_URL}/handle-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

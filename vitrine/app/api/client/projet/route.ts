@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SUPABASE_FUNCTIONS_URL } from '../../../../lib/supabase-functions';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-client-project?token=${token}`, {
+    const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/get-client-project?token=${token}`, {
       headers: { 'Content-Type': 'application/json' },
     });
 
