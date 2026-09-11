@@ -1,6 +1,23 @@
 {
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "actoos-jobs/frontend",
+    "vitrine"
+  ],
   "engines": {
     "node": "20.x"
+  },
+  "scripts": {
+    "build:auth": "npm run build --workspace=@actoos/auth-client",
+    "dev:auth": "npm run dev --workspace=@actoos/auth-client",
+    "dev:jobs": "npm run start --workspace=frontend",
+    "dev:vitrine": "npm run dev --workspace=actoos-vitrine",
+    "postinstall": "npm run build:auth"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.4"
   }
 }

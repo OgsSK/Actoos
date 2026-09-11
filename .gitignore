@@ -1,322 +1,69 @@
 # ============================================
-# ACTOOS - .gitignore
+# ACTOOS — .gitignore
 # ============================================
 
-# ===================
-# Dossiers à ignorer
-# ===================
-
-# Emergent Agent (NE PAS COMMITER)
-.emergent/
-.gitconfig
-
-# Dependencies
+# ========== Dependencies ==========
 node_modules/
-/node_modules
 
-# Python
+# ========== Build outputs ==========
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# ========== Python ==========
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyc
 venv/
 .venv/
 env/
-.env.local
-
-# Testing & Reports
-test_reports/
-tests/
-coverage/
 .pytest_cache/
 .ruff_cache/
-*.test.js
-*.spec.js
 
-# ===================
-# Fichiers de build
-# ===================
+# ========== Tests & coverage ==========
+coverage/
+test_reports/
+.pytest_cache/
 
-# Next.js
-/.next/
-/out/
-next-env.d.ts
-*.tsbuildinfo
+# ========== Environment & secrets ==========
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+*token.json*
+*credentials.json*
 
-# React
-/build
-dist/
+# ========== Logs ==========
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# ===================
-# IDE & Editeurs
-# ===================
+# ========== IDE ==========
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 
-# ===================
-# Environnement
-# ===================
-.env
-.env.*
-!.env.example
-*token.json*
-*credentials.json*
-
-# ===================
-# Logs
-# ===================
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-*.log
-dump.rdb
-
-# ===================
-# Système
-# ===================
+# ========== OS ==========
 .DS_Store
-*.pem
 Thumbs.db
 
-# ===================
-# Yarn/NPM
-# ===================
-.pnp
-.pnp.js
-.yarn/install-state.gz
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-yarn.lock
-package-lock.json
+# ========== Emergent Agent ==========
+.emergent/
+.gitconfig
 
-# ===================
-# Divers
-# ===================
+# ========== Misc ==========
 *.bak
 *.tmp
 *.temp
-vitrine/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
-actoos-one/node_modules/.cache/default-development/3.pack
-actoos-one/node_modules/.cache/default-development/32.pack
-actoos-one/node_modules/.cache/default-development/14.pack
-actoos-pro/frontend/node_modules/.cache/default-development/29.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
-actoos-one.bak/node_modules/.cache/default-development/3.pack
-actoos-one.bak/node_modules/.cache/default-development/32.pack
-actoos-one.bak/node_modules/.cache/default-development/14.pack
-actoos-pro/frontend/node_modules/.cache/default-development/0.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
-actoos-pro/frontend/node_modules/.cache/default-development/1.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
-actoos-pro/frontend/node_modules/.cache/default-development/3.pack
-actoos-pro/frontend/node_modules/.cache/default-development/2.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
-actoos-pro/frontend/node_modules/.cache/default-development/5.pack
-actoos-pro/frontend/node_modules/.cache/default-development/4.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
-actoos-pro/frontend/node_modules/.cache/default-development/6.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
-actoos-pro/frontend/node_modules/.cache/default-development/8.pack
-actoos-pro/frontend/node_modules/.cache/default-development/13.pack
-actoos-pro/frontend/node_modules/.cache/default-development/14.pack
-actoos-pro/frontend/node_modules/.cache/default-development/16.pack
-actoos-pro/frontend/node_modules/.cache/default-development/9.pack
-actoos-jobs/frontend/node_modules/.cache/default-development/0.pack
+.pnp
+.pnp.js
+.yarn/install-state.gz
+next-env.d.ts
