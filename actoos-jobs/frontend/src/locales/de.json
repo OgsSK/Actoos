@@ -510,21 +510,34 @@
     }
   },
  
-  "resetPassword": {
+   "resetPassword": {
     "title": "Neues Passwort",
-    "description": "Wählen Sie ein neues Passwort für Ihr Konto.",
+    "description": "Legen Sie Ihr neues Passwort fest.",
+    "verifying": "Link wird überprüft...",
     "newPasswordLabel": "Neues Passwort",
+    "passwordLabel": "Neues Passwort",
     "confirmPasswordLabel": "Passwort bestätigen",
-    "placeholder": "••••••••",
-    "submitButton": "Passwort aktualisieren",
+    "placeholder": "•••••••••••",
+    "submitButton": "Speichern",
+    "invalidLinkTitle": "Ungültiger Link",
+    "requestNewLink": "Neuen Link anfordern",
     "successTitle": "Passwort geändert",
-    "successMessage": "Ihr Passwort wurde erfolgreich geändert. Sie können sich jetzt anmelden.",
-    "loginButton": "Anmelden",
+    "successMessage": "Weiterleitung zur Anmeldung...",
+    "success": "Passwort erfolgreich aktualisiert.",
+    "errorPasswordMismatch": "Die Passwörter stimmen nicht überein.",
+    "errorPasswordLength": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+    "errorGeneric": "Ein Fehler ist aufgetreten.",
     "toasts": {
-      "passwordMismatch": "Die Passwörter stimmen nicht überein",
-      "passwordLength": "Das Passwort muss mindestens 8 Zeichen lang sein",
-      "updateSuccess": "Passwort erfolgreich aktualisiert!",
-      "updateError": "Fehler beim Aktualisieren des Passworts"
+      "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+      "passwordLength": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+      "passwordConstraints": "Das neue Passwort muss sich vom alten unterscheiden",
+      "updateSuccess": "Passwort erfolgreich aktualisiert.",
+      "updateError": "Fehler beim Aktualisieren des Passworts.",
+      "sessionLost": "Sitzung nicht gefunden. Der Link ist möglicherweise abgelaufen. Bitte fordern Sie einen neuen an.",
+      "updateFailed": "Das Passwort konnte nicht aktualisiert werden",
+      "invalidLink": "Ungültiger oder bereits verwendeter Link. Bitte fordern Sie einen neuen an.",
+      "noToken": "Kein gültiger Reset-Link gefunden. Bitte fordern Sie einen neuen an.",
+      "genericError": "Fehler bei der Verarbeitung des Links."
     }
   },
   

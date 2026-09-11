@@ -477,19 +477,32 @@
   
   "resetPassword": {
     "title": "Nuova password",
-    "description": "Scegli una nuova password per il tuo account.",
+    "description": "Imposta la tua nuova password.",
+    "verifying": "Verifica del link in corso...",
     "newPasswordLabel": "Nuova password",
+    "passwordLabel": "Nuova password",
     "confirmPasswordLabel": "Conferma password",
-    "placeholder": "••••••••",
-    "submitButton": "Aggiorna password",
+    "placeholder": "•••••••••••",
+    "submitButton": "Salva",
+    "invalidLinkTitle": "Link non valido",
+    "requestNewLink": "Richiedi un nuovo link",
     "successTitle": "Password modificata",
-    "successMessage": "La tua password è stata modificata con successo. Ora puoi accedere.",
-    "loginButton": "Accedi",
+    "successMessage": "Reindirizzamento al login...",
+    "success": "Password aggiornata con successo.",
+    "errorPasswordMismatch": "Le password non corrispondono.",
+    "errorPasswordLength": "La password deve contenere almeno 8 caratteri.",
+    "errorGeneric": "Si è verificato un errore.",
     "toasts": {
-      "passwordMismatch": "Le password non corrispondono",
-      "passwordLength": "La password deve contenere almeno 8 caratteri",
-      "updateSuccess": "Password aggiornata con successo!",
-      "updateError": "Errore durante l'aggiornamento della password"
+      "passwordMismatch": "Le password non corrispondono.",
+      "passwordLength": "La password deve contenere almeno 8 caratteri.",
+      "passwordConstraints": "La nuova password deve essere diversa dalla precedente",
+      "updateSuccess": "Password aggiornata con successo.",
+      "updateError": "Errore durante l'aggiornamento della password.",
+      "sessionLost": "Sessione non trovata. Il link potrebbe essere scaduto. Si prega di richiederne uno nuovo.",
+      "updateFailed": "Impossibile aggiornare la password",
+      "invalidLink": "Link non valido o già utilizzato. Si prega di richiederne uno nuovo.",
+      "noToken": "Nessun link di reimpostazione valido rilevato. Si prega di richiederne uno nuovo.",
+      "genericError": "Errore durante l'elaborazione del link."
     }
   },
   

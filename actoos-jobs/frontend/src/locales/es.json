@@ -476,19 +476,32 @@
  
   "resetPassword": {
     "title": "Nueva contraseña",
-    "description": "Elige una nueva contraseña para tu cuenta.",
+    "description": "Establezca su nueva contraseña.",
+    "verifying": "Verificando enlace...",
     "newPasswordLabel": "Nueva contraseña",
+    "passwordLabel": "Nueva contraseña",
     "confirmPasswordLabel": "Confirmar contraseña",
-    "placeholder": "••••••••",
-    "submitButton": "Actualizar contraseña",
-    "successTitle": "Contraseña cambiada",
-    "successMessage": "Tu contraseña se ha cambiado correctamente. Ahora puedes iniciar sesión.",
-    "loginButton": "Iniciar sesión",
+    "placeholder": "•••••••••••",
+    "submitButton": "Guardar",
+    "invalidLinkTitle": "Enlace no válido",
+    "requestNewLink": "Solicitar un nuevo enlace",
+    "successTitle": "Contraseña modificada",
+    "successMessage": "Redirigiendo al inicio de sesión...",
+    "success": "Contraseña actualizada correctamente.",
+    "errorPasswordMismatch": "Las contraseñas no coinciden.",
+    "errorPasswordLength": "La contraseña debe tener al menos 8 caracteres.",
+    "errorGeneric": "Se produjo un error.",
     "toasts": {
-      "passwordMismatch": "Las contraseñas no coinciden",
-      "passwordLength": "La contraseña debe tener al menos 8 caracteres",
-      "updateSuccess": "¡Contraseña actualizada con éxito!",
-      "updateError": "Error al actualizar la contraseña"
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "passwordLength": "La contraseña debe tener al menos 8 caracteres.",
+      "passwordConstraints": "La nueva contraseña debe ser diferente de la anterior",
+      "updateSuccess": "Contraseña actualizada correctamente.",
+      "updateError": "Error al actualizar la contraseña.",
+      "sessionLost": "Sesión no encontrada. Es posible que el enlace haya caducado. Por favor, solicite uno nuevo.",
+      "updateFailed": "No se pudo actualizar la contraseña",
+      "invalidLink": "Enlace no válido o ya utilizado. Por favor, solicite uno nuevo.",
+      "noToken": "No se detectó ningún enlace de restablecimiento válido. Por favor, solicite uno nuevo.",
+      "genericError": "Error al procesar el enlace."
     }
   },
   

@@ -280,6 +280,7 @@
         "error": "An error occurred. Please try again."
       },
       "resetPassword": {
+        
         "title": "New password",
         "description": "Set your new password.",
         "passwordLabel": "New password",
@@ -389,19 +390,32 @@
 
   "resetPassword": {
     "title": "New password",
-    "description": "Choose a new password for your account.",
+    "description": "Set your new password.",
+    "verifying": "Verifying link...",
     "newPasswordLabel": "New password",
+    "passwordLabel": "New password",
     "confirmPasswordLabel": "Confirm password",
-    "placeholder": "••••••••",
-    "submitButton": "Update password",
+    "placeholder": "•••••••••••",
+    "submitButton": "Save",
+    "invalidLinkTitle": "Invalid link",
+    "requestNewLink": "Request a new link",
     "successTitle": "Password changed",
-    "successMessage": "Your password has been changed successfully. You can now log in.",
-    "loginButton": "Log in",
+    "successMessage": "Redirecting to login...",
+    "success": "Password updated successfully.",
+    "errorPasswordMismatch": "Passwords do not match.",
+    "errorPasswordLength": "Password must contain at least 8 characters.",
+    "errorGeneric": "An error occurred.",
     "toasts": {
-      "passwordMismatch": "Passwords do not match",
-      "passwordLength": "Password must be at least 8 characters",
-      "updateSuccess": "Password updated successfully!",
-      "updateError": "Error updating password"
+      "passwordMismatch": "Passwords do not match.",
+      "passwordLength": "Password must contain at least 8 characters.",
+      "passwordConstraints": "The new password must be different from the old one",
+      "updateSuccess": "Password updated successfully.",
+      "updateError": "Error updating password.",
+      "sessionLost": "Session not found. The link may have expired. Please request a new one.",
+      "updateFailed": "The password could not be updated",
+      "invalidLink": "Invalid or already used link. Please request a new one.",
+      "noToken": "No valid reset link detected. Please request a new one.",
+      "genericError": "Error processing the link."
     }
   },
   

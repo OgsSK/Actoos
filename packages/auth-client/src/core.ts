@@ -2,7 +2,7 @@ import type { AuthClient } from './client';
 import type { SignUpParams, SignInParams } from './types';
 
 export function createAuthCore(client: AuthClient) {
-  const { supabase, config } = client;
+  const { supabase } = client;
 
   const signUp = async ({
     email,
@@ -105,7 +105,7 @@ export function createAuthCore(client: AuthClient) {
     return data.session;
   };
 
-  return {
+    return {
     signUp,
     signIn,
     signInWithGoogle,
@@ -115,7 +115,6 @@ export function createAuthCore(client: AuthClient) {
     updateProfile,
     getSession,
     refreshSession,
-    appName: config.appName,
   };
 }
 

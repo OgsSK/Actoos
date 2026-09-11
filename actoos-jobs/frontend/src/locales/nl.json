@@ -476,19 +476,32 @@
 
   "resetPassword": {
     "title": "Nieuw wachtwoord",
-    "description": "Kies een nieuw wachtwoord voor uw account.",
+    "description": "Stel uw nieuwe wachtwoord in.",
+    "verifying": "Link wordt geverifieerd...",
     "newPasswordLabel": "Nieuw wachtwoord",
-    "confirmPasswordLabel": "Wachtwoord bevestigen",
-    "placeholder": "••••••••",
-    "submitButton": "Wachtwoord bijwerken",
+    "passwordLabel": "Nieuw wachtwoord",
+    "confirmPasswordLabel": "Bevestig wachtwoord",
+    "placeholder": "•••••••••••",
+    "submitButton": "Opslaan",
+    "invalidLinkTitle": "Ongeldige link",
+    "requestNewLink": "Een nieuwe link aanvragen",
     "successTitle": "Wachtwoord gewijzigd",
-    "successMessage": "Uw wachtwoord is succesvol gewijzigd. U kunt nu inloggen.",
-    "loginButton": "Inloggen",
+    "successMessage": "Doorsturen naar inloggen...",
+    "success": "Wachtwoord succesvol bijgewerkt.",
+    "errorPasswordMismatch": "Wachtwoorden komen niet overeen.",
+    "errorPasswordLength": "Het wachtwoord moet minimaal 8 tekens bevatten.",
+    "errorGeneric": "Er is een fout opgetreden.",
     "toasts": {
-      "passwordMismatch": "Wachtwoorden komen niet overeen",
-      "passwordLength": "Wachtwoord moet minstens 8 tekens bevatten",
-      "updateSuccess": "Wachtwoord succesvol bijgewerkt!",
-      "updateError": "Fout bij bijwerken wachtwoord"
+      "passwordMismatch": "Wachtwoorden komen niet overeen.",
+      "passwordLength": "Het wachtwoord moet minimaal 8 tekens bevatten.",
+      "passwordConstraints": "Het nieuwe wachtwoord moet verschillen van het oude",
+      "updateSuccess": "Wachtwoord succesvol bijgewerkt.",
+      "updateError": "Fout bij het bijwerken van het wachtwoord.",
+      "sessionLost": "Sessie niet gevonden. De link is mogelijk verlopen. Vraag een nieuwe aan.",
+      "updateFailed": "Het wachtwoord kon niet worden bijgewerkt",
+      "invalidLink": "Ongeldige of reeds gebruikte link. Vraag een nieuwe aan.",
+      "noToken": "Geen geldige resetlink gevonden. Vraag een nieuwe aan.",
+      "genericError": "Fout bij het verwerken van de link."
     }
   },
   

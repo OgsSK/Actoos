@@ -477,19 +477,32 @@
   
   "resetPassword": {
     "title": "كلمة مرور جديدة",
-    "description": "اختر كلمة مرور جديدة لحسابك.",
+    "description": "حدد كلمة المرور الجديدة.",
+    "verifying": "جارٍ التحقق من الرابط...",
     "newPasswordLabel": "كلمة المرور الجديدة",
+    "passwordLabel": "كلمة المرور الجديدة",
     "confirmPasswordLabel": "تأكيد كلمة المرور",
-    "placeholder": "••••••••",
-    "submitButton": "تحديث كلمة المرور",
+    "placeholder": "•••••••••••",
+    "submitButton": "حفظ",
+    "invalidLinkTitle": "رابط غير صالح",
+    "requestNewLink": "طلب رابط جديد",
     "successTitle": "تم تغيير كلمة المرور",
-    "successMessage": "تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.",
-    "loginButton": "تسجيل الدخول",
+    "successMessage": "جارٍ إعادة التوجيه إلى تسجيل الدخول...",
+    "success": "تم تحديث كلمة المرور بنجاح.",
+    "errorPasswordMismatch": "كلمتا المرور غير متطابقتين.",
+    "errorPasswordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل.",
+    "errorGeneric": "حدث خطأ.",
     "toasts": {
-      "passwordMismatch": "كلمات المرور غير متطابقة",
-      "passwordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل",
-      "updateSuccess": "تم تحديث كلمة المرور بنجاح!",
-      "updateError": "خطأ أثناء تحديث كلمة المرور"
+      "passwordMismatch": "كلمتا المرور غير متطابقتين.",
+      "passwordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل.",
+      "passwordConstraints": "يجب أن تكون كلمة المرور الجديدة مختلفة عن القديمة",
+      "updateSuccess": "تم تحديث كلمة المرور بنجاح.",
+      "updateError": "خطأ في تحديث كلمة المرور.",
+      "sessionLost": "لم يتم العثور على الجلسة. ربما انتهت صلاحية الرابط. يرجى طلب رابط جديد.",
+      "updateFailed": "تعذر تحديث كلمة المرور",
+      "invalidLink": "رابط غير صالح أو مستخدم بالفعل. يرجى طلب رابط جديد.",
+      "noToken": "لم يتم العثور على رابط إعادة تعيين صالح. يرجى طلب رابط جديد.",
+      "genericError": "خطأ في معالجة الرابط."
     }
   },
   

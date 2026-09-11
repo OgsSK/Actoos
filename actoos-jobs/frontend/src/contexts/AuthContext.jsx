@@ -1,6 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  createAuthCore,
+  buildBaseProfile,
+  enrichProfile,
+  isCandidate as checkIsCandidate,
+  isCompany as checkIsCompany,
+  isAdmin as checkIsAdmin,
+} from '@actoos/auth-client';
+
+// ✅ IMPORTANT : on importe le client Supabase UNIQUE depuis lib/supabase.js
+// Cela garantit qu'il n'y ait qu'UNE SEULE instance dans toute l'app
 import { supabase } from '../lib/supabase';
 
+// ============ Configuration du client ============
+// Le client est déjà créé dans lib/supabase.js. On l'enveloppe juste
+// pour respecter l'API attendue par createAuthCore.
+const client = { supabase };
+
+// ============ Initialisation des fonctions d'auth ============
+const authCore = createAuthCore(client);
+
+// ============ Context ============
 const AuthContext = createContext({});
 
 export const useAuth = () => {
@@ -17,6 +37,7 @@ export const AuthProvider = ({ children }) => {
     return localStorage.getItem('actoosActiveCompanyId') || null;
   });
 
+  // ============ Persistance activeCompanyId ============
   useEffect(() => {
     if (activeCompanyId) {
       localStorage.setItem('actoosActiveCompanyId', activeCompanyId);
@@ -25,91 +46,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [activeCompanyId]);
 
-  const buildBaseProfile = useCallback((authUser) => {
-    if (!authUser) return null;
-    return {
-      id: authUser.id,
-      email: authUser.email,
-      role: authUser.user_metadata?.role || 'candidate',
-      first_name: authUser.user_metadata?.first_name || '',
-      last_name: authUser.user_metadata?.last_name || '',
-      avatar_url: null,
-      candidate_profile: null,
-      subscription_plan: 'free',
-      hasCompanies: false,
-      is_active: true,
-      is_banned: false,
-    };
-  }, []);
-
-  const enrichProfile = useCallback(async (authUser, currentProfile) => {
-    if (!authUser) return currentProfile;
-    try {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle();
-      const roleFromDb = userData?.role;
-
-      // ✅ Si la colonne language est NULL ou absente, on la met à jour avec la langue du navigateur
-      if (userData && !userData.language) {
-        const browserLang = navigator.language?.split('-')[0] || 'fr';
-        await supabase
-          .from('users')
-          .update({ language: browserLang })
-          .eq('id', authUser.id);
-        userData.language = browserLang;
-      }
-
-      if (roleFromDb && roleFromDb !== authUser.user_metadata?.role) {
-        await supabase.auth.updateUser({ data: { role: roleFromDb } });
-      }
-
-      const { data: candidateData } = await supabase
-        .from('candidate_profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .maybeSingle();
-
-      let subscriptionPlan = 'free';
-      const { data: companyData } = await supabase
-        .from('companies')
-        .select('subscription_plan, billing_cycle')
-        .eq('owner_id', authUser.id)
-        .maybeSingle();
-      if (companyData) {
-        subscriptionPlan = companyData.subscription_plan || 'free';
-        currentProfile.billing_cycle = companyData.billing_cycle || null;
-      }
-
-      const { count: ownedCount } = await supabase
-        .from('companies')
-        .select('id', { count: 'exact', head: true })
-        .eq('owner_id', authUser.id);
-
-      const { count: memberCount } = await supabase
-        .from('company_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', authUser.id);
-
-      const hasCompanies = (ownedCount || 0) + (memberCount || 0) > 0;
-
-      const merged = {
-        ...currentProfile,
-        ...(userData || {}),
-        role: roleFromDb || currentProfile.role,
-        candidate_profile: candidateData || null,
-        subscription_plan: subscriptionPlan,
-        hasCompanies,
-      };
-      return merged;
-    } catch (err) {
-      console.warn('Enrichissement profil échoué:', err);
-      return currentProfile;
-    }
-  }, []);
-
+  // ============ Gestion de la session ============
   const handleSession = useCallback(async (authUser) => {
     if (!authUser) {
       setUser(null);
@@ -123,19 +60,26 @@ export const AuthProvider = ({ children }) => {
     setProfile(baseProfile);
     setLoading(false);
 
-    const enriched = await enrichProfile(authUser, baseProfile);
+    const enriched = await enrichProfile(client, authUser, baseProfile);
     setProfile(enriched);
-  }, [buildBaseProfile, enrichProfile]);
+  }, []);
 
+  // ============ Écouter les changements d'auth ============
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession()
+
+    supabase.auth
+      .getSession()
       .then(({ data: { session } }) => {
         if (mounted) handleSession(session?.user ?? null);
       })
-      .catch(() => { if (mounted) setLoading(false); });
+      .catch(() => {
+        if (mounted) setLoading(false);
+      });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (mounted) handleSession(session?.user ?? null);
     });
 
@@ -145,108 +89,98 @@ export const AuthProvider = ({ children }) => {
     };
   }, [handleSession]);
 
-  // ✅ signUp modifié : on ne crée plus d'entreprise automatiquement
-  const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language }) => {
-    const cleanLanguage = language ? language.split('-')[0] : 'fr';
-
-    const { data, error } = await supabase.auth.signUp({
+  // ============ Actions ============
+  const signUp = async ({
+    email,
+    password,
+    role = 'candidate',
+    firstName,
+    lastName,
+    language,
+  }) => {
+    return await authCore.signUp({
       email,
       password,
-      options: {
-        data: {
-          role,
-          first_name: firstName,
-          last_name: lastName,
-          language: cleanLanguage
-        }
-      },
+      role,
+      firstName,
+      lastName,
+      language,
     });
-    if (error) throw error;
-
-    if (data.user) {
-      // Créer l'utilisateur dans la table users avec la langue
-      await supabase.from('users').insert({
-        id: data.user.id,
-        email,
-        role,
-        first_name: firstName,
-        last_name: lastName,
-        language: cleanLanguage,
-      });
-      // ✅ L'entreprise sera créée ultérieurement via le formulaire dédié (CreateCompany)
-    }
-    return data;
   };
 
   const signIn = async ({ email, password }) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
+    return await authCore.signIn({ email, password });
   };
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    await authCore.signInWithGoogle();
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await authCore.signOut();
     setUser(null);
     setProfile(null);
     setActiveCompanyId(null);
   };
 
   const resetPassword = async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) throw error;
+    await authCore.resetPassword(email);
   };
 
   const updatePassword = async (newPassword) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) throw error;
+    await authCore.updatePassword(newPassword);
   };
 
   const updateProfile = async (updates) => {
     if (!user) throw new Error('Not authenticated');
-    const { error } = await supabase.from('users').update(updates).eq('id', user.id);
-    if (error) throw error;
-    const enriched = await enrichProfile(user, profile);
+    await authCore.updateProfile(user.id, updates);
+    const enriched = await enrichProfile(client, user, profile);
     setProfile(enriched);
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await supabase.auth.refreshSession();
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUser = session?.user;
-      if (currentUser) {
-        const baseProfile = buildBaseProfile(currentUser);
-        const enriched = await enrichProfile(currentUser, baseProfile);
-        setProfile(enriched);
-        setUser(currentUser);
-      }
+    if (!user) return;
+
+    await supabase.auth.refreshSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const currentUser = session?.user;
+
+    if (currentUser) {
+      const baseProfile = buildBaseProfile(currentUser);
+      const enriched = await enrichProfile(client, currentUser, baseProfile);
+      setProfile(enriched);
+      setUser(currentUser);
     }
   };
 
+  // ============ API publique ============
   const value = {
-    user, profile, loading, activeCompanyId, setActiveCompanyId,
-    isCandidate: profile?.role === 'candidate' && !profile?.hasCompanies,
-    isCompany: profile?.role === 'company' || profile?.hasCompanies,
-    isAdmin: profile?.role === 'admin',
-    signUp, signIn, signInWithGoogle, signOut,
-    resetPassword, updatePassword,
-    updateProfile, refreshProfile,
+    // État
+    user,
+    profile,
+    loading,
+    activeCompanyId,
+    setActiveCompanyId,
+
+    // Rôles (calculés par le package)
+    isCandidate: checkIsCandidate(profile),
+    isCompany: checkIsCompany(profile),
+    isAdmin: checkIsAdmin(profile),
+
+    // Actions
+    signUp,
+    signIn,
+    signInWithGoogle,
+    signOut,
+    resetPassword,
+    updatePassword,
+    updateProfile,
+    refreshProfile,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export default AuthContext;

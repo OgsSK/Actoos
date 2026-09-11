@@ -476,19 +476,32 @@
   
   "resetPassword": {
     "title": "Nova palavra-passe",
-    "description": "Escolha uma nova palavra-passe para a sua conta.",
+    "description": "Defina a sua nova palavra-passe.",
+    "verifying": "A verificar link...",
     "newPasswordLabel": "Nova palavra-passe",
+    "passwordLabel": "Nova palavra-passe",
     "confirmPasswordLabel": "Confirmar palavra-passe",
-    "placeholder": "••••••••",
-    "submitButton": "Atualizar palavra-passe",
+    "placeholder": "•••••••••••",
+    "submitButton": "Guardar",
+    "invalidLinkTitle": "Link inválido",
+    "requestNewLink": "Pedir um novo link",
     "successTitle": "Palavra-passe alterada",
-    "successMessage": "A sua palavra-passe foi alterada com sucesso. Agora pode iniciar sessão.",
-    "loginButton": "Iniciar sessão",
+    "successMessage": "A redirecionar para o login...",
+    "success": "Palavra-passe atualizada com sucesso.",
+    "errorPasswordMismatch": "As palavras-passe não coincidem.",
+    "errorPasswordLength": "A palavra-passe deve ter pelo menos 8 caracteres.",
+    "errorGeneric": "Ocorreu um erro.",
     "toasts": {
-      "passwordMismatch": "As palavras-passe não coincidem",
-      "passwordLength": "A palavra-passe deve ter pelo menos 8 caracteres",
-      "updateSuccess": "Palavra-passe atualizada com sucesso!",
-      "updateError": "Erro ao atualizar a palavra-passe"
+      "passwordMismatch": "As palavras-passe não coincidem.",
+      "passwordLength": "A palavra-passe deve ter pelo menos 8 caracteres.",
+      "passwordConstraints": "A nova palavra-passe deve ser diferente da antiga",
+      "updateSuccess": "Palavra-passe atualizada com sucesso.",
+      "updateError": "Erro ao atualizar a palavra-passe.",
+      "sessionLost": "Sessão não encontrada. O link pode ter expirado. Por favor, solicite um novo.",
+      "updateFailed": "Não foi possível atualizar a palavra-passe",
+      "invalidLink": "Link inválido ou já utilizado. Por favor, solicite um novo.",
+      "noToken": "Nenhum link de redefinição válido detetado. Por favor, solicite um novo.",
+      "genericError": "Erro ao processar o link."
     }
   },
   
