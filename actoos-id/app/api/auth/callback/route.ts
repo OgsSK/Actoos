@@ -18,13 +18,14 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookieOptions: isProd
-        ? {
-            domain: '.actoos.com',
-            path: '/',
-            sameSite: 'lax',
-            secure: true,
-          }
-        : undefined,
+  ? {
+      domain: '.actoos.com',
+      path: '/',
+      sameSite: 'lax',
+      secure: true,
+      httpOnly: false,   // ⚠️ OBLIGATOIRE pour que createBrowserClient puisse lire
+    }
+  : undefined,
       cookies: {
         getAll() {
           return request.cookies.getAll();
