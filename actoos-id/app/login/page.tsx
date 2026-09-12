@@ -2,28 +2,93 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-// ⬇️ Composant interne qui utilise useSearchParams (doit être dans Suspense)
+type Language = 'fr' | 'en';
+
+const T = {
+  fr: {
+    title: 'Actoos ID',
+    subtitle: 'Un compte pour tous vos produits',
+    email: 'Email',
+    password: 'Mot de passe',
+    forgotPassword: 'Mot de passe oublié ?',
+    signIn: 'Se connecter',
+    or: 'ou',
+    continueGoogle: 'Continuer avec Google',
+    noAccount: "Pas encore de compte ?",
+    signUp: 'Créer un compte',
+    back: 'Retour à actoos.com',
+    errorInvalid: 'Identifiants incorrects',
+    errorGoogle: 'Erreur Google',
+    loading: 'Vérification de votre session…',
+  },
+  en: {
+    title: 'Actoos ID',
+    subtitle: 'One account for all your products',
+    email: 'Email',
+    password: 'Password',
+    forgotPassword: 'Forgot password?',
+    signIn: 'Sign in',
+    or: 'or',
+    continueGoogle: 'Continue with Google',
+    noAccount: "Don't have an account?",
+    signUp: 'Create an account',
+    back: 'Back to actoos.com',
+    errorInvalid: 'Invalid credentials',
+    errorGoogle: 'Google error',
+    loading: 'Checking your session…',
+  },
+};
+
+function LanguageToggle({ language, setLanguage }: { language: Language; setLanguage: (l: Language) => void }) {
+  return (
+    <div className="absolute top-4 right-4 flex items-center gap-0.5">
+      <button
+        onClick={() => setLanguage('fr')}
+        className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'fr' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+      >FR</button>
+      <span className="text-slate-300 text-xs">/</span>
+      <button
+        onClick={() => setLanguage('en')}
+        className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+      >EN</button>
+    </div>
+  );
+}
+
 function LoginForm() {
   const { user, loading, signIn, signInWithGoogle } = useAuth();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
 
+  const [language, setLanguage] = useState<Language>('fr');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Charge la langue depuis localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('actoos-id-language');
+    if (stored === 'fr' || stored === 'en') setLanguage(stored);
+  }, []);
+
+  const changeLanguage = (lang: Language) => {
+    setLanguage(lang);
+    if (typeof window !== 'undefined') localStorage.setItem('actoos-id-language', lang);
+  };
+
   useEffect(() => {
     if (!loading && user) {
-      const target = redirect
-        ? decodeURIComponent(redirect)
-        : (process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account');
+      const target = redirect ? decodeURIComponent(redirect) : '/account';
       window.location.href = target;
     }
   }, [user, loading, redirect]);
+
+  const t = T[language];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +96,10 @@ function LoginForm() {
     setSubmitting(true);
     try {
       await signIn({ email, password });
-      const target = redirect
-        ? decodeURIComponent(redirect)
-        : (process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account');
+      const target = redirect ? decodeURIComponent(redirect) : '/account';
       window.location.href = target;
     } catch (err: any) {
-      setError(err?.message || 'Identifiants incorrects');
+      setError(err?.message || t.errorInvalid);
     } finally {
       setSubmitting(false);
     }
@@ -47,27 +110,30 @@ function LoginForm() {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      setError(err?.message || 'Erreur Google');
+      setError(err?.message || t.errorGoogle);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
+          <p className="text-xs text-slate-400">{t.loading}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
+      <LanguageToggle language={language} setLanguage={changeLanguage} />
+
       <div className="bg-white rounded-2xl border border-slate-200 p-8 max-w-md w-full shadow-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-lg">A</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Actoos ID</h1>
-          <p className="text-sm text-slate-500">Un compte pour tous vos produits</p>
+          <img src="/logo-icon.png" alt="Actoos" className="h-14 w-14 object-contain mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">{t.title}</h1>
+          <p className="text-sm text-slate-500">{t.subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,7 +143,7 @@ function LoginForm() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="Email"
+              placeholder={t.email}
               required
               autoComplete="email"
               className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
@@ -90,11 +156,17 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Mot de passe"
+              placeholder={t.password}
               required
               autoComplete="current-password"
               className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
             />
+          </div>
+
+          <div className="text-right">
+            <a href="/mot-de-passe-oublie" className="text-xs text-slate-500 hover:text-blue-600 transition-colors">
+              {t.forgotPassword}
+            </a>
           </div>
 
           {error && (
@@ -109,13 +181,13 @@ function LoginForm() {
             className="w-full bg-slate-900 text-white rounded-lg py-3 font-medium text-sm hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
-            Se connecter
+            {t.signIn}
           </button>
         </form>
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-slate-200" />
-          <span className="text-xs text-slate-400 uppercase">ou</span>
+          <span className="text-xs text-slate-400 uppercase">{t.or}</span>
           <div className="flex-1 h-px bg-slate-200" />
         </div>
 
@@ -129,14 +201,14 @@ function LoginForm() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          Continuer avec Google
+          {t.continueGoogle}
         </button>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-500">
-            Pas encore de compte ?{' '}
+            {t.noAccount}{' '}
             <a href="/register" className="font-medium text-blue-600 hover:text-blue-700">
-              Créer un compte
+              {t.signUp}
             </a>
           </p>
         </div>
@@ -144,7 +216,7 @@ function LoginForm() {
         <div className="mt-4 text-center">
           <a href="https://actoos.com" className="text-xs text-slate-400 hover:text-slate-600 inline-flex items-center gap-1">
             <ArrowLeft size={12} />
-            Retour à actoos.com
+            {t.back}
           </a>
         </div>
       </div>
@@ -152,11 +224,10 @@ function LoginForm() {
   );
 }
 
-// ⬇️ Wrapper avec Suspense (obligatoire pour useSearchParams)
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
       </div>
     }>

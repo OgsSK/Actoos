@@ -90,8 +90,18 @@ export default function StudioAccountPage() {
             </span>
           </a>
           <div className="flex items-center gap-3 shrink-0">
-            <a href="/" className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors">
+            {/* ✅ LIEN MON COMPTE — visible uniquement sur desktop */}
+            <a
+              href="https://id.actoos.com/account"
+              className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+            >
               <ArrowLeft size={15} />
+              <span>Mon compte</span>
+            </a>
+            <a
+              href="/"
+              className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+            >
               <span>Accueil</span>
             </a>
             <button

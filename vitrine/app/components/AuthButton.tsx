@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
+import { createAuthClientSSR } from '@actoos/auth-client';
 
-// Lien vers le portail Actoos ID (à terme id.actoos.com, en attendant jobs.actoos.com)
-const ACTOOS_ID_LOGIN_URL = 'https://jobs.actoos.com/connexion';
-const ACTOOS_ID_ACCOUNT_URL = 'https://jobs.actoos.com/mon-compte';
+const ACTOOS_ID_BASE = 'https://id.actoos.com';
+const ACTOOS_ID_LOGIN_URL = `${ACTOOS_ID_BASE}/login`;
+const ACTOOS_ID_ACCOUNT_URL = `${ACTOOS_ID_BASE}/account`;
 
 type AuthUser = {
   email: string;
@@ -17,37 +18,33 @@ type AuthUser = {
 
 export default function AuthButton() {
   const { language } = useLanguage();
-  const tr = t[language];
-
   const [user, setUser] = useState<AuthUser>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Lecture de la session en arrière-plan (non bloquant)
     let cancelled = false;
 
     async function loadSession() {
       try {
-        // Import dynamique pour ne pas charger Supabase si pas nécessaire
-        const { createBrowserClient } = await import('@supabase/ssr').catch(() => ({ createBrowserClient: null }));
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-        if (!createBrowserClient) {
-          // @supabase/ssr non installé → fallback
-          if (!cancelled) {
-            setUser(null);
-            setLoading(false);
-          }
+        if (!supabaseUrl || !supabaseAnonKey) {
+          if (!cancelled) setLoading(false);
           return;
         }
 
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        // On utilise EXACTEMENT le même client que celui du AuthContext
+        // (createAuthClientSSR → cookies .actoos.com en prod)
+        const client = createAuthClientSSR({
+          supabaseUrl,
+          supabaseAnonKey,
+          appName: 'vitrine',
+          cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
+        });
 
-        const { data } = await supabase.auth.getUser();
-
+        const { data } = await client.supabase.auth.getUser();
         if (cancelled) return;
 
         if (data?.user) {
@@ -61,8 +58,8 @@ export default function AuthButton() {
         } else {
           setUser(null);
         }
-      } catch {
-        // En cas d'erreur (Supabase down, réseau, etc.) → fallback silencieux
+      } catch (err) {
+        console.error('[AuthButton] session error:', err);
         if (!cancelled) setUser(null);
       } finally {
         if (!cancelled) setLoading(false);
@@ -75,26 +72,27 @@ export default function AuthButton() {
     };
   }, []);
 
-  // Pendant le chargement : afficher un placeholder discret (pas de blocage)
+  const loginHref = `${ACTOOS_ID_LOGIN_URL}?redirect=${encodeURIComponent(
+    typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/'
+  )}`;
+
   if (loading) {
     return (
       <span className="inline-block w-24 h-9 rounded-full bg-slate-200 animate-pulse" aria-hidden />
     );
   }
 
-  // Non connecté → lien vers Actoos ID
   if (!user) {
     return (
       <a
-        href={ACTOOS_ID_LOGIN_URL}
+        href={loginHref}
         className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-full hover:bg-slate-100 transition-colors"
       >
-        {tr.navLogin}
+        {t[language].navLogin}
       </a>
     );
   }
 
-  // Connecté → avatar + menu
   const initials =
     (user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '') || user.email[0]?.toUpperCase() || '?';
 
@@ -102,18 +100,14 @@ export default function AuthButton() {
     <div className="relative">
       <button
         onClick={() => setMenuOpen((v) => !v)}
-        className="inline-flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/10 transition-colors"
-        aria-label={tr.navAccount}
+        className="inline-flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
+        aria-label={t[language].navAccount}
       >
         {user.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatarUrl}
-            alt=""
-            className="w-8 h-8 rounded-full object-cover"
-          />
+          <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
         ) : (
-          <span className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium">
+          <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
             {initials}
           </span>
         )}
@@ -121,12 +115,7 @@ export default function AuthButton() {
 
       {menuOpen && (
         <>
-          {/* Overlay pour fermer au clic extérieur */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setMenuOpen(false)}
-            aria-hidden
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
             <div className="px-4 py-3 border-b border-gray-100">
               <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
@@ -135,13 +124,13 @@ export default function AuthButton() {
               href={ACTOOS_ID_ACCOUNT_URL}
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              {tr.navAccount}
+              {t[language].navAccount}
             </a>
             <a
-              href={ACTOOS_ID_ACCOUNT_URL + '/projets'}
+              href="https://actoos.com/studio/account"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              {tr.navProjects}
+              {t[language].navMyProjects}
             </a>
           </div>
         </>

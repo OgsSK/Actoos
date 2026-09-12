@@ -1,41 +1,107 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-import { ArrowLeft, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Mail, Lock, User, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function RegisterPage() {
-  const { user, loading, signUp } = useAuth();
- 
+type Language = 'fr' | 'en';
 
+const T = {
+  fr: {
+    title: 'Créer un compte',
+    subtitle: 'Rejoignez Actoos en 30 secondes',
+    firstName: 'Prénom',
+    lastName: 'Nom',
+    email: 'Email',
+    password: 'Mot de passe (min. 6 caractères)',
+    createAccount: 'Créer mon compte',
+    alreadyAccount: 'Déjà un compte ?',
+    signIn: 'Se connecter',
+    back: 'Retour à actoos.com',
+    errorSignup: 'Erreur lors de la création du compte',
+    successTitle: 'Compte créé !',
+    successMessage: 'Vérifiez votre boîte mail pour confirmer votre adresse.',
+    redirecting: 'Redirection…',
+    loading: 'Vérification de votre session…',
+    terms: 'En créant un compte, vous acceptez nos conditions générales et notre politique de confidentialité.',
+  },
+  en: {
+    title: 'Create an account',
+    subtitle: 'Join Actoos in 30 seconds',
+    firstName: 'First name',
+    lastName: 'Last name',
+    email: 'Email',
+    password: 'Password (min. 6 characters)',
+    createAccount: 'Create my account',
+    alreadyAccount: 'Already have an account?',
+    signIn: 'Sign in',
+    back: 'Back to actoos.com',
+    errorSignup: 'Error creating account',
+    successTitle: 'Account created!',
+    successMessage: 'Check your inbox to confirm your email address.',
+    redirecting: 'Redirecting…',
+    loading: 'Checking your session…',
+    terms: 'By creating an account, you agree to our terms of service and privacy policy.',
+  },
+};
+
+function RegisterForm() {
+  const { user, loading, signUp } = useAuth();
+
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
+
+  const [language, setLanguage] = useState<Language>('fr');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'candidate' | 'company'>('candidate');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('actoos-id-language');
+    if (stored === 'fr' || stored === 'en') setLanguage(stored);
+  }, []);
+
+  const changeLanguage = (lang: Language) => {
+    setLanguage(lang);
+    if (typeof window !== 'undefined') localStorage.setItem('actoos-id-language', lang);
+  };
+
+  useEffect(() => {
     if (!loading && user) {
-      window.location.href = process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account';
+      const target = redirect ? decodeURIComponent(redirect) : '/account';
+      window.location.href = target;
     }
-  }, [user, loading]);
+  }, [user, loading, redirect]);
+
+  const t = T[language];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      await signUp({ email, password, firstName, lastName, role, language: 'fr' });
+      await signUp({
+        email,
+        password,
+        firstName,
+        lastName,
+        // Pas de rôle : Actoos ID = identité pure.
+        // Le rôle sera défini dans chaque produit (Jobs, Studio, etc.)
+        language,
+      });
       setSuccess(true);
+      const target = redirect ? decodeURIComponent(redirect) : '/account';
       setTimeout(() => {
-        window.location.href = process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account';
+        window.location.href = target;
       }, 2000);
     } catch (err: any) {
-      setError(err?.message || 'Erreur lors de la création du compte');
+      setError(err?.message || t.errorSignup);
     } finally {
       setSubmitting(false);
     }
@@ -43,38 +109,49 @@ export default function RegisterPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
+          <p className="text-xs text-slate-400">{t.loading}</p>
+        </div>
       </div>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 max-w-md w-full text-center">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 max-w-md w-full text-center shadow-sm">
           <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-emerald-600 text-2xl">✓</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">Compte créé !</h1>
-          <p className="text-sm text-slate-500 mb-2">
-            Vérifiez votre boîte mail pour confirmer votre adresse.
-          </p>
-          <p className="text-xs text-slate-400">Redirection…</p>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">{t.successTitle}</h1>
+          <p className="text-sm text-slate-500 mb-2">{t.successMessage}</p>
+          <p className="text-xs text-slate-400">{t.redirecting}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
+      <div className="absolute top-4 right-4 flex items-center gap-0.5">
+        <button
+          onClick={() => changeLanguage('fr')}
+          className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'fr' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+        >FR</button>
+        <span className="text-slate-300 text-xs">/</span>
+        <button
+          onClick={() => changeLanguage('en')}
+          className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+        >EN</button>
+      </div>
+
       <div className="bg-white rounded-2xl border border-slate-200 p-8 max-w-md w-full shadow-sm">
         <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-lg">A</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Créer un compte</h1>
-          <p className="text-sm text-slate-500">Rejoignez Actoos en 30 secondes</p>
+          <img src="/logo-icon.png" alt="Actoos" className="h-14 w-14 object-contain mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">{t.title}</h1>
+          <p className="text-sm text-slate-500">{t.subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,7 +162,7 @@ export default function RegisterPage() {
                 type="text"
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
-                placeholder="Prénom"
+                placeholder={t.firstName}
                 required
                 className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
               />
@@ -96,7 +173,7 @@ export default function RegisterPage() {
                 type="text"
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
-                placeholder="Nom"
+                placeholder={t.lastName}
                 required
                 className="w-full border border-slate-200 rounded-lg pl-10 pr-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
               />
@@ -109,7 +186,7 @@ export default function RegisterPage() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="Email"
+              placeholder={t.email}
               required
               autoComplete="email"
               className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
@@ -122,40 +199,12 @@ export default function RegisterPage() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Mot de passe (min. 6 caractères)"
+              placeholder={t.password}
               required
               minLength={6}
               autoComplete="new-password"
               className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
             />
-          </div>
-
-          <div>
-            <p className="text-xs text-slate-500 mb-2">Je suis :</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setRole('candidate')}
-                className={`py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                  role === 'candidate'
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                Candidat
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('company')}
-                className={`py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                  role === 'company'
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                Entreprise
-              </button>
-            </div>
           </div>
 
           {error && (
@@ -170,15 +219,19 @@ export default function RegisterPage() {
             className="w-full bg-slate-900 text-white rounded-lg py-3 font-medium text-sm hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
-            Créer mon compte
+            {t.createAccount}
           </button>
         </form>
 
+        <p className="text-[11px] text-slate-400 text-center mt-4 leading-relaxed">
+          {t.terms}
+        </p>
+
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-500">
-            Déjà un compte ?{' '}
+            {t.alreadyAccount}{' '}
             <a href="/login" className="font-medium text-blue-600 hover:text-blue-700">
-              Se connecter
+              {t.signIn}
             </a>
           </p>
         </div>
@@ -186,10 +239,22 @@ export default function RegisterPage() {
         <div className="mt-4 text-center">
           <a href="https://actoos.com" className="text-xs text-slate-400 hover:text-slate-600 inline-flex items-center gap-1">
             <ArrowLeft size={12} />
-            Retour à actoos.com
+            {t.back}
           </a>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }
