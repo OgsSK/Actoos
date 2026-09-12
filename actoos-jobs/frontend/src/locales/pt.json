@@ -1780,6 +1780,14 @@
     "companySpace": "Espaço Empresa"
   },
   "user": {
+    "menu": {
+        "title": "Minha conta",
+        "switchError": "Falha ao trocar de conta",
+        "removeAccount": "Remover esta conta",
+        "addAccount": "Adicionar outra conta",
+        "actoosAccount": "Minha conta Actoos",
+        "signOutAll": "Sair de todas as contas"
+      },
     "defaultName": "Usuário",
     "defaultUser": "Usuário",
     "dashboard": "Painel",

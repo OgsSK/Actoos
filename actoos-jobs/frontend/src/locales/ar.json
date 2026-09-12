@@ -1781,6 +1781,14 @@
     "companySpace": "مساحة الشركة"
   },
   "user": {
+    "menu": {
+        "title": "حسابي",
+        "switchError": "فشل التبديل إلى هذا الحساب",
+        "removeAccount": "إزالة هذا الحساب",
+        "addAccount": "إضافة حساب آخر",
+        "actoosAccount": "حساب Actoos الخاص بي",
+        "signOutAll": "تسجيل الخروج من جميع الحسابات"
+      },
     "defaultName": "مستخدم",
     "defaultUser": "مستخدم",
     "dashboard": "لوحة التحكم",

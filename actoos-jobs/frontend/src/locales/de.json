@@ -1817,6 +1817,14 @@
     "companySpace": "Firmenbereich"
   },
   "user": {
+    "menu": {
+        "title": "Mein Konto",
+        "switchError": "Kontowechsel fehlgeschlagen",
+        "removeAccount": "Dieses Konto entfernen",
+        "addAccount": "Weiteres Konto hinzufügen",
+        "actoosAccount": "Mein Actoos-Konto",
+        "signOutAll": "Von allen Konten abmelden"
+      },
     "defaultName": "Benutzer",
     "defaultUser": "Benutzer",
     "dashboard": "Dashboard",

@@ -1847,6 +1847,14 @@
     "companySpace": "Bedrijfsruimte"
   },
   "user": {
+    "menu": {
+        "title": "Mijn account",
+        "switchError": "Kan niet wisselen van account",
+        "removeAccount": "Dit account verwijderen",
+        "addAccount": "Nog een account toevoegen",
+        "actoosAccount": "Mijn Actoos-account",
+        "signOutAll": "Afmelden bij alle accounts"
+      },
     "defaultName": "Gebruiker",
     "defaultUser": "Gebruiker",
     "dashboard": "Dashboard",

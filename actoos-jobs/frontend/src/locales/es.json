@@ -1779,6 +1779,14 @@
     "companySpace": "Espacio Empresa"
   },
   "user": {
+    "menu": {
+        "title": "Mi cuenta",
+        "switchError": "No se pudo cambiar de cuenta",
+        "removeAccount": "Eliminar esta cuenta",
+        "addAccount": "Añadir otra cuenta",
+        "actoosAccount": "Mi cuenta Actoos",
+        "signOutAll": "Cerrar sesión en todas las cuentas"
+      },
     "defaultName": "Usuario",
     "defaultUser": "Usuario",
     "dashboard": "Panel",

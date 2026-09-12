@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import LanguageSwitcher from './LanguageSwitcher';
 import HeaderPreferences from './HeaderPreferences';
+import UserMenu from './UserMenu';
 
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -28,6 +29,7 @@ import {
   LayoutDashboard,
   Shield,
   Bell,
+  Plus,
 } from 'lucide-react';
 
 import { cn } from '../lib/utils';
@@ -199,61 +201,18 @@ const Header = ({ user, onLogout }) => {
                   </Button>
                 </Link>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 rounded-full p-1 hover:bg-slate-100 transition-colors">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">
-                        {getInitials()}
-                      </div>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  </DropdownMenuTrigger>
-
-                  <DropdownMenuContent align="end" sideOffset={8} className="w-56 rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-xl p-2 shadow-xl">
-                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                      <p className="text-sm font-medium text-slate-900 truncate">
-                        {firstName || t('header.user.defaultName')}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
-                    </div>
-
-                    {/* Entreprise active et plan */}
-                    <ActiveCompanyInfo />
-
-                    <DropdownMenuItem onClick={() => navigate(profileLink)} className="cursor-pointer rounded-lg">
-                      <User className="w-4 h-4 mr-2.5 text-slate-400" />
-                      {t('header.user.profile')}
-                    </DropdownMenuItem>
-
-                    {isCandidate && (
-                      <DropdownMenuItem onClick={() => navigate('/alertes')} className="cursor-pointer rounded-lg">
-                        <Bell className="w-4 h-4 mr-2.5 text-slate-400" />
-                        {t('header.user.createAlert')}
-                      </DropdownMenuItem>
-                    )}
-
-                    <DropdownMenuItem onClick={() => navigate('/parametres')} className="cursor-pointer rounded-lg">
-                      <Settings className="w-4 h-4 mr-2.5 text-slate-400" />
-                      {t('header.user.settings')}
-                    </DropdownMenuItem>
-
-                    {isAdmin && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate('/admin')} className="cursor-pointer rounded-lg">
-                          <Shield className="w-4 h-4 mr-2.5 text-purple-400" />
-                          {t('header.user.admin')}
-                        </DropdownMenuItem>
-                      </>
-                    )}
-
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg text-red-600 hover:!text-red-700 hover:!bg-red-50">
-                      <LogOut className="w-4 h-4 mr-2.5" />
-                      {t('header.user.logout')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <UserMenu
+                  user={user}
+                  profile={profile}
+                  isAdmin={isAdmin}
+                  isCandidate={isCandidate}
+                  isCompany={isCompany}
+                  activeCompanyId={activeCompanyId}
+                  activeCompanyName={activeCompanyName}
+                  activeCompanyPlan={activeCompanyPlan}
+                  activeCompanyCycle={activeCompanyCycle}
+                  onLogout={handleLogout}
+                />
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -407,6 +366,30 @@ const Header = ({ user, onLogout }) => {
                         </Button>
                       </Link>
                     )}
+                    <a
+                      href={process.env.NODE_ENV === 'production' ? 'https://id.actoos.com/account' : 'http://localhost:3001/account'}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button variant="outline" className="w-full justify-start rounded-xl">
+                        <Settings className="w-4 h-4 mr-2" />
+                        {t('header.user.menu.actoosAccount')}
+                      </Button>
+                    </a>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        const base = process.env.NODE_ENV === 'production' ? 'https://id.actoos.com' : 'http://localhost:3001';
+                        const redirect = window.location.href;
+                        window.location.href = `${base}/login?addAccount=1&redirect=${encodeURIComponent(redirect)}`;
+                      }}
+                      className="block w-full"
+                    >
+                      <Button variant="outline" className="w-full justify-start rounded-xl">
+                        <Plus className="w-4 h-4 mr-2" />
+                        {t('header.user.menu.addAccount')}
+                      </Button>
+                    </button>
                     <Button
                       variant="outline"
                       className="w-full justify-start rounded-xl text-red-500 border-red-200 hover:bg-red-50"

@@ -1694,6 +1694,14 @@
     "companySpace": "Company Space"
   },
   "user": {
+    "menu": {
+        "title": "My account",
+        "switchError": "Failed to switch account",
+        "removeAccount": "Remove this account",
+        "addAccount": "Add another account",
+        "actoosAccount": "My Actoos account",
+        "signOutAll": "Sign out of all accounts"
+      },
     "defaultName": "User",
     "defaultUser": "User",
     "dashboard": "Dashboard",
