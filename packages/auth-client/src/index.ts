@@ -20,3 +20,15 @@ export type {
   SignUpParams,
   SignInParams,
 } from './types.js';
+
+export {
+  getLinkedAccounts,
+  getActiveAccountId,
+  setActiveAccountId,
+  buildLinkedAccount,
+  upsertLinkedAccount,
+  removeLinkedAccount,
+  clearAllLinkedAccounts,
+  sortAccountsByUsage,
+} from './multiAccount.js';
+export type { LinkedAccount } from './multiAccount.js';

@@ -1,88 +1,175 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
-import { createAuthClientSSR } from '@actoos/auth-client';
+import {
+  createAuthClientSSR,
+  getLinkedAccounts,
+  getActiveAccountId,
+  setActiveAccountId,
+  buildLinkedAccount,
+  upsertLinkedAccount,
+  removeLinkedAccount,
+  clearAllLinkedAccounts,
+  sortAccountsByUsage,
+  type LinkedAccount,
+} from '@actoos/auth-client';
+import { Plus, User as UserIcon, Settings, FolderOpen, LogOut, Check } from 'lucide-react';
 
-const ACTOOS_ID_BASE = 'https://id.actoos.com';
-const ACTOOS_ID_LOGIN_URL = `${ACTOOS_ID_BASE}/login`;
-const ACTOOS_ID_ACCOUNT_URL = `${ACTOOS_ID_BASE}/account`;
+// En dev → localhost:3001, en prod → id.actoos.com
+const ACTOOS_ID_BASE =
+  process.env.NODE_ENV === 'production'
+    ? 'https://id.actoos.com'
+    : 'http://localhost:3001';
 
-type AuthUser = {
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  avatarUrl?: string;
-} | null;
+const LOGIN_URL = `${ACTOOS_ID_BASE}/login`;
+const ACCOUNT_URL = `${ACTOOS_ID_BASE}/account`;
+
+let _client: ReturnType<typeof createAuthClientSSR> | null = null;
+function getClient() {
+  if (_client) return _client;
+  _client = createAuthClientSSR({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    appName: 'vitrine',
+    cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
+  });
+  return _client;
+}
 
 export default function AuthButton() {
   const { language } = useLanguage();
-  const [user, setUser] = useState<AuthUser>(null);
+  const [currentAccount, setCurrentAccount] = useState<LinkedAccount | null>(null);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const refreshState = useCallback(async () => {
+    try {
+      const client = getClient();
+      const { data } = await client.supabase.auth.getSession();
+      const session = data.session;
 
-    async function loadSession() {
-      try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-        if (!supabaseUrl || !supabaseAnonKey) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-
-        // On utilise EXACTEMENT le même client que celui du AuthContext
-        // (createAuthClientSSR → cookies .actoos.com en prod)
-        const client = createAuthClientSSR({
-          supabaseUrl,
-          supabaseAnonKey,
-          appName: 'vitrine',
-          cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
-        });
-
-        const { data } = await client.supabase.auth.getUser();
-        if (cancelled) return;
-
-        if (data?.user) {
-          const meta = data.user.user_metadata ?? {};
-          setUser({
-            email: data.user.email ?? '',
-            firstName: meta.first_name,
-            lastName: meta.last_name,
-            avatarUrl: meta.avatar_url,
-          });
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('[AuthButton] session error:', err);
-        if (!cancelled) setUser(null);
-      } finally {
-        if (!cancelled) setLoading(false);
+      if (session?.user) {
+        const account = buildLinkedAccount(session.user, session);
+        upsertLinkedAccount(account);
+        setActiveAccountId(account.userId);
+        setCurrentAccount(account);
+        setAvatarError(false); // reset en cas de changement de compte
+      } else {
+        setCurrentAccount(null);
+        setActiveAccountId(null);
       }
-    }
 
-    loadSession();
-    return () => {
-      cancelled = true;
-    };
+      setLinkedAccounts(sortAccountsByUsage(getLinkedAccounts()));
+    } catch (err) {
+      console.error('[AuthButton] refresh error:', err);
+      setCurrentAccount(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const loginHref = `${ACTOOS_ID_LOGIN_URL}?redirect=${encodeURIComponent(
+  useEffect(() => {
+    refreshState();
+  }, [refreshState]);
+
+  // Ferme le menu au clic extérieur ou à Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+
+    // setTimeout pour éviter de fermer immédiatement après le clic d'ouverture
+    const timeout = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [menuOpen]);
+
+  const handleSwitch = async (userId: string) => {
+    if (switching || userId === currentAccount?.userId) return;
+    setSwitching(true);
+    try {
+      const account = getLinkedAccounts().find(a => a.userId === userId);
+      if (!account) throw new Error('Account not found');
+
+      const client = getClient();
+      const { error } = await client.supabase.auth.setSession({
+        access_token: account.accessToken,
+        refresh_token: account.refreshToken,
+      });
+      if (error) throw error;
+
+      upsertLinkedAccount({ ...account, lastUsedAt: Date.now() });
+      setActiveAccountId(userId);
+      setMenuOpen(false);
+      // Reload la page pour que tous les composants voient la nouvelle session
+      window.location.reload();
+    } catch (err) {
+      console.error('[AuthButton] switch failed:', err);
+      alert(language === 'fr' ? 'Impossible de basculer sur ce compte.' : 'Failed to switch account.');
+      setSwitching(false);
+    }
+  };
+
+  const handleRemove = async (userId: string) => {
+    const wasActive = userId === currentAccount?.userId;
+    const remaining = removeLinkedAccount(userId);
+    const sorted = sortAccountsByUsage(remaining);
+    setLinkedAccounts(sorted);
+
+    if (wasActive) {
+      if (sorted.length > 0) {
+        await handleSwitch(sorted[0].userId);
+      } else {
+        await getClient().supabase.auth.signOut();
+        clearAllLinkedAccounts();
+        window.location.href = '/';
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    await getClient().supabase.auth.signOut();
+    clearAllLinkedAccounts();
+    setMenuOpen(false);
+    window.location.href = '/';
+  };
+
+  const handleAddAccount = () => {
+    const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
+    window.location.href = `${LOGIN_URL}?addAccount=1&redirect=${encodeURIComponent(redirect)}`;
+  };
+
+  const loginHref = `${LOGIN_URL}?redirect=${encodeURIComponent(
     typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/'
   )}`;
 
   if (loading) {
-    return (
-      <span className="inline-block w-24 h-9 rounded-full bg-slate-200 animate-pulse" aria-hidden />
-    );
+    return <span className="inline-block w-24 h-9 rounded-full bg-slate-200 animate-pulse" aria-hidden />;
   }
 
-  if (!user) {
+  if (!currentAccount) {
     return (
       <a
         href={loginHref}
@@ -94,18 +181,28 @@ export default function AuthButton() {
   }
 
   const initials =
-    (user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '') || user.email[0]?.toUpperCase() || '?';
+    (currentAccount.firstName?.[0] ?? '') + (currentAccount.lastName?.[0] ?? '') ||
+    currentAccount.email[0]?.toUpperCase() ||
+    '?';
+
+  const otherAccounts = linkedAccounts.filter(a => a.userId !== currentAccount.userId);
+  const hasMultiple = linkedAccounts.length > 1;
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button
-        onClick={() => setMenuOpen((v) => !v)}
-        className="inline-flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
-        aria-label={t[language].navAccount}
+        onClick={() => setMenuOpen(v => !v)}
+        className="inline-flex items-center gap-2 px-1 py-1 rounded-lg hover:bg-slate-100 transition-colors"
+        aria-label="Mon compte"
       >
-        {user.avatarUrl ? (
+        {currentAccount.avatarUrl && !avatarError ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+          <img
+            src={currentAccount.avatarUrl}
+            alt=""
+            className="w-8 h-8 rounded-full object-cover"
+            onError={() => setAvatarError(true)}
+          />
         ) : (
           <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
             {initials}
@@ -114,26 +211,120 @@ export default function AuthButton() {
       </button>
 
       {menuOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-20 overflow-hidden">
+
+          {/* Compte actif */}
+          <div className="px-4 py-3 bg-slate-50">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                {initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-900 truncate">
+                  {currentAccount.firstName} {currentAccount.lastName}
+                </p>
+                <p className="text-xs text-slate-500 truncate">{currentAccount.email}</p>
+              </div>
+              <Check size={14} className="text-emerald-600 shrink-0" />
             </div>
+          </div>
+
+          {/* Autres comptes */}
+          {otherAccounts.map(acc => {
+            const otherInitials =
+              (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') || acc.email[0]?.toUpperCase() || '?';
+            return (
+              <div key={acc.userId} className="border-t border-slate-100">
+                <div className="flex items-center">
+                  <button
+                    onClick={() => handleSwitch(acc.userId)}
+                    disabled={switching}
+                    className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left disabled:opacity-50"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold shrink-0">
+                      {otherInitials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-700 truncate">
+                        {acc.firstName} {acc.lastName}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{acc.email}</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleRemove(acc.userId)}
+                    className="p-2 mr-1 text-slate-300 hover:text-red-500 transition-colors shrink-0"
+                    title={language === 'fr' ? 'Retirer ce compte' : 'Remove this account'}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Ajouter un compte */}
+          <button
+            onClick={handleAddAccount}
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+          >
+            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+              <Plus size={14} className="text-slate-600" />
+            </div>
+            <span className="text-sm font-medium text-slate-700">
+              {language === 'fr' ? 'Ajouter un compte' : 'Add another account'}
+            </span>
+          </button>
+
+          {/* Actions produit */}
+          <div className="border-t border-slate-100">
             <a
-              href={ACTOOS_ID_ACCOUNT_URL}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              href={ACCOUNT_URL}
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
             >
-              {t[language].navAccount}
+              <Settings size={14} className="text-slate-500" />
+              <span className="text-sm text-slate-700">
+                {language === 'fr' ? 'Mon compte Actoos' : 'My Actoos account'}
+              </span>
             </a>
             <a
               href="https://actoos.com/studio/account"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
             >
-              {t[language].navMyProjects}
+              <FolderOpen size={14} className="text-slate-500" />
+              <span className="text-sm text-slate-700">
+                {language === 'fr' ? 'Mes projets' : 'My projects'}
+              </span>
             </a>
           </div>
-        </>
+
+          {/* Déconnexion */}
+          <div className="border-t border-slate-100">
+            {hasMultiple ? (
+              <>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-left"
+                >
+                  <LogOut size={14} className="text-red-500" />
+                  <span className="text-sm text-red-600">
+                    {language === 'fr' ? 'Se déconnecter de tous les comptes' : 'Sign out of all accounts'}
+                  </span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-left"
+              >
+                <LogOut size={14} className="text-red-500" />
+                <span className="text-sm text-red-600">
+                  {language === 'fr' ? 'Se déconnecter' : 'Sign out'}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

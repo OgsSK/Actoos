@@ -62,6 +62,7 @@ function LoginForm() {
   const { user, loading, signIn, signInWithGoogle } = useAuth();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const addAccount = searchParams.get('addAccount') === '1';
 
   const [language, setLanguage] = useState<Language>('fr');
   const [email, setEmail] = useState('');
@@ -82,11 +83,13 @@ function LoginForm() {
   };
 
   useEffect(() => {
+    // Ne pas rediriger si on ajoute un compte (on veut afficher le formulaire)
+    if (addAccount) return;
     if (!loading && user) {
       const target = redirect ? decodeURIComponent(redirect) : '/account';
       window.location.href = target;
     }
-  }, [user, loading, redirect]);
+  }, [user, loading, redirect, addAccount]);
 
   const t = T[language];
 
