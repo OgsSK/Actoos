@@ -10,7 +10,7 @@ if (!stripeKey || !supabaseUrl || !supabaseKey) {
   throw new Error('Variables d\'environnement manquantes');
 }
 
-const stripe = new Stripe(stripeKey, { apiVersion: '2026-06-24.dahlia' });
+const stripe = new Stripe(stripeKey, { apiVersion: '2026-08-26.dahlia' });
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(req: NextRequest) {
