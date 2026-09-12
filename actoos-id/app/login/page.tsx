@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function LoginPage() {
+// ⬇️ Composant interne qui utilise useSearchParams (doit être dans Suspense)
+function LoginForm() {
   const { user, loading, signIn, signInWithGoogle } = useAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
 
@@ -16,12 +16,11 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // Rediriger si déjà connecté
   useEffect(() => {
     if (!loading && user) {
       const target = redirect
-  ? decodeURIComponent(redirect)
-  : (process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account');
+        ? decodeURIComponent(redirect)
+        : (process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account');
       window.location.href = target;
     }
   }, [user, loading, redirect]);
@@ -33,8 +32,8 @@ export default function LoginPage() {
     try {
       await signIn({ email, password });
       const target = redirect
-  ? decodeURIComponent(redirect)
-  : (process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account');
+        ? decodeURIComponent(redirect)
+        : (process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account');
       window.location.href = target;
     } catch (err: any) {
       setError(err?.message || 'Identifiants incorrects');
@@ -150,5 +149,18 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ⬇️ Wrapper avec Suspense (obligatoire pour useSearchParams)
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

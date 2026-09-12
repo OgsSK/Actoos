@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+
 import { ArrowLeft, Mail, Lock, User, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
   const { user, loading, signUp } = useAuth();
-  const router = useRouter();
+ 
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -20,7 +20,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      window.location.href = 'https://actoos.com/studio/account';
+      window.location.href = process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account';
     }
   }, [user, loading]);
 
@@ -32,7 +32,7 @@ export default function RegisterPage() {
       await signUp({ email, password, firstName, lastName, role, language: 'fr' });
       setSuccess(true);
       setTimeout(() => {
-        window.location.href = 'https://actoos.com/studio/account';
+        window.location.href = process.env.NEXT_PUBLIC_STUDIO_URL || 'https://actoos.com/studio/account';
       }, 2000);
     } catch (err: any) {
       setError(err?.message || 'Erreur lors de la création du compte');

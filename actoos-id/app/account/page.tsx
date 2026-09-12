@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { LogOut, Mail, User as UserIcon, Briefcase, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
