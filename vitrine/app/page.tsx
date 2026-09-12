@@ -57,9 +57,12 @@ export default function HomePage() {
             </a>
           </div>
 
-          <button className="md:hidden p-2 text-slate-700" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
-            <Menu size={22} />
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <AuthButton />
+            <button className="p-2 text-slate-700" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
+              <Menu size={22} />
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -130,9 +133,6 @@ export default function HomePage() {
 
         {/* Bottom CTA fixed */}
         <div className="border-t border-slate-100 p-6 space-y-3 bg-white shrink-0">
-          <div className="flex justify-center">
-            <AuthButton />
-          </div>
           <a
             href="#projet"
             onClick={() => setMobileMenuOpen(false)}
