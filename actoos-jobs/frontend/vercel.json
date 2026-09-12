@@ -1,5 +1,6 @@
 {
-  "buildCommand": "CI=false npm install && npx react-scripts build",
+  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "CI=false npx craco build",
   "outputDirectory": "build",
   "framework": "create-react-app",
   "rewrites": [
