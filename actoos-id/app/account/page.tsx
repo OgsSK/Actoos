@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import {
   LogOut, Mail, User as UserIcon, Shield, Lock, Monitor,
-  Globe, ArrowRight, Briefcase, Search, Pencil,
+  Globe, ArrowRight, Briefcase, Search, Pencil, Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ChangeEmailModal from '../components/ChangeEmailModal';
+import ChangeNameModal from '../components/ChangeNameModal';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 
 type Language = 'fr' | 'en';
 
@@ -122,6 +124,8 @@ export default function AccountPage() {
   const [language, setLanguage] = useState<Language>('fr');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangeName, setShowChangeName] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   // Charge la langue depuis localStorage
   useEffect(() => {
@@ -322,7 +326,14 @@ export default function AccountPage() {
               icon={UserIcon}
               title={t.fullName}
               subtitle={fullName}
-              action={<button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"><Pencil size={11} />{t.edit}</button>}
+              action={
+                <button
+                  onClick={() => setShowChangeName(true)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <Pencil size={11} />{t.edit}
+                </button>
+              }
             />
             <Row
               icon={Mail}
@@ -374,6 +385,27 @@ export default function AccountPage() {
           </div>
         </section>
 
+        {/* Zone dangereuse : supprimer compte */}
+        <section>
+          <div className="bg-white rounded-2xl border border-red-200 p-5">
+            <h3 className="font-semibold text-red-800 mb-1">
+              {language === 'fr' ? 'Zone dangereuse' : 'Danger zone'}
+            </h3>
+            <p className="text-sm text-slate-500 mb-4">
+              {language === 'fr'
+                ? 'La suppression du compte est définitive et irréversible.'
+                : 'Account deletion is permanent and irreversible.'}
+            </p>
+            <button
+              onClick={() => setShowDeleteAccount(true)}
+              className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg font-medium text-sm hover:bg-red-700 transition-colors"
+            >
+              <Trash2 size={15} />
+              {language === 'fr' ? 'Supprimer mon compte' : 'Delete my account'}
+            </button>
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="pt-4 pb-8 text-center">
           <p className="text-xs text-slate-400">{t.footer}</p>
@@ -391,6 +423,20 @@ export default function AccountPage() {
       <ChangeEmailModal
         isOpen={showChangeEmail}
         onClose={() => setShowChangeEmail(false)}
+        language={language}
+      />
+
+      {/* Modale changement de nom */}
+      <ChangeNameModal
+        isOpen={showChangeName}
+        onClose={() => setShowChangeName(false)}
+        language={language}
+      />
+
+      {/* Modale suppression de compte */}
+      <DeleteAccountModal
+        isOpen={showDeleteAccount}
+        onClose={() => setShowDeleteAccount(false)}
         language={language}
       />
     </div>
