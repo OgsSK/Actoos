@@ -1,5 +1,7 @@
 export { createAuthClient } from './client.js';
 export type { AuthClient } from './client.js';
+export { createAuthClientSSR } from './client-ssr.js';
+export type { AuthClientSSR, AuthClientSSRConfig } from './client-ssr.js';
 
 export { createAuthCore } from './core.js';
 export type { AuthCore } from './core.js';
