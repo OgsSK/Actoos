@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  LogOut, Mail, User as UserIcon, Shield, Lock, Monitor,
+  LogOut, Mail, User as UserIcon, Shield, Lock,
   Globe, ArrowRight, Briefcase, Search, Pencil, Trash2,
   type LucideIcon,
 } from 'lucide-react';
@@ -300,18 +300,6 @@ export default function AccountPage() {
                   {t.edit}
                 </button>
               }
-            />
-            <Row
-              icon={Shield}
-              title={t.twoFactor}
-              subtitle={t.twoFactorSubtitle}
-              action={<button className="text-xs font-medium text-blue-600 hover:text-blue-700">{t.activate}</button>}
-            />
-            <Row
-              icon={Monitor}
-              title={t.sessions}
-              subtitle={t.sessionsSubtitle}
-              action={<button className="text-xs font-medium text-blue-600 hover:text-blue-700">{t.view}</button>}
             />
           </div>
         </section>
