@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 type Language = 'fr' | 'en';
 
@@ -115,6 +116,7 @@ const TRANSLATIONS: Record<Language, Translation> = {
 export default function AccountPage() {
   const { user, profile, loading, signOut, isAdmin, isCompany, isCandidate } = useAuth();
   const [language, setLanguage] = useState<Language>('fr');
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   // Charge la langue depuis localStorage
   useEffect(() => {
@@ -281,7 +283,14 @@ export default function AccountPage() {
               icon={Lock}
               title={t.password}
               subtitle={t.passwordSubtitle}
-              action={<button className="text-xs font-medium text-blue-600 hover:text-blue-700">{t.edit}</button>}
+              action={
+                <button
+                  onClick={() => setShowChangePassword(true)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                >
+                  {t.edit}
+                </button>
+              }
             />
             <Row
               icon={Shield}
@@ -352,6 +361,13 @@ export default function AccountPage() {
           <p className="text-xs text-slate-400">{t.footer}</p>
         </footer>
       </main>
+
+      {/* Modale changement de mot de passe */}
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+        language={language}
+      />
     </div>
   );
 }
