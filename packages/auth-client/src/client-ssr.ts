@@ -32,12 +32,13 @@ export function createAuthClientSSR(config: AuthClientSSRConfig) {
   );
 
   // Ne pas mettre de domain sur localhost (impossible de poser .actoos.com sur localhost)
-  const cookieOptions = (!isLocalhost && config.cookieDomain)
+    const cookieOptions = (!isLocalhost && config.cookieDomain)
     ? {
         domain: config.cookieDomain,
         path: '/',
         sameSite: 'lax' as const,
         secure: true,
+        httpOnly: false,  // ⚠️ OBLIGATOIRE pour le SSO cross-domain
       }
     : undefined;
 
