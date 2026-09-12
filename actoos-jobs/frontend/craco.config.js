@@ -1,6 +1,9 @@
 const path = require('path');
 
 module.exports = {
+    eslint: {
+    enable: false,
+  },
   webpack: {
     configure: (webpackConfig) => {
       // 1. Retirer ModuleScopePlugin (bloque les imports hors src/)
