@@ -68,34 +68,78 @@ export default function HomePage() {
         className={`fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 md:hidden ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setMobileMenuOpen(false)}
       />
-      <div className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 ease-in-out md:hidden ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <span className="font-semibold text-slate-900">Menu</span>
-            <button onClick={() => setMobileMenuOpen(false)} className="p-2 -mr-2 text-slate-500"><X size={22} /></button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-5 space-y-1">
-            <div className="flex items-center gap-1 mb-5 pb-5 border-b border-slate-100">
-              <button
-                onClick={() => { setLanguage('fr'); setMobileMenuOpen(false); }}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${language === 'fr' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'}`}
-              >Français</button>
-              <button
-                onClick={() => { setLanguage('en'); setMobileMenuOpen(false); }}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-slate-50'}`}
-              >English</button>
-            </div>
+      <div className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 h-16 border-b border-slate-100 shrink-0">
+          <a href="/" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
+            <img src="/logo-icon.png" alt="Actoos" className="h-8 w-8 object-contain" />
+            <span className="font-bold text-base tracking-tight text-slate-900">Actoos</span>
+          </a>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 -mr-2 text-slate-400 hover:text-slate-700 transition-colors"
+            aria-label="Fermer"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Body scrollable */}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
+          {/* Navigation principale */}
+          <nav className="px-6 py-2">
             {[
               { href: '/jobs', label: t[language].navProducts },
               { href: '/a-propos', label: t[language].navAbout },
               { href: '/contact', label: t[language].navContact },
-              { href: '#projet', label: t[language].heroButtonStudio },
             ].map((item) => (
-              <a key={item.href} href={item.href} className="block text-sm font-medium text-slate-700 hover:text-slate-900 py-3 border-b border-slate-50" onClick={() => setMobileMenuOpen(false)}>
-                {item.label}
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between py-4 text-base font-medium text-slate-700 hover:text-slate-900 border-b border-slate-100 transition-colors"
+              >
+                <span>{item.label}</span>
+                <span className="text-slate-300 text-lg leading-none">›</span>
               </a>
             ))}
+          </nav>
+
+          {/* Langue */}
+          <div className="px-6 pt-6">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              {language === 'fr' ? 'Langue' : 'Language'}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${language === 'fr' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              >Français</button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${language === 'en' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              >English</button>
+            </div>
           </div>
+
+          {/* Spacer pour pousser le CTA en bas */}
+          <div className="flex-1 min-h-6" />
+        </div>
+
+        {/* Bottom CTA fixed */}
+        <div className="border-t border-slate-100 p-6 space-y-3 bg-white shrink-0">
+          <div className="flex justify-center">
+            <AuthButton />
+          </div>
+          <a
+            href="#projet"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block w-full text-center px-4 py-3.5 rounded-full bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
+          >
+            {t[language].heroButtonStudio}
+          </a>
         </div>
       </div>
 

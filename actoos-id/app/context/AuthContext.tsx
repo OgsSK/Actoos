@@ -8,7 +8,7 @@ import {
   useCallback,
 } from 'react';
 import {
-  createAuthClient,
+  createAuthClientSSR,
   createAuthCore,
   buildBaseProfile,
   enrichProfile,
@@ -32,11 +32,12 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 // ============ Client unique (créé une seule fois) ============
-const client = createAuthClient({
+const client = createAuthClientSSR({
   supabaseUrl: SUPABASE_URL,
   supabaseAnonKey: SUPABASE_ANON_KEY,
-  appName: 'vitrine',
+  appName: 'actoos-id',
   apiUrl: API_URL,
+  cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
 });
 
 const authCore = createAuthCore(client);
