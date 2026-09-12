@@ -67,6 +67,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  updateEmail: (newEmail: string) => Promise<void>;
   updateProfile: (updates: Record<string, any>) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -85,6 +86,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   resetPassword: async () => {},
   updatePassword: async () => {},
+  updateEmail: async () => {},
   updateProfile: async () => {},
   refreshProfile: async () => {},
 });
@@ -184,6 +186,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authCore.updatePassword(newPassword);
   };
 
+  const updateEmail = async (newEmail: string) => {
+    await authCore.updateEmail(newEmail);
+  };
+
   const updateProfile = async (updates: Record<string, any>) => {
     if (!user) throw new Error('Not authenticated');
     await authCore.updateProfile(user.id, updates);
@@ -222,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     resetPassword,
     updatePassword,
+    updateEmail,
     updateProfile,
     refreshProfile,
   };

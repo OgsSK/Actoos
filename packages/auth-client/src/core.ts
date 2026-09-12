@@ -1,5 +1,5 @@
-import type { AuthClient } from './client';
-import type { SignUpParams, SignInParams } from './types';
+import type { AuthClient } from './client.js';
+import type { SignUpParams, SignInParams } from './types.js';
 
 export function createAuthCore(client: AuthClient) {
   const { supabase } = client;
@@ -85,6 +85,12 @@ export function createAuthCore(client: AuthClient) {
     if (error) throw error;
   };
 
+  const updateEmail = async (newEmail: string) => {
+    const { data, error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) throw error;
+    return data;
+  };
+
   const updateProfile = async (userId: string, updates: Record<string, any>) => {
     const { error } = await supabase
       .from('users')
@@ -112,6 +118,7 @@ export function createAuthCore(client: AuthClient) {
     signOut,
     resetPassword,
     updatePassword,
+    updateEmail,
     updateProfile,
     getSession,
     refreshSession,

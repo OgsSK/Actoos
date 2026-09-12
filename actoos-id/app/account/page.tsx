@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import ChangeEmailModal from '../components/ChangeEmailModal';
 
 type Language = 'fr' | 'en';
 
@@ -37,6 +38,7 @@ interface Translation {
   sessions: string;
   sessionsSubtitle: string;
   fullName: string;
+  emailLabel: string;
   language: string;
   languageSubtitle: string;
   edit: string;
@@ -68,6 +70,7 @@ const TRANSLATIONS: Record<Language, Translation> = {
     sessions: 'Sessions actives',
     sessionsSubtitle: 'Appareils connectés à votre compte',
     fullName: 'Nom complet',
+    emailLabel: 'Adresse email',
     language: "Langue d'affichage",
     languageSubtitle: "Langue d'affichage de l'interface",
     edit: 'Modifier',
@@ -97,6 +100,7 @@ const TRANSLATIONS: Record<Language, Translation> = {
     sessions: 'Active sessions',
     sessionsSubtitle: 'Devices connected to your account',
     fullName: 'Full name',
+    emailLabel: 'Email address',
     language: 'Display language',
     languageSubtitle: 'Interface display language',
     edit: 'Edit',
@@ -117,6 +121,7 @@ export default function AccountPage() {
   const { user, profile, loading, signOut, isAdmin, isCompany, isCandidate } = useAuth();
   const [language, setLanguage] = useState<Language>('fr');
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
 
   // Charge la langue depuis localStorage
   useEffect(() => {
@@ -320,6 +325,19 @@ export default function AccountPage() {
               action={<button className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"><Pencil size={11} />{t.edit}</button>}
             />
             <Row
+              icon={Mail}
+              title={t.emailLabel}
+              subtitle={user.email || ''}
+              action={
+                <button
+                  onClick={() => setShowChangeEmail(true)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                >
+                  {t.edit}
+                </button>
+              }
+            />
+            <Row
               icon={Globe}
               title={t.language}
               subtitle={t.languageSubtitle}
@@ -366,6 +384,13 @@ export default function AccountPage() {
       <ChangePasswordModal
         isOpen={showChangePassword}
         onClose={() => setShowChangePassword(false)}
+        language={language}
+      />
+
+      {/* Modale changement d'email */}
+      <ChangeEmailModal
+        isOpen={showChangeEmail}
+        onClose={() => setShowChangeEmail(false)}
         language={language}
       />
     </div>
