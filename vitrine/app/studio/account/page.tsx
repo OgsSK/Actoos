@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, RefreshCw, FolderOpen, MessageSquare, DollarSign, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { SUPABASE_FUNCTIONS_URL } from '../../../lib/supabase-functions';
 
 interface Project {
@@ -25,23 +26,25 @@ function getProjectTitle(p: Project): string {
   return p.project_name || p.brief?.projectName || 'Projet sans titre';
 }
 
-function getStatusLabel(status: string): { label: string; color: string } {
+function getStatusLabel(status: string, isEn: boolean): { label: string; color: string } {
   const s = (status || '').toLowerCase().replace(/\s+/g, '_');
   const map: Record<string, { label: string; color: string }> = {
-    nouveau: { label: 'Nouveau', color: 'bg-blue-50 text-blue-700' },
-    contacté: { label: 'En discussion', color: 'bg-amber-50 text-amber-700' },
-    devis_envoyé: { label: 'Devis envoyé', color: 'bg-purple-50 text-purple-700' },
-    en_cours: { label: 'En cours', color: 'bg-cyan-50 text-cyan-700' },
-    gagné: { label: 'Accepté', color: 'bg-emerald-50 text-emerald-700' },
-    livré: { label: 'Livré', color: 'bg-emerald-50 text-emerald-700' },
-    terminé: { label: 'Terminé', color: 'bg-slate-100 text-slate-700' },
-    perdu: { label: 'Refusé', color: 'bg-red-50 text-red-700' },
+    nouveau: { label: isEn ? 'New' : 'Nouveau', color: 'bg-blue-50 text-blue-700' },
+    contacté: { label: isEn ? 'In discussion' : 'En discussion', color: 'bg-amber-50 text-amber-700' },
+    devis_envoyé: { label: isEn ? 'Quote sent' : 'Devis envoyé', color: 'bg-purple-50 text-purple-700' },
+    en_cours: { label: isEn ? 'In progress' : 'En cours', color: 'bg-cyan-50 text-cyan-700' },
+    gagné: { label: isEn ? 'Accepted' : 'Accepté', color: 'bg-emerald-50 text-emerald-700' },
+    livré: { label: isEn ? 'Delivered' : 'Livré', color: 'bg-emerald-50 text-emerald-700' },
+    terminé: { label: isEn ? 'Completed' : 'Terminé', color: 'bg-slate-100 text-slate-700' },
+    perdu: { label: isEn ? 'Declined' : 'Refusé', color: 'bg-red-50 text-red-700' },
   };
   return map[s] || { label: status, color: 'bg-slate-100 text-slate-700' };
 }
 
 export default function StudioAccountPage() {
   const { user, signOut } = useAuth();
+  const { language, setLanguage } = useLanguage();
+  const isEn = language === 'en';
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -75,7 +78,7 @@ export default function StudioAccountPage() {
   };
 
   const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    new Date(iso).toLocaleDateString(isEn ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
@@ -86,29 +89,44 @@ export default function StudioAccountPage() {
           <a href="/" className="flex items-center gap-2.5 min-w-0">
             <img src="/logo-icon.png" alt="Actoos" className="h-8 w-8 object-contain shrink-0" />
             <span className="font-bold text-base tracking-tight text-slate-900 truncate">
-              Mes projets
+              {isEn ? 'My projects' : 'Mes projets'}
             </span>
           </a>
           <div className="flex items-center gap-3 shrink-0">
-            {/* ✅ LIEN MON COMPTE — visible uniquement sur desktop */}
-            <a
-              href="https://id.actoos.com/account"
-              className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+            {/* Sélecteur langue */}
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'fr' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+              >FR</button>
+              <span className="text-slate-300 text-xs">/</span>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
+              >EN</button>
+            </div>
+
+            {/* Retour */}
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  window.location.href = 'https://id.actoos.com/account';
+                }
+              }}
+              className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft size={15} />
-              <span>Mon compte</span>
-            </a>
-            <a
-              href="/"
-              className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              <span>Accueil</span>
-            </a>
+              <span className="hidden sm:inline">{isEn ? 'Back' : 'Retour'}</span>
+            </button>
+
+            {/* Déconnexion */}
             <button
               onClick={handleSignOut}
               className="text-sm text-slate-500 hover:text-red-600 transition-colors"
             >
-              Déconnexion
+              {isEn ? 'Sign out' : 'Déconnexion'}
             </button>
           </div>
         </div>
@@ -120,7 +138,7 @@ export default function StudioAccountPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 break-words">
-              Mes projets
+              {isEn ? 'My projects' : 'Mes projets'}
             </h1>
             <p className="text-slate-500 text-sm mt-1">
               {user?.email}
@@ -131,7 +149,7 @@ export default function StudioAccountPage() {
             className="shrink-0 px-4 py-2 rounded-full bg-white border border-slate-200 hover:bg-slate-100 transition-colors text-sm font-medium text-slate-700 flex items-center gap-2"
           >
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{isEn ? 'Refresh' : 'Actualiser'}</span>
           </button>
         </div>
 
@@ -143,24 +161,30 @@ export default function StudioAccountPage() {
         ) : projects.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center">
             <FolderOpen size={32} className="text-slate-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-slate-900 mb-1">Aucun projet pour le moment</p>
+            <p className="text-sm font-medium text-slate-900 mb-1">
+              {isEn ? 'No projects yet' : 'Aucun projet pour le moment'}
+            </p>
             <p className="text-xs text-slate-500 mb-5">
-              Vous n'avez pas encore soumis de projet avec cet email.
+              {isEn
+                ? "You haven't submitted any project with this email yet."
+                : "Vous n'avez pas encore soumis de projet avec cet email."}
             </p>
             <a
               href="/#projet"
               className="inline-block bg-slate-900 text-white px-5 py-2.5 rounded-full font-medium text-sm hover:bg-slate-800 transition-colors"
             >
-              Démarrer un projet
+              {isEn ? 'Start a project' : 'Démarrer un projet'}
             </a>
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-slate-400">
-              {projects.length} {projects.length > 1 ? 'projets' : 'projet'}
+              {projects.length} {isEn
+                ? (projects.length > 1 ? 'projects' : 'project')
+                : (projects.length > 1 ? 'projets' : 'projet')}
             </p>
             {projects.map(p => {
-              const st = getStatusLabel(p.status);
+              const st = getStatusLabel(p.status, isEn);
               return (
                 <a
                   key={p.id}
@@ -190,7 +214,9 @@ export default function StudioAccountPage() {
                     {p.payment_status && p.payment_status !== 'aucun' && (
                       <span className="flex items-center gap-1">
                         <DollarSign size={12} />
-                        {p.payment_status === 'complet' ? 'Payé' : 'En cours'}
+                        {p.payment_status === 'complet'
+                          ? (isEn ? 'Paid' : 'Payé')
+                          : (isEn ? 'In progress' : 'En cours')}
                       </span>
                     )}
                     {p.brief?.sector && (
