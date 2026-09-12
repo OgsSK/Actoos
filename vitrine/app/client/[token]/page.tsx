@@ -342,9 +342,10 @@ export default function ClientSpacePage() {
                 className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${language === 'en' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'}`}
               >EN</button>
             </div>
-            <a href="/" className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors">
+            <a href="/" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors">
               <ArrowLeft size={15} />
-              <span>{t[language].clientBackHome}</span>
+              <span className="hidden sm:inline">{t[language].clientBackHome}</span>
+              <span className="sm:hidden">{language === 'fr' ? 'Retour' : 'Back'}</span>
             </a>
           </div>
         </div>
