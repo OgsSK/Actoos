@@ -19,9 +19,14 @@ module.exports = {
       ];
 
       // 3. Forcer tailwindcss à être résolu depuis frontend/node_modules
+      // 4. Forcer @actoos/auth-client vers son dist (CRA ne transpile pas le TS source)
       webpackConfig.resolve.alias = {
         ...webpackConfig.resolve.alias,
         tailwindcss: path.resolve(__dirname, 'node_modules/tailwindcss'),
+        '@actoos/auth-client': path.resolve(
+          __dirname,
+          '../../packages/auth-client/dist/index.js'
+        ),
       };
 
       return webpackConfig;
