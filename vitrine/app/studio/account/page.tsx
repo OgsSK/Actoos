@@ -1,5 +1,5 @@
 'use client';
-
+export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, RefreshCw, FolderOpen, MessageSquare, DollarSign, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
