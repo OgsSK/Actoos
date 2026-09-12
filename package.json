@@ -3,7 +3,8 @@
   "workspaces": [
     "packages/*",
     "actoos-jobs/frontend",
-    "vitrine"
+    "vitrine",
+    "actoos-id"
   ],
   "engines": {
     "node": "20.x"
