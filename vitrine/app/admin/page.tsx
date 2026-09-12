@@ -13,6 +13,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { t } from '../../lib/translations';
 import BookingModal from '../components/BookingModal';
 import StepPickerModal from '../components/StepPickerModal';
@@ -86,6 +87,7 @@ function getProjectTitle(projet: any, untitled: string): string {
 
 export default function AdminPage() {
   const { language, setLanguage } = useLanguage();
+  const { user: authUser, loading: authLoading, isAdmin: authIsAdmin, signOut: authSignOut } = useAuth();
   const [projets, setProjets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [password, setPassword] = useState('');
@@ -166,6 +168,15 @@ export default function AdminPage() {
       setIsAuthenticated(true);
     }
   }, []);
+
+  // Auto-authentification via Actoos ID (si user connecté et rôle admin)
+  useEffect(() => {
+    if (authLoading) return;
+    if (authIsAdmin && authUser) {
+      setIsAuthenticated(true);
+      setToken('actoos-id-session');
+    }
+  }, [authLoading, authIsAdmin, authUser]);
 
   const loadProjects = async () => {
     setLoading(true);
@@ -252,9 +263,16 @@ export default function AdminPage() {
     } else { alert(t[language].adminLoginError); }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin_token'); setToken(''); setIsAuthenticated(false);
-    setPassword(''); setProjets([]);
+  const handleLogout = async () => {
+    localStorage.removeItem('admin_token');
+    setToken('');
+    setIsAuthenticated(false);
+    setPassword('');
+    setProjets([]);
+    // Si connecté via Actoos ID, on déconnecte aussi la session
+    if (authUser) {
+      try { await authSignOut(); } catch {}
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -722,6 +740,18 @@ export default function AdminPage() {
 
   if (!mounted) return null;
 
+  // Pendant le chargement de la session Actoos ID
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans antialiased">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-slate-900" />
+          <p className="text-xs text-slate-400">Vérification de votre session…</p>
+        </div>
+      </div>
+    );
+  }
+
   // ========== ÉCRAN DE LOGIN ==========
   if (!isAuthenticated) {
     return (
@@ -756,6 +786,25 @@ export default function AdminPage() {
             >
               {t[language].adminLoginButton}
             </button>
+
+            {/* Séparateur + lien Actoos ID */}
+            <div className="flex items-center gap-3 my-2">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="text-[10px] text-slate-400 uppercase tracking-wide">ou</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+
+            <a
+              href="https://jobs.actoos.com/connexion"
+              className="block w-full text-center border border-slate-200 text-slate-700 rounded-lg py-3 font-medium text-sm hover:bg-slate-50 transition-colors"
+            >
+              Se connecter avec Actoos ID
+            </a>
+
+            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+              Connectez-vous avec votre compte Actoos (role admin requis).
+              Une fois connecté, revenez sur cette page pour accéder au dashboard.
+            </p>
           </form>
         </div>
       </div>
