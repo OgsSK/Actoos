@@ -45,7 +45,10 @@ const JobsOnboarding = ({ onComplete }) => {
     }
   };
 
-  const firstName = user?.user_metadata?.first_name || '';
+  const firstName = 
+  user?.user_metadata?.first_name || 
+  user?.email?.split('@')[0] || 
+  '';
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
