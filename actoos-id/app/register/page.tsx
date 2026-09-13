@@ -10,7 +10,7 @@ type Language = 'fr' | 'en';
 const T = {
   fr: {
     title: 'Créer un compte',
-    subtitle: 'Rejoignez Actoos en 30 secondes',
+    subtitle: 'Un compte pour tous vos produits Actoos',
     firstName: 'Prénom',
     lastName: 'Nom',
     email: 'Email',
@@ -28,7 +28,7 @@ const T = {
   },
   en: {
     title: 'Create an account',
-    subtitle: 'Join Actoos in 30 seconds',
+    subtitle: 'One account for all your Actoos products',
     firstName: 'First name',
     lastName: 'Last name',
     email: 'Email',
