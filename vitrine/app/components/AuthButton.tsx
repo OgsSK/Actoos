@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
 import {
@@ -66,6 +67,10 @@ export default function AuthButton() {
   const [switching, setSwitching] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const refreshState = useCallback(async () => {
     try {
@@ -362,32 +367,38 @@ export default function AuthButton() {
         )}
       </button>
 
-      {/* === MOBILE : Bottom Sheet === */}
-      {menuOpen && isMobile && (
+      {/* === MOBILE : Bottom Sheet (via Portal pour échapper au backdrop-blur de la nav) === */}
+      {menuOpen && isMobile && mounted && createPortal(
         <>
           {/* Overlay */}
           <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] animate-fade-in"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] animate-fade-in"
             onClick={() => setMenuOpen(false)}
           />
           {/* Sheet */}
-          <div className="fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto animate-slide-up">
-            {/* Handle + Close */}
-            <div className="sticky top-0 bg-white z-10 flex justify-center pt-3 pb-2 border-b border-slate-100">
+          <div className="fixed inset-x-0 bottom-0 z-[101] bg-white rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-2 shrink-0 border-b border-slate-100 relative">
               <div className="w-10 h-1 bg-slate-300 rounded-full" />
+              <button
+                onClick={() => setMenuOpen(false)}
+                className="absolute top-2 right-3 p-2 text-slate-400 hover:text-slate-700 transition-colors"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <button
-              onClick={() => setMenuOpen(false)}
-              className="absolute top-3 right-3 p-2 text-slate-400 hover:text-slate-700 transition-colors"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
 
-            {menuContent}
-            <div className="h-6" />
+            {/* Contenu scrollable */}
+            <div className="overflow-y-auto flex-1">
+              {menuContent}
+            </div>
+
+            {/* Safe area iPhone (encoche en bas) */}
+            <div className="h-[env(safe-area-inset-bottom,0px)] shrink-0" />
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* === DESKTOP : Dropdown === */}
