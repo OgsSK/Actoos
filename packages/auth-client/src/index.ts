@@ -22,7 +22,7 @@ export type {
 } from './types.js';
 
 export {
-    
+  MAX_LINKED_ACCOUNTS,
   ensureSelfLink,    
   getLinkedAccounts,
     getLinkedAccountsFromSupabase,  // ← AJOUTER

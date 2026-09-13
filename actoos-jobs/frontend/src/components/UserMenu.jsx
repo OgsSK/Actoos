@@ -6,7 +6,10 @@ import {
   Shield, Bell, Plus, Check, UserCog,
 } from 'lucide-react';
 import {
+  MAX_LINKED_ACCOUNTS,
   getLinkedAccounts,
+  getLinkedAccountsFromSupabase,
+  ensureSelfLink,
   saveLinkedAccounts,
   linkAccount,
   unlinkAccount,
@@ -75,10 +78,25 @@ const UserMenu = ({
         expiresAt: session.expires_at,
       });
 
-      // Détecter un lien en attente (2ᵉ compte en cours d'ajout)
+      // S'assurer que ce compte est dans sa propre liste
+      await ensureSelfLink(supabase, account);
+
+      // Si on vient d'ajouter un compte → lier le nouveau à TOUTE la famille
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
+        // Lire tous les membres de la famille existante
+        const family = await getLinkedAccountsFromSupabase(supabase, pendingLinkId);
+
+        // Lier le nouveau compte au compte source
         await linkAccount(supabase, pendingLinkId, account.userId);
+
+        // Lier le nouveau compte à TOUS les autres membres
+        for (const member of family) {
+          if (member.userId !== account.userId && member.userId !== pendingLinkId) {
+            await linkAccount(supabase, member.userId, account.userId);
+          }
+        }
+
         clearPendingLink();
       }
 
@@ -182,6 +200,10 @@ const UserMenu = ({
 
   const handleAddAccount = () => {
     if (!currentAccount) return;
+    if (linkedAccounts.length >= MAX_LINKED_ACCOUNTS) {
+      alert(`Vous avez atteint la limite de ${MAX_LINKED_ACCOUNTS} comptes. Retirez-en un avant d'en ajouter un autre.`);
+      return;
+    }
     setPendingLink(currentAccount.userId);
     const redirect = typeof window !== 'undefined' ? window.location.href : 'https://jobs.actoos.com/';
     window.location.href = `${LOGIN_URL}?addAccount=1&redirect=${encodeURIComponent(redirect)}`;
@@ -203,6 +225,7 @@ const UserMenu = ({
   const initials = getInitials();
   const otherAccounts = linkedAccounts.filter(a => a.userId !== currentAccount?.userId);
   const hasMultiple = linkedAccounts.length > 1;
+  const canAddMore = linkedAccounts.length < MAX_LINKED_ACCOUNTS;
   const profileLink = isCompany ? '/dashboard/entreprise/profil' : '/profil';
 
   return (
@@ -294,17 +317,26 @@ const UserMenu = ({
             })}
 
             {/* Ajouter un compte */}
-            <button
-              onClick={handleAddAccount}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left border-b border-slate-100"
-            >
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                <Plus size={14} className="text-slate-600" />
+            {canAddMore ? (
+              <button
+                onClick={handleAddAccount}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left border-b border-slate-100"
+              >
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                  <Plus size={14} className="text-slate-600" />
+                </div>
+                <span className="text-sm font-medium text-slate-700">
+                  {t('header.user.menu.addAccount', { defaultValue: 'Ajouter un compte' })}
+                </span>
+              </button>
+            ) : (
+              <div className="px-3 py-2.5 text-xs text-slate-400 italic border-b border-slate-100">
+                {t('header.user.menu.limitReached', {
+                  defaultValue: `Limite de ${MAX_LINKED_ACCOUNTS} comptes atteinte. Retirez-en un pour en ajouter un autre.`,
+                  max: MAX_LINKED_ACCOUNTS,
+                })}
               </div>
-              <span className="text-sm font-medium text-slate-700">
-                {t('header.user.menu.addAccount', { defaultValue: 'Ajouter un compte' })}
-              </span>
-            </button>
+            )}
 
             {/* Actions produit */}
             <div className="py-1">

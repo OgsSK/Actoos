@@ -3,6 +3,8 @@
 // - Tokens (access, refresh) → cookie ".actoos.com" (chunked, cross-domain for SSO)
 // - Active account ID → localStorage (per browser)
 
+export const MAX_LINKED_ACCOUNTS = 5;
+
 export interface LinkedAccount {
   userId: string;
   email: string;
@@ -325,8 +327,7 @@ export async function unlinkAccount(
 ): Promise<void> {
   if (!supabase) return;
   try {
-    // Supprimer TOUS les liens impliquant linkedUserId (avec n'importe qui)
-    // pour éviter les liens croisés résiduels qui font "revenir" le compte
+    // Supprimer TOUS les liens impliquant linkedUserId (peu importe avec qui)
     await supabase
       .from('linked_accounts')
       .delete()
