@@ -29,13 +29,27 @@ export async function POST(request: NextRequest) {
 
     const userId = userData.user.id;
 
-    // 2. Supprimer le user avec le service_role (droit admin)
+    // 2. Client admin (bypass RLS)
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // 3. Nettoyer toutes les dépendances FK via la fonction SQL
+    const { error: cleanupError } = await adminClient.rpc('cleanup_user_data', {
+      target_user_id: userId,
+    });
+    if (cleanupError) {
+      console.error('[delete-account] cleanup failed:', cleanupError);
+      return NextResponse.json(
+        { error: `Cleanup failed: ${cleanupError.message}` },
+        { status: 500 }
+      );
+    }
+
+    // 4. Supprimer de auth.users
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
     if (deleteError) {
+      console.error('[delete-account] deleteUser failed:', deleteError);
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
 

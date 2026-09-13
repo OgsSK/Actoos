@@ -220,18 +220,15 @@ function saveTokensToCookie(tokensByUser: Record<string, SessionTokens>): void {
 // ==================== Public API: metadata ====================
 
 /**
- * Get linked accounts. Reads from cookie first (fast).
- * If empty, falls back to Supabase (needs current user ID).
+ * Récupère les comptes liés depuis Supabase (source de vérité unique).
+ * Plus de lecture cookie/localStorage : toujours frais, toujours cohérent.
+ * Si Supabase échoue, renvoie [] — le caller fera un upsertAccountInList avec le compte courant.
  */
 export async function getLinkedAccounts(
   supabase: any,
   currentUserId?: string
 ): Promise<LinkedAccount[]> {
-  // 1. Try cookie
-  const fromCookie = loadMetadataFromCookie();
-  if (fromCookie.length > 0) return fromCookie;
-
-  // 2. Fallback to Supabase
+  // Toujours lire depuis Supabase (source de vérité unique)
   if (supabase && currentUserId) {
     try {
       const { data, error } = await supabase
@@ -240,8 +237,8 @@ export async function getLinkedAccounts(
         .eq('user_id', currentUserId)
         .order('last_used_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        const accounts: LinkedAccount[] = (data as LinkedAccountRow[]).map(row => ({
+      if (!error && data) {
+        return (data as LinkedAccountRow[]).map(row => ({
           userId: row.linked_user_id,
           email: row.linked_email,
           firstName: row.linked_first_name || undefined,
@@ -250,18 +247,12 @@ export async function getLinkedAccounts(
           addedAt: new Date(row.created_at).getTime(),
           lastUsedAt: new Date(row.last_used_at).getTime(),
         }));
-        // Cache in cookie + localStorage
-        saveMetadataToCookie(accounts);
-        saveMetadataToLocalStorage(accounts);
-        return accounts;
       }
     } catch (e) {
       console.warn('[multiAccount] Supabase fetch failed:', e);
     }
   }
-
-  // 3. Fallback localStorage
-  return loadMetadataFromLocalStorage();
+  return [];
 }
 
 /**

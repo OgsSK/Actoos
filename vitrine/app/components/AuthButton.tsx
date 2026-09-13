@@ -7,20 +7,18 @@ import { t } from '../../lib/translations';
 import {
   createAuthClientSSR,
   getLinkedAccounts,
-  getLinkedAccountsFromSupabase,
+  ensureSelfLink,
   saveLinkedAccounts,
   linkAccount,
   unlinkAccount,
   saveTokens,
   getTokens,
   removeTokens,
-  getActiveAccountId,
   setActiveAccountId,
   setPendingLink,
   getPendingLink,
   clearPendingLink,
   buildLinkedAccount,
-  upsertAccountInList,
   sortAccountsByUsage,
   clearAll,
   type LinkedAccount,
@@ -92,25 +90,26 @@ export default function AuthButton() {
       setActiveAccountId(account.userId);
       setAvatarError(false);
 
+      // Sauvegarder le token du compte actif
       saveTokens(account.userId, {
         accessToken: session.access_token,
         refreshToken: session.refresh_token,
         expiresAt: session.expires_at,
       });
 
+      // S'assurer que ce compte est dans sa propre liste
+      await ensureSelfLink(client.supabase, account);
+
+      // Si on vient d'ajouter un compte → lier les 2
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
         await linkAccount(client.supabase, pendingLinkId, account.userId);
         clearPendingLink();
-        // Force re-read depuis Supabase (bypass cookie périmé)
-        const fromDb = await getLinkedAccountsFromSupabase(client.supabase, account.userId);
-        const merged = upsertAccountInList(fromDb, account);
-        await saveLinkedAccounts(merged, client.supabase, account.userId);
       }
 
+      // Toujours recharger depuis Supabase
       const accounts = await getLinkedAccounts(client.supabase, account.userId);
-      const withCurrent = upsertAccountInList(accounts, account);
-      setLinkedAccounts(sortAccountsByUsage(withCurrent));
+      setLinkedAccounts(sortAccountsByUsage(accounts));
     } catch (err) {
       console.error('[AuthButton] refresh error:', err);
       setCurrentAccount(null);

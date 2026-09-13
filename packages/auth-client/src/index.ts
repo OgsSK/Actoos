@@ -22,6 +22,8 @@ export type {
 } from './types.js';
 
 export {
+    
+  ensureSelfLink,    
   getLinkedAccounts,
     getLinkedAccountsFromSupabase,  // ← AJOUTER
   saveLinkedAccounts,
