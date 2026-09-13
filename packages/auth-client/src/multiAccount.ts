@@ -19,8 +19,8 @@ const COOKIE_BASE = 'actoos-linked-accounts';
 const COOKIE_COUNT = `${COOKIE_BASE}-count`;
 const ACTIVE_KEY = 'actoos-active-account-id';
 const LS_FALLBACK = 'actoos-linked-accounts-ls';
-const CHUNK_SIZE = 3500;
-const EXPIRY_DAYS = 30;
+const MAX_ENCODED_CHUNK = 3500;  // taille max d'un cookie ENCODÉ
+const EXPIRY_DAYS = 365;          // 1 an au lieu de 30 jours
 
 function isProd(): boolean {
   if (typeof window === 'undefined') return false;
@@ -51,8 +51,8 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-function setCookie(name: string, value: string, days: number): void {
-  if (typeof document === 'undefined') return;
+function setCookie(name: string, value: string, days: number): boolean {
+  if (typeof document === 'undefined') return false;
   const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
   const domain = getCookieDomain();
   const parts = [
@@ -64,6 +64,8 @@ function setCookie(name: string, value: string, days: number): void {
   if (domain) parts.push(`domain=${domain}`);
   if (isProd()) parts.push('Secure');
   document.cookie = parts.join('; ');
+  // Vérifier que le cookie est bien écrit
+  return document.cookie.indexOf(`${name}=`) !== -1;
 }
 
 function deleteCookie(name: string): void {
@@ -105,17 +107,40 @@ function loadFromCookie(): LinkedAccount[] {
 
 function saveToCookie(accounts: LinkedAccount[]): void {
   const json = JSON.stringify(accounts);
+
+  // Chunking dynamique : chaque chunk doit rester < MAX_ENCODED_CHUNK après encodeURIComponent
   const chunks: string[] = [];
-  for (let i = 0; i < json.length; i += CHUNK_SIZE) {
-    chunks.push(json.substring(i, i + CHUNK_SIZE));
+  let current = '';
+  for (const char of json) {
+    const test = current + char;
+    if (encodeURIComponent(test).length > MAX_ENCODED_CHUNK) {
+      chunks.push(current);
+      current = char;
+    } else {
+      current = test;
+    }
   }
+  if (current) chunks.push(current);
+  if (chunks.length === 0) chunks.push('[]');
 
   clearAllChunks();
 
+  // Écrire les chunks et vérifier que chacun est bien posé
   chunks.forEach((chunk, i) => {
-    setCookie(`${COOKIE_BASE}.${i}`, chunk, EXPIRY_DAYS);
+    const name = `${COOKIE_BASE}.${i}`;
+    const ok = setCookie(name, chunk, EXPIRY_DAYS);
+    if (!ok) {
+      throw new Error(
+        `[multiAccount] Cookie ${name} not written (chunk=${chunk.length}, encoded=${encodeURIComponent(chunk).length})`
+      );
+    }
   });
-  setCookie(COOKIE_COUNT, String(chunks.length), EXPIRY_DAYS);
+
+  // Count en dernier (atomicité)
+  const countOk = setCookie(COOKIE_COUNT, String(chunks.length), EXPIRY_DAYS);
+  if (!countOk) {
+    throw new Error(`[multiAccount] Cookie count not written`);
+  }
 }
 
 function loadFromLocalStorage(): LinkedAccount[] {
