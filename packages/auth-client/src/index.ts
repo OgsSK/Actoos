@@ -23,12 +23,21 @@ export type {
 
 export {
   getLinkedAccounts,
+  saveLinkedAccounts,
+  linkAccount,
+  unlinkAccount,
+  saveTokens,
+  getTokens,
+  removeTokens,
+  clearAllTokens,
   getActiveAccountId,
   setActiveAccountId,
+  setPendingLink,
+  getPendingLink,
+  clearPendingLink,
   buildLinkedAccount,
-  upsertLinkedAccount,
-  removeLinkedAccount,
-  clearAllLinkedAccounts,
+  upsertAccountInList,
   sortAccountsByUsage,
+  clearAll,
 } from './multiAccount.js';
-export type { LinkedAccount } from './multiAccount.js';
+export type { LinkedAccount, SessionTokens } from './multiAccount.js';

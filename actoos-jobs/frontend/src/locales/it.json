@@ -3844,6 +3844,15 @@
     "docAuth": "Autenticazione",
     "docExample": "Esempio: elenca offerte",
     "docEndpoints": "Endpoint disponibili"
+  },
+  "jobs_onboarding": {
+    "welcome": "Benvenuto {{name}} 👋",
+    "question": "Sei su Actoos Jobs per:",
+    "candidate": "Cercare lavoro",
+    "candidateDesc": "Trovare incarichi, candidarsi, seguire le candidature.",
+    "company": "Reclutare",
+    "companyDesc": "Pubblicare offerte e gestire il tuo team.",
+    "error": "Si è verificato un errore. Riprova."
   }
  
 

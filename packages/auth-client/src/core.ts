@@ -5,44 +5,30 @@ export function createAuthCore(client: AuthClient) {
   const { supabase } = client;
 
   const signUp = async ({
+  email,
+  password,
+  role,
+  firstName,
+  lastName,
+  language,
+  extraMetadata,
+}: SignUpParams) => {
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    role = 'candidate',
-    firstName,
-    lastName,
-    language,
-  }: SignUpParams) => {
-    const cleanLanguage = language ? language.split('-')[0] : 'fr';
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role,
-          first_name: firstName,
-          last_name: lastName,
-          language: cleanLanguage,
-        },
-      },
-    });
-
-    if (error) throw error;
-
-    if (data.user) {
-      await supabase.from('users').insert({
-        id: data.user.id,
-        email,
+    options: {
+      data: {
         role,
         first_name: firstName,
         last_name: lastName,
-        language: cleanLanguage,
-      });
-    }
-
-    return data;
-  };
-
+        language,
+        ...(extraMetadata || {}),
+      },
+    },
+  });
+  if (error) throw error;
+  return data;
+};
   const signIn = async ({ email, password }: SignInParams) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,

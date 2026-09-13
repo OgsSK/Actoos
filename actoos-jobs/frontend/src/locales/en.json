@@ -3922,6 +3922,15 @@
     "docAuth": "Authentication",
     "docExample": "Example: list jobs",
     "docEndpoints": "Available endpoints"
+  },
+  "jobs_onboarding": {
+    "welcome": "Welcome {{name}} 👋",
+    "question": "You're on Actoos Jobs to:",
+    "candidate": "Find a job",
+    "candidateDesc": "Find missions, apply, track your applications.",
+    "company": "Recruit",
+    "companyDesc": "Post offers and manage your team.",
+    "error": "An error occurred. Please try again."
   }
 
 

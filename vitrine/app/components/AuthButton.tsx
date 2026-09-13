@@ -6,12 +6,21 @@ import { t } from '../../lib/translations';
 import {
   createAuthClientSSR,
   getLinkedAccounts,
+  saveLinkedAccounts,
+  linkAccount,
+  unlinkAccount,
+  saveTokens,
+  getTokens,
+  removeTokens,
+  getActiveAccountId,
   setActiveAccountId,
+  setPendingLink,
+  getPendingLink,
+  clearPendingLink,
   buildLinkedAccount,
-  upsertLinkedAccount,
-  removeLinkedAccount,
-  clearAllLinkedAccounts,
+  upsertAccountInList,
   sortAccountsByUsage,
+  clearAll,
   type LinkedAccount,
 } from '@actoos/auth-client';
 import { Plus, Settings, FolderOpen, LogOut, Check } from 'lucide-react';
@@ -51,18 +60,45 @@ export default function AuthButton() {
       const { data } = await client.supabase.auth.getSession();
       const session = data.session;
 
-      if (session?.user) {
-        const account = buildLinkedAccount(session.user, session);
-        upsertLinkedAccount(account);
-        setActiveAccountId(account.userId);
-        setCurrentAccount(account);
-        setAvatarError(false);
-      } else {
+      if (!session?.user) {
         setCurrentAccount(null);
         setActiveAccountId(null);
+        setLinkedAccounts([]);
+        setLoading(false);
+        return;
       }
 
-      setLinkedAccounts(sortAccountsByUsage(getLinkedAccounts()));
+      const account = buildLinkedAccount(session.user, session);
+      setCurrentAccount(account);
+      setActiveAccountId(account.userId);
+      setAvatarError(false);
+
+      // Sauvegarder le token du compte actif
+      saveTokens(account.userId, {
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+        expiresAt: session.expires_at,
+      });
+
+      // Détecter un lien en attente (2ᵉ compte en cours d'ajout)
+      const pendingLinkId = getPendingLink();
+      if (pendingLinkId && pendingLinkId !== account.userId) {
+        // Lier les 2 comptes (RPC + cookie)
+        await linkAccount(client.supabase, pendingLinkId, account.userId);
+
+        // Ajouter les 2 dans la liste locale
+        const existing = await getLinkedAccounts(client.supabase, account.userId);
+        const accountA = { ...account, userId: pendingLinkId }; // Le compte A est celui du pendingLink
+        // Note: on ne connait pas les infos de A ici, elles viendront de Supabase
+        const newList = upsertAccountInList(existing, account);
+        await saveLinkedAccounts(newList, client.supabase, account.userId);
+        clearPendingLink();
+      }
+
+      // Charger la liste des comptes liés
+      const accounts = await getLinkedAccounts(client.supabase, account.userId);
+      const withCurrent = upsertAccountInList(accounts, account);
+      setLinkedAccounts(sortAccountsByUsage(withCurrent));
     } catch (err) {
       console.error('[AuthButton] refresh error:', err);
       setCurrentAccount(null);
@@ -75,9 +111,9 @@ export default function AuthButton() {
     refreshState();
   }, [refreshState]);
 
+  // Fermeture au clic extérieur / Escape
   useEffect(() => {
     if (!menuOpen) return;
-
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
@@ -86,14 +122,10 @@ export default function AuthButton() {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);
     };
-
-    const timeout = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
+    const timer = setTimeout(() => document.addEventListener('mousedown', handleClickOutside), 0);
     document.addEventListener('keydown', handleEscape);
-
     return () => {
-      clearTimeout(timeout);
+      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
@@ -102,21 +134,31 @@ export default function AuthButton() {
   const handleSwitch = async (userId: string) => {
     if (switching || userId === currentAccount?.userId) return;
     setSwitching(true);
+
     try {
-      const account = getLinkedAccounts().find(a => a.userId === userId);
-      if (!account) throw new Error('Account not found');
+      const tokens = getTokens(userId);
 
-      const client = getClient();
-      const { error } = await client.supabase.auth.setSession({
-        access_token: account.accessToken,
-        refresh_token: account.refreshToken,
-      });
-      if (error) throw error;
+      // Si on a les tokens en cookie → bascule instantanée
+      if (tokens?.accessToken && tokens?.refreshToken) {
+        const client = getClient();
+        const { error } = await client.supabase.auth.setSession({
+          access_token: tokens.accessToken,
+          refresh_token: tokens.refreshToken,
+        });
 
-      upsertLinkedAccount({ ...account, lastUsedAt: Date.now() });
-      setActiveAccountId(userId);
-      setMenuOpen(false);
-      window.location.reload();
+        if (!error) {
+          setActiveAccountId(userId);
+          setMenuOpen(false);
+          window.location.reload();
+          return;
+        }
+      }
+
+      // Sinon → redirection vers login avec le compte pré-rempli
+      const account = linkedAccounts.find(a => a.userId === userId);
+      setPendingLink(userId);
+      const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
+      window.location.href = `${LOGIN_URL}?email=${encodeURIComponent(account?.email || '')}&redirect=${encodeURIComponent(redirect)}`;
     } catch (err) {
       console.error('[AuthButton] switch failed:', err);
       alert(language === 'fr' ? 'Impossible de basculer sur ce compte.' : 'Failed to switch account.');
@@ -125,17 +167,28 @@ export default function AuthButton() {
   };
 
   const handleRemove = async (userId: string) => {
-    const wasActive = userId === currentAccount?.userId;
-    const remaining = removeLinkedAccount(userId);
-    const sorted = sortAccountsByUsage(remaining);
-    setLinkedAccounts(sorted);
+    if (!currentAccount) return;
+    const wasActive = userId === currentAccount.userId;
+    const client = getClient();
 
+    // 1. Unlink dans Supabase
+    await unlinkAccount(client.supabase, currentAccount.userId, userId);
+
+    // 2. Supprimer les tokens
+    removeTokens(userId);
+
+    // 3. Retirer de la liste locale
+    const remaining = linkedAccounts.filter(a => a.userId !== userId);
+    await saveLinkedAccounts(remaining, client.supabase, currentAccount.userId);
+    setLinkedAccounts(remaining);
+
+    // 4. Si on a retiré le compte actif → basculer sur le suivant ou logout
     if (wasActive) {
-      if (sorted.length > 0) {
-        await handleSwitch(sorted[0].userId);
+      if (remaining.length > 0) {
+        await handleSwitch(remaining[0].userId);
       } else {
-        await getClient().supabase.auth.signOut();
-        clearAllLinkedAccounts();
+        await client.supabase.auth.signOut();
+        clearAll();
         window.location.href = '/';
       }
     }
@@ -143,12 +196,14 @@ export default function AuthButton() {
 
   const handleSignOut = async () => {
     await getClient().supabase.auth.signOut();
-    clearAllLinkedAccounts();
+    clearAll();
     setMenuOpen(false);
     window.location.href = '/';
   };
 
   const handleAddAccount = () => {
+    if (!currentAccount) return;
+    setPendingLink(currentAccount.userId);
     const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
     window.location.href = `${LOGIN_URL}?addAccount=1&redirect=${encodeURIComponent(redirect)}`;
   };
@@ -158,14 +213,14 @@ export default function AuthButton() {
   )}`;
 
   if (loading) {
-    return <span className="inline-block w-9 h-9 rounded-full bg-slate-200 animate-pulse" aria-hidden />;
+    return <span className="inline-block w-24 h-9 rounded-full bg-slate-200 animate-pulse" aria-hidden />;
   }
 
   if (!currentAccount) {
     return (
       <a
         href={loginHref}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 rounded-full hover:bg-slate-100 transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-full hover:bg-slate-100 transition-colors"
       >
         {t[language].navLogin}
       </a>
@@ -205,7 +260,7 @@ export default function AuthButton() {
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
-          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[320px] sm:w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-20 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[340px] sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-20 overflow-hidden max-h-[85vh] overflow-y-auto">
 
             {/* Compte actif */}
             <div className="px-4 py-3 bg-slate-50">
@@ -225,8 +280,10 @@ export default function AuthButton() {
 
             {/* Autres comptes */}
             {otherAccounts.map(acc => {
-              const otherInitials =
-                (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') || acc.email[0]?.toUpperCase() || '?';
+              const oi =
+                (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') ||
+                acc.email[0]?.toUpperCase() ||
+                '?';
               return (
                 <div key={acc.userId} className="border-t border-slate-100 flex items-center">
                   <button
@@ -235,7 +292,7 @@ export default function AuthButton() {
                     className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left disabled:opacity-50"
                   >
                     <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold shrink-0">
-                      {otherInitials}
+                      {oi}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-slate-700 truncate">

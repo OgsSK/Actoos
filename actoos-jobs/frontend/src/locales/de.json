@@ -3949,6 +3949,15 @@
     "docAuth": "Authentifizierung",
     "docExample": "Beispiel: Stellen auflisten",
     "docEndpoints": "Verfügbare Endpunkte"
+  },
+  "jobs_onboarding": {
+    "welcome": "Willkommen {{name}} 👋",
+    "question": "Sie sind auf Actoos Jobs, um:",
+    "candidate": "Einen Job suchen",
+    "candidateDesc": "Aufträge finden, bewerben, Bewerbungen verfolgen.",
+    "company": "Rekrutieren",
+    "companyDesc": "Angebote veröffentlichen und Ihr Team verwalten.",
+    "error": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
   }
 
 

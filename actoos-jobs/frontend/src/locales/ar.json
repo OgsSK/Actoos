@@ -3920,6 +3920,15 @@
     "docAuth": "المصادقة",
     "docExample": "مثال: قائمة الوظائف",
     "docEndpoints": "نقاط النهاية المتاحة"
+  },
+  "jobs_onboarding": {
+    "welcome": "مرحبًا {{name}} 👋",
+    "question": "أنت على Actoos Jobs من أجل:",
+    "candidate": "البحث عن عمل",
+    "candidateDesc": "ابحث عن مهام، تقدم للوظائف، تابع طلباتك.",
+    "company": "التوظيف",
+    "companyDesc": "انشر العروض وأدر فريقك.",
+    "error": "حدث خطأ. يرجى المحاولة مرة أخرى."
   }
 
 

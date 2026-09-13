@@ -14,6 +14,7 @@ import CountryGate from './components/CountryGate';
 import CompanyFollowersPage from './pages/CompanyFollowersPage';
 import { Loader2 } from 'lucide-react';
 import AcceptInvitationPage from './pages/AcceptInvitationPage';
+import JobsOnboarding from './components/JobsOnboarding';
 import './index.css';
 
 // ---------- Lazy-loaded pages ----------
@@ -123,7 +124,7 @@ const NotFoundPage = () => (
 
 // ---------- Main App Content ----------
 const AppContent = () => {
-  const { user, signOut } = useAuth();
+  const { user, profile, isAdmin, loading: authLoading, signOut, refreshProfile } = useAuth();
   const { i18n } = useTranslation();
   const { prefs } = usePreferencesContext();
 
@@ -147,8 +148,23 @@ const AppContent = () => {
     };
   }, []);
 
+  // Condition : user connecté + onboarding Jobs pas encore fait + pas admin
+  const needsJobsOnboarding =
+    !authLoading &&
+    user &&
+    profile &&
+    !isAdmin &&
+    profile.jobs_onboarded === false;
+
   return (
     <div className="min-h-screen flex flex-col">
+      {needsJobsOnboarding && (
+        <JobsOnboarding
+          onComplete={async () => {
+            if (refreshProfile) await refreshProfile();
+          }}
+        />
+      )}
       <Header user={user} onLogout={signOut} />
       <ScrollToTop />
       <main className="flex-1">

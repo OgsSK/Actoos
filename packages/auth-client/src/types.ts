@@ -44,6 +44,7 @@ export interface SignUpParams {
   firstName: string;
   lastName: string;
   language?: string;
+  extraMetadata?: Record<string, any>;
 }
 
 export interface SignInParams {

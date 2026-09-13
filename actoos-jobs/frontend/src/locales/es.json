@@ -3842,6 +3842,15 @@
     "docAuth": "Autenticación",
     "docExample": "Ejemplo: listar ofertas",
     "docEndpoints": "Endpoints disponibles"
+  },
+  "jobs_onboarding": {
+    "welcome": "Bienvenido {{name}} 👋",
+    "question": "Estás en Actoos Jobs para:",
+    "candidate": "Buscar empleo",
+    "candidateDesc": "Encontrar misiones, postular, seguir tus candidaturas.",
+    "company": "Reclutar",
+    "companyDesc": "Publicar ofertas y gestionar tu equipo.",
+    "error": "Se produjo un error. Inténtalo de nuevo."
   }
 
 }

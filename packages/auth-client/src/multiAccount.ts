@@ -1,6 +1,7 @@
-// Multi-comptes avec stockage en cookie partagé (.actoos.com)
-// Utilise le chunking pour rester sous la limite de ~4 KB par cookie.
-// Fallback localStorage en local (dev).
+// Multi-account with hybrid storage:
+// - Metadata (email, name, avatar) → Supabase table "linked_accounts" (persistent, cross-device)
+// - Tokens (access, refresh) → cookie ".actoos.com" (chunked, cross-domain for SSO)
+// - Active account ID → localStorage (per browser)
 
 export interface LinkedAccount {
   userId: string;
@@ -8,19 +9,41 @@ export interface LinkedAccount {
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt?: number;
   addedAt: number;
   lastUsedAt: number;
 }
 
-const COOKIE_BASE = 'actoos-linked-accounts';
-const COOKIE_COUNT = `${COOKIE_BASE}-count`;
+export interface SessionTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?: number;
+}
+
+interface LinkedAccountRow {
+  linked_user_id: string;
+  linked_email: string;
+  linked_first_name: string | null;
+  linked_last_name: string | null;
+  linked_avatar_url: string | null;
+  created_at: string;
+  last_used_at: string;
+}
+
 const ACTIVE_KEY = 'actoos-active-account-id';
-const LS_FALLBACK = 'actoos-linked-accounts-ls';
-const MAX_ENCODED_CHUNK = 3500;  // taille max d'un cookie ENCODÉ
-const EXPIRY_DAYS = 365;          // 1 an au lieu de 30 jours
+const PENDING_LINK_KEY = 'actoos-pending-link';
+
+// Metadata cookie (without tokens)
+const META_COOKIE_BASE = 'actoos-linked-meta';
+const META_COUNT_KEY = `${META_COOKIE_BASE}-count`;
+
+// Tokens cookie (chunked dynamically)
+const TOKENS_COOKIE_BASE = 'actoos-linked-tokens';
+const TOKENS_COUNT_KEY = `${TOKENS_COOKIE_BASE}-count`;
+
+const MAX_ENCODED_CHUNK = 3500;
+const EXPIRY_DAYS = 365;
+
+// ==================== Utilities ====================
 
 function isProd(): boolean {
   if (typeof window === 'undefined') return false;
@@ -64,7 +87,6 @@ function setCookie(name: string, value: string, days: number): boolean {
   if (domain) parts.push(`domain=${domain}`);
   if (isProd()) parts.push('Secure');
   document.cookie = parts.join('; ');
-  // Vérifier que le cookie est bien écrit
   return document.cookie.indexOf(`${name}=`) !== -1;
 }
 
@@ -76,39 +98,27 @@ function deleteCookie(name: string): void {
   document.cookie = parts.join('; ');
 }
 
-function clearAllChunks(): void {
-  const countStr = getCookie(COOKIE_COUNT);
-  const count = countStr ? parseInt(countStr, 10) : 0;
-  for (let i = 0; i < count + 5; i++) {
-    deleteCookie(`${COOKIE_BASE}.${i}`);
-  }
-  deleteCookie(COOKIE_COUNT);
-}
-
-function loadFromCookie(): LinkedAccount[] {
-  const countStr = getCookie(COOKIE_COUNT);
-  if (!countStr) return [];
+// Chunked cookie reader
+function readChunkedCookie(base: string, countKey: string): string | null {
+  const countStr = getCookie(countKey);
+  if (!countStr) return null;
   const count = parseInt(countStr, 10);
-  if (!count || count < 0 || count > 100) return [];
-
+  if (!count || count < 0 || count > 100) return null;
   let json = '';
   for (let i = 0; i < count; i++) {
-    const chunk = getCookie(`${COOKIE_BASE}.${i}`);
-    if (!chunk) return []; // chunk manquant = corrompu
+    const chunk = getCookie(`${base}.${i}`);
+    if (!chunk) return null;
     json += chunk;
   }
-  try {
-    const parsed = JSON.parse(json);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  return json;
 }
 
-function saveToCookie(accounts: LinkedAccount[]): void {
-  const json = JSON.stringify(accounts);
-
-  // Chunking dynamique : chaque chunk doit rester < MAX_ENCODED_CHUNK après encodeURIComponent
+// Chunked cookie writer (with verification)
+function writeChunkedCookie(
+  base: string,
+  countKey: string,
+  json: string
+): void {
   const chunks: string[] = [];
   let current = '';
   for (const char of json) {
@@ -123,30 +133,54 @@ function saveToCookie(accounts: LinkedAccount[]): void {
   if (current) chunks.push(current);
   if (chunks.length === 0) chunks.push('[]');
 
-  clearAllChunks();
+  // Clear old chunks
+  const oldCount = getCookie(countKey);
+  const oldNum = oldCount ? parseInt(oldCount, 10) : 0;
+  for (let i = 0; i < oldNum + 5; i++) {
+    deleteCookie(`${base}.${i}`);
+  }
+  deleteCookie(countKey);
 
-  // Écrire les chunks et vérifier que chacun est bien posé
+  // Write new chunks
   chunks.forEach((chunk, i) => {
-    const name = `${COOKIE_BASE}.${i}`;
+    const name = `${base}.${i}`;
     const ok = setCookie(name, chunk, EXPIRY_DAYS);
     if (!ok) {
-      throw new Error(
-        `[multiAccount] Cookie ${name} not written (chunk=${chunk.length}, encoded=${encodeURIComponent(chunk).length})`
-      );
+      throw new Error(`[multiAccount] Cookie ${name} not written`);
     }
   });
 
-  // Count en dernier (atomicité)
-  const countOk = setCookie(COOKIE_COUNT, String(chunks.length), EXPIRY_DAYS);
+  const countOk = setCookie(countKey, String(chunks.length), EXPIRY_DAYS);
   if (!countOk) {
-    throw new Error(`[multiAccount] Cookie count not written`);
+    throw new Error('[multiAccount] Cookie count not written');
   }
 }
 
-function loadFromLocalStorage(): LinkedAccount[] {
+// ==================== Metadata: cookie + Supabase ====================
+
+function loadMetadataFromCookie(): LinkedAccount[] {
+  const json = readChunkedCookie(META_COOKIE_BASE, META_COUNT_KEY);
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMetadataToCookie(accounts: LinkedAccount[]): void {
+  try {
+    writeChunkedCookie(META_COOKIE_BASE, META_COUNT_KEY, JSON.stringify(accounts));
+  } catch (e) {
+    console.warn('[multiAccount] Failed to save metadata to cookie:', e);
+  }
+}
+
+function loadMetadataFromLocalStorage(): LinkedAccount[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(LS_FALLBACK);
+    const raw = localStorage.getItem('actoos-linked-meta-ls');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -155,40 +189,191 @@ function loadFromLocalStorage(): LinkedAccount[] {
   }
 }
 
-function saveToLocalStorage(accounts: LinkedAccount[]): void {
+function saveMetadataToLocalStorage(accounts: LinkedAccount[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(LS_FALLBACK, JSON.stringify(accounts));
+    localStorage.setItem('actoos-linked-meta-ls', JSON.stringify(accounts));
   } catch {}
 }
 
-// ============ API publique ============
+// ==================== Tokens: cookie only ====================
 
-export function getLinkedAccounts(): LinkedAccount[] {
-  if (canUseCookie()) {
-    const fromCookie = loadFromCookie();
-    if (fromCookie.length > 0) return fromCookie;
+function loadTokensFromCookie(): Record<string, SessionTokens> {
+  const json = readChunkedCookie(TOKENS_COOKIE_BASE, TOKENS_COUNT_KEY);
+  if (!json) return {};
+  try {
+    const parsed = JSON.parse(json);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
-  return loadFromLocalStorage();
 }
 
-function saveLinkedAccounts(accounts: LinkedAccount[]): void {
-  if (canUseCookie()) {
+function saveTokensToCookie(tokensByUser: Record<string, SessionTokens>): void {
+  try {
+    writeChunkedCookie(TOKENS_COOKIE_BASE, TOKENS_COUNT_KEY, JSON.stringify(tokensByUser));
+  } catch (e) {
+    console.warn('[multiAccount] Failed to save tokens to cookie:', e);
+  }
+}
+
+// ==================== Public API: metadata ====================
+
+/**
+ * Get linked accounts. Reads from cookie first (fast).
+ * If empty, falls back to Supabase (needs current user ID).
+ */
+export async function getLinkedAccounts(
+  supabase: any,
+  currentUserId?: string
+): Promise<LinkedAccount[]> {
+  // 1. Try cookie
+  const fromCookie = loadMetadataFromCookie();
+  if (fromCookie.length > 0) return fromCookie;
+
+  // 2. Fallback to Supabase
+  if (supabase && currentUserId) {
     try {
-      saveToCookie(accounts);
+      const { data, error } = await supabase
+        .from('linked_accounts')
+        .select('*')
+        .eq('user_id', currentUserId)
+        .order('last_used_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        const accounts: LinkedAccount[] = (data as LinkedAccountRow[]).map(row => ({
+          userId: row.linked_user_id,
+          email: row.linked_email,
+          firstName: row.linked_first_name || undefined,
+          lastName: row.linked_last_name || undefined,
+          avatarUrl: row.linked_avatar_url || undefined,
+          addedAt: new Date(row.created_at).getTime(),
+          lastUsedAt: new Date(row.last_used_at).getTime(),
+        }));
+        // Cache in cookie + localStorage
+        saveMetadataToCookie(accounts);
+        saveMetadataToLocalStorage(accounts);
+        return accounts;
+      }
     } catch (e) {
-      console.warn('[multiAccount] cookie save failed, falling back to localStorage:', e);
-      saveToLocalStorage(accounts);
+      console.warn('[multiAccount] Supabase fetch failed:', e);
     }
-  } else {
-    saveToLocalStorage(accounts);
+  }
+
+  // 3. Fallback localStorage
+  return loadMetadataFromLocalStorage();
+}
+
+/**
+ * Save linked accounts to cookie + Supabase.
+ * Supabase insert is best-effort (doesn't block).
+ */
+export async function saveLinkedAccounts(
+  accounts: LinkedAccount[],
+  supabase?: any,
+  currentUserId?: string
+): Promise<void> {
+  // Local always
+  saveMetadataToCookie(accounts);
+  saveMetadataToLocalStorage(accounts);
+
+  // Supabase: sync (upsert)
+  if (supabase && currentUserId) {
+    try {
+      for (const acc of accounts) {
+        await supabase
+          .from('linked_accounts')
+          .upsert(
+            {
+              user_id: currentUserId,
+              linked_user_id: acc.userId,
+              linked_email: acc.email,
+              linked_first_name: acc.firstName || null,
+              linked_last_name: acc.lastName || null,
+              linked_avatar_url: acc.avatarUrl || null,
+              last_used_at: new Date(acc.lastUsedAt).toISOString(),
+            },
+            { onConflict: 'user_id,linked_user_id' }
+          );
+      }
+    } catch (e) {
+      console.warn('[multiAccount] Supabase upsert failed:', e);
+    }
   }
 }
+
+/**
+ * Link account A and B (both directions) via Supabase RPC.
+ */
+export async function linkAccount(
+  supabase: any,
+  userA: string,
+  userB: string
+): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { error } = await supabase.rpc('link_accounts', {
+      p_user_a: userA,
+      p_user_b: userB,
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.warn('[multiAccount] link_accounts RPC failed:', e);
+  }
+}
+
+/**
+ * Unlink account via Supabase delete.
+ */
+export async function unlinkAccount(
+  supabase: any,
+  currentUserId: string,
+  linkedUserId: string
+): Promise<void> {
+  if (!supabase) return;
+  try {
+    await supabase
+      .from('linked_accounts')
+      .delete()
+      .or(
+        `and(user_id.eq.${currentUserId},linked_user_id.eq.${linkedUserId}),and(user_id.eq.${linkedUserId},linked_user_id.eq.${currentUserId})`
+      );
+  } catch (e) {
+    console.warn('[multiAccount] unlink failed:', e);
+  }
+}
+
+// ==================== Public API: tokens ====================
+
+export function saveTokens(userId: string, tokens: SessionTokens): void {
+  const all = loadTokensFromCookie();
+  all[userId] = tokens;
+  saveTokensToCookie(all);
+}
+
+export function getTokens(userId: string): SessionTokens | null {
+  const all = loadTokensFromCookie();
+  return all[userId] || null;
+}
+
+export function removeTokens(userId: string): void {
+  const all = loadTokensFromCookie();
+  delete all[userId];
+  saveTokensToCookie(all);
+}
+
+export function clearAllTokens(): void {
+  try {
+    writeChunkedCookie(TOKENS_COOKIE_BASE, TOKENS_COUNT_KEY, '{}');
+  } catch (e) {
+    console.warn('[multiAccount] clear tokens failed:', e);
+  }
+}
+
+// ==================== Public API: active account ====================
 
 export function getActiveAccountId(): string | null {
   if (typeof window === 'undefined') return null;
-  // On lit depuis localStorage (par domaine) car le compte actif est unique
-  // par navigateur, pas besoin de le partager
   return localStorage.getItem(ACTIVE_KEY);
 }
 
@@ -198,6 +383,25 @@ export function setActiveAccountId(userId: string | null): void {
   else localStorage.removeItem(ACTIVE_KEY);
 }
 
+// ==================== Public API: pending link ====================
+
+export function setPendingLink(userId: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(PENDING_LINK_KEY, userId);
+}
+
+export function getPendingLink(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(PENDING_LINK_KEY);
+}
+
+export function clearPendingLink(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(PENDING_LINK_KEY);
+}
+
+// ==================== Public API: helpers ====================
+
 export function buildLinkedAccount(user: any, session: any): LinkedAccount {
   const meta = user.user_metadata || {};
   return {
@@ -206,40 +410,32 @@ export function buildLinkedAccount(user: any, session: any): LinkedAccount {
     firstName: meta.first_name,
     lastName: meta.last_name,
     avatarUrl: meta.avatar_url,
-    accessToken: session.access_token,
-    refreshToken: session.refresh_token,
-    expiresAt: session.expires_at,
     addedAt: Date.now(),
     lastUsedAt: Date.now(),
   };
 }
 
-export function upsertLinkedAccount(account: LinkedAccount): LinkedAccount[] {
-  const accounts = getLinkedAccounts();
+export function upsertAccountInList(
+  accounts: LinkedAccount[],
+  account: LinkedAccount
+): LinkedAccount[] {
   const idx = accounts.findIndex(a => a.userId === account.userId);
   if (idx >= 0) {
     accounts[idx] = { ...accounts[idx], ...account };
   } else {
     accounts.push(account);
   }
-  saveLinkedAccounts(accounts);
   return accounts;
-}
-
-export function removeLinkedAccount(userId: string): LinkedAccount[] {
-  const accounts = getLinkedAccounts().filter(a => a.userId !== userId);
-  saveLinkedAccounts(accounts);
-  if (getActiveAccountId() === userId) setActiveAccountId(null);
-  return accounts;
-}
-
-export function clearAllLinkedAccounts(): void {
-  if (typeof window === 'undefined') return;
-  if (canUseCookie()) clearAllChunks();
-  localStorage.removeItem(LS_FALLBACK);
-  localStorage.removeItem(ACTIVE_KEY);
 }
 
 export function sortAccountsByUsage(accounts: LinkedAccount[]): LinkedAccount[] {
   return [...accounts].sort((a, b) => (b.lastUsedAt || 0) - (a.lastUsedAt || 0));
+}
+
+export function clearAll(): void {
+  saveMetadataToCookie([]);
+  saveMetadataToLocalStorage([]);
+  clearAllTokens();
+  setActiveAccountId(null);
+  clearPendingLink();
 }

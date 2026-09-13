@@ -3910,6 +3910,15 @@
     "docAuth": "Authenticatie",
     "docExample": "Voorbeeld: vacatures weergeven",
     "docEndpoints": "Beschikbare endpoints"
+  },
+   "jobs_onboarding": {
+    "welcome": "Welkom {{name}} 👋",
+    "question": "Je bent op Actoos Jobs om:",
+    "candidate": "Een baan zoeken",
+    "candidateDesc": "Opdrachten vinden, solliciteren, sollicitaties volgen.",
+    "company": "Werven",
+    "companyDesc": "Vacatures plaatsen en je team beheren.",
+    "error": "Er is een fout opgetreden. Probeer het opnieuw."
   }
  
 

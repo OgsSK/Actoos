@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [handleSession]);
 
   // ============ Actions ============
-  const signUp: AuthContextType['signUp'] = async (params) => {
+    const signUp: AuthContextType['signUp'] = async (params) => {
     return await authCore.signUp({
       email: params.email,
       password: params.password,
@@ -161,6 +161,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       firstName: params.firstName,
       lastName: params.lastName,
       language: params.language,
+      // User créé via Actoos ID → onboarding Jobs pas encore fait
+      extraMetadata: { jobs_onboarded: false },
     });
   };
 

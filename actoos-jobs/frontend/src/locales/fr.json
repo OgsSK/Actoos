@@ -3818,6 +3818,15 @@
     "docAuth": "Authentification",
     "docExample": "Exemple : lister les offres",
     "docEndpoints": "Endpoints disponibles"
+  },
+  "jobs_onboarding": {
+    "welcome": "Bienvenue {{name}} 👋",
+    "question": "Vous venez sur Actoos Jobs pour :",
+    "candidate": "Chercher un emploi",
+    "candidateDesc": "Trouver des missions, postuler, suivre mes candidatures.",
+    "company": "Recruter",
+    "companyDesc": "Publier des offres et gérer mon équipe.",
+    "error": "Une erreur est survenue. Veuillez réessayer."
   }
   
 
