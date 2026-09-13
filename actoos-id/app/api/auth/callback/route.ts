@@ -43,28 +43,24 @@ export async function GET(request: NextRequest) {
 
   let error: any = null;
 
-  // Cas 1 : PKCE classique (OAuth Google, magic link récent)
+  // Cas 1 : PKCE avec ?code=
   if (code) {
     const result = await supabase.auth.exchangeCodeForSession(code);
     error = result.error;
   }
-  // Cas 2 : token_hash avec préfixe pkce_ (email_change, recovery récents)
+  // Cas 2 : token_hash avec préfixe pkce_ (email_change récent)
   else if (token_hash?.startsWith('pkce_') && type) {
-    // Supabase PKCE flow : le token_hash contient le code PKCE
     const pkceCode = token_hash.replace(/^pkce_/, '');
     const result = await supabase.auth.exchangeCodeForSession(pkceCode);
     if (result.error) {
-      // Fallback : essayer verifyOtp au cas où
       const fallback = await supabase.auth.verifyOtp({
         type: type as any,
         token_hash,
       });
       error = fallback.error;
-    } else {
-      error = result.error;
     }
   }
-  // Cas 3 : token_hash classique (OTP pur)
+  // Cas 3 : token_hash classique
   else if (token_hash && type) {
     const result = await supabase.auth.verifyOtp({
       type: type as any,
@@ -75,7 +71,9 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[callback] auth error:', error.message);
-    return NextResponse.redirect(`${origin}/?error=auth&reason=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(
+      `${origin}/?error=auth&reason=${encodeURIComponent(error.message)}`
+    );
   }
 
   return response;
