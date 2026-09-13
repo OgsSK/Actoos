@@ -7,6 +7,7 @@ import { t } from '../../lib/translations';
 import {
   createAuthClientSSR,
   getLinkedAccounts,
+  getLinkedAccountsFromSupabase,
   saveLinkedAccounts,
   linkAccount,
   unlinkAccount,
@@ -100,10 +101,11 @@ export default function AuthButton() {
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
         await linkAccount(client.supabase, pendingLinkId, account.userId);
-        const existing = await getLinkedAccounts(client.supabase, account.userId);
-        const newList = upsertAccountInList(existing, account);
-        await saveLinkedAccounts(newList, client.supabase, account.userId);
         clearPendingLink();
+        // Force re-read depuis Supabase (bypass cookie périmé)
+        const fromDb = await getLinkedAccountsFromSupabase(client.supabase, account.userId);
+        const merged = upsertAccountInList(fromDb, account);
+        await saveLinkedAccounts(merged, client.supabase, account.userId);
       }
 
       const accounts = await getLinkedAccounts(client.supabase, account.userId);

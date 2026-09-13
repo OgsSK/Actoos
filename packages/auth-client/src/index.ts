@@ -23,6 +23,7 @@ export type {
 
 export {
   getLinkedAccounts,
+    getLinkedAccountsFromSupabase,  // ← AJOUTER
   saveLinkedAccounts,
   linkAccount,
   unlinkAccount,

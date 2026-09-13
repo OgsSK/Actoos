@@ -4,10 +4,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const token_hash = searchParams.get('token_hash');
+  const type = searchParams.get('type');
   const next = searchParams.get('next') ?? '/';
   const isProd = process.env.NODE_ENV === 'production';
 
-  if (!code) {
+  if (!code && !token_hash) {
     return NextResponse.redirect(`${origin}/`);
   }
 
@@ -18,14 +20,14 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookieOptions: isProd
-  ? {
-      domain: '.actoos.com',
-      path: '/',
-      sameSite: 'lax',
-      secure: true,
-      httpOnly: false,   // ⚠️ OBLIGATOIRE pour que createBrowserClient puisse lire
-    }
-  : undefined,
+        ? {
+            domain: '.actoos.com',
+            path: '/',
+            sameSite: 'lax',
+            secure: true,
+            httpOnly: false,
+          }
+        : undefined,
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -39,9 +41,23 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  let error = null;
+
+  if (code) {
+    // Flow PKCE (OAuth, magic link)
+    const result = await supabase.auth.exchangeCodeForSession(code);
+    error = result.error;
+  } else if (token_hash && type) {
+    // Flow OTP (email change, recovery, etc.)
+    const result = await supabase.auth.verifyOtp({
+      type: type as any,
+      token_hash,
+    });
+    error = result.error;
+  }
 
   if (error) {
+    console.error('[callback] auth error:', error.message);
     return NextResponse.redirect(`${origin}/?error=auth`);
   }
 

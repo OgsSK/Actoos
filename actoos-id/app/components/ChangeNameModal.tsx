@@ -52,8 +52,8 @@ export default function ChangeNameModal({ isOpen, onClose, language }: Props) {
   // Charger les valeurs actuelles à l'ouverture
   useEffect(() => {
     if (isOpen) {
-      setFirstName(profile?.firstName || '');
-      setLastName(profile?.lastName || '');
+      setFirstName(profile?.first_name || '');
+      setLastName(profile?.last_name || '');
       setError('');
       setSuccess(false);
     }

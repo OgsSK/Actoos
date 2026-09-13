@@ -167,13 +167,13 @@ export default function AccountPage() {
 
   if (!user) return null;
 
-  const fullName = profile?.firstName && profile?.lastName
-    ? `${profile.firstName} ${profile.lastName}`
-    : profile?.firstName || profile?.lastName || user.email?.split('@')[0] || 'Utilisateur';
+  const fullName = profile?.first_name && profile?.last_name
+    ? `${profile.first_name} ${profile.last_name}`
+    : profile?.first_name || profile?.last_name || user.email?.split('@')[0] || 'Utilisateur';
 
   const initials = (() => {
-    const f = profile?.firstName?.[0] || '';
-    const l = profile?.lastName?.[0] || '';
+    const f = profile?.first_name?.[0] || '';
+    const l = profile?.last_name?.[0] || '';
     return (f + l).toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
   })();
 

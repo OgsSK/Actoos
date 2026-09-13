@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Trash2, Loader2, AlertTriangle, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { createAuthClientSSR } from '@actoos/auth-client';
 
 type Language = 'fr' | 'en';
 
@@ -38,6 +39,18 @@ const T = {
     errMissing: 'Please fill in all fields.',
   },
 };
+
+let _client: ReturnType<typeof createAuthClientSSR> | null = null;
+function getSupabaseClient() {
+  if (_client) return _client;
+  _client = createAuthClientSSR({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    appName: 'actoos-id',
+    cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
+  });
+  return _client;
+}
 
 interface Props {
   isOpen: boolean;
@@ -96,21 +109,25 @@ export default function DeleteAccountModal({ isOpen, onClose, language }: Props)
         return;
       }
 
-      // 2. Supprimer le compte via l'API backend de Jobs
-      //    (la seule qui a les droits admin côté Supabase)
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL ||
-        'https://actoos-jobs-api.onrender.com';
+      // 2. Supprimer le compte via l'API route d'actoos-id
+      const client = getSupabaseClient();
+      const { data: { session } } = await client.supabase.auth.getSession();
 
-      const res = await fetch(`${API_URL}/api/user/delete-account`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id }),
+      if (!session?.access_token) {
+        throw new Error('Session invalide');
+      }
+
+      const res = await fetch('/api/auth/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || data.error || 'Delete failed');
+        throw new Error(data.error || 'Delete failed');
       }
 
       // 3. Déconnexion + redirection

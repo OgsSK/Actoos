@@ -343,6 +343,35 @@ export async function unlinkAccount(
   }
 }
 
+/**
+ * S'assure que l'utilisateur est dans sa propre liste de comptes liés.
+ * Appelé à chaque login pour éviter qu'un compte disparaisse.
+ */
+export async function ensureSelfLink(
+  supabase: any,
+  account: LinkedAccount
+): Promise<void> {
+  if (!supabase) return;
+  try {
+    await supabase
+      .from('linked_accounts')
+      .upsert(
+        {
+          user_id: account.userId,
+          linked_user_id: account.userId,
+          linked_email: account.email,
+          linked_first_name: account.firstName || null,
+          linked_last_name: account.lastName || null,
+          linked_avatar_url: account.avatarUrl || null,
+          last_used_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,linked_user_id' }
+      );
+  } catch (e) {
+    console.warn('[multiAccount] ensureSelfLink failed:', e);
+  }
+}
+
 // ==================== Public API: tokens ====================
 
 export function saveTokens(userId: string, tokens: SessionTokens): void {
@@ -438,4 +467,35 @@ export function clearAll(): void {
   clearAllTokens();
   setActiveAccountId(null);
   clearPendingLink();
+}
+
+/**
+ * Lit directement depuis Supabase, sans passer par le cookie.
+ * Utilisé après un linkAccount pour forcer la lecture à jour.
+ */
+export async function getLinkedAccountsFromSupabase(
+  supabase: any,
+  userId: string
+): Promise<LinkedAccount[]> {
+  if (!supabase || !userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('linked_accounts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_used_at', { ascending: false });
+    if (error || !data) return [];
+    return (data as LinkedAccountRow[]).map(row => ({
+      userId: row.linked_user_id,
+      email: row.linked_email,
+      firstName: row.linked_first_name || undefined,
+      lastName: row.linked_last_name || undefined,
+      avatarUrl: row.linked_avatar_url || undefined,
+      addedAt: new Date(row.created_at).getTime(),
+      lastUsedAt: new Date(row.last_used_at).getTime(),
+    }));
+  } catch (e) {
+    console.warn('[multiAccount] getLinkedAccountsFromSupabase failed:', e);
+    return [];
+  }
 }
