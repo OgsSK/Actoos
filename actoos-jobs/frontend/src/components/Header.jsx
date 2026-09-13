@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import LanguageSwitcher from './LanguageSwitcher';
 import HeaderPreferences from './HeaderPreferences';
-import UserMenu from './UserMenu';
 
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -29,7 +28,6 @@ import {
   LayoutDashboard,
   Shield,
   Bell,
-  Plus,
 } from 'lucide-react';
 
 import { cn } from '../lib/utils';
@@ -47,11 +45,9 @@ const Header = ({ user, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ✅ Récupère le prénom et nom depuis le profil mis à jour (sinon depuis user_metadata)
   const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
   const lastName = profile?.last_name || user?.user_metadata?.last_name || '';
 
-  // Charger le plan, le cycle et le nom de l'entreprise active
   useEffect(() => {
     if (!isCompany || !activeCompanyId) {
       setActiveCompanyPlan(null);
@@ -88,7 +84,6 @@ const Header = ({ user, onLogout }) => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // ✅ Remplacement de "Blog" par "Newsletter"
   const navLinks = useMemo(
     () => [
       { label: t('header.nav.jobs'), href: '/emplois' },
@@ -116,7 +111,6 @@ const Header = ({ user, onLogout }) => {
     navigate('/connexion');
   };
 
-  // Composant pour la section "Entreprise active" dans le dropdown
   const ActiveCompanyInfo = () => {
     if (!isCompany || !activeCompanyId) return null;
     return (
@@ -153,7 +147,7 @@ const Header = ({ user, onLogout }) => {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2">
-          {/* ---- Logo + navigation desktop ---- */}
+          {/* Logo + navigation desktop */}
           <div className="flex items-center gap-3 lg:gap-3 min-w-0 flex-shrink-0">
             <Link to="/" className="flex items-center shrink-0 gap-2" title={t('header.brand')}>
               <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
@@ -182,10 +176,9 @@ const Header = ({ user, onLogout }) => {
             </nav>
           </div>
 
-          {/* ---- Espace flexible ---- */}
           <div className="flex-1 hidden lg:block" />
 
-          {/* ---- Actions desktop ---- */}
+          {/* Actions desktop */}
           <div className="hidden lg:flex items-center gap-1.5 shrink-0">
             <HeaderPreferences isTransparent={false} />
             <LanguageSwitcher isTransparent={false} />
@@ -201,18 +194,68 @@ const Header = ({ user, onLogout }) => {
                   </Button>
                 </Link>
 
-                <UserMenu
-                  user={user}
-                  profile={profile}
-                  isAdmin={isAdmin}
-                  isCandidate={isCandidate}
-                  isCompany={isCompany}
-                  activeCompanyId={activeCompanyId}
-                  activeCompanyName={activeCompanyName}
-                  activeCompanyPlan={activeCompanyPlan}
-                  activeCompanyCycle={activeCompanyCycle}
-                  onLogout={handleLogout}
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 rounded-full p-1 hover:bg-slate-100 transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">
+                        {getInitials()}
+                      </div>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end" sideOffset={8} className="w-56 rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-xl p-2 shadow-xl">
+                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {firstName || t('header.user.defaultName')}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
+                    </div>
+
+                    <ActiveCompanyInfo />
+
+                    <DropdownMenuItem
+                      onClick={() => { window.location.href = 'https://id.actoos.com/account'; }}
+                      className="cursor-pointer rounded-lg"
+                    >
+                      <Settings className="w-4 h-4 mr-2.5 text-slate-400" />
+                      {t('header.user.menu.actoosAccount', { defaultValue: 'Mon compte Actoos' })}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => navigate(profileLink)} className="cursor-pointer rounded-lg">
+                      <User className="w-4 h-4 mr-2.5 text-slate-400" />
+                      {t('header.user.profile')}
+                    </DropdownMenuItem>
+
+                    {isCandidate && (
+                      <DropdownMenuItem onClick={() => navigate('/alertes')} className="cursor-pointer rounded-lg">
+                        <Bell className="w-4 h-4 mr-2.5 text-slate-400" />
+                        {t('header.user.createAlert')}
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuItem onClick={() => navigate('/parametres')} className="cursor-pointer rounded-lg">
+                      <Settings className="w-4 h-4 mr-2.5 text-slate-400" />
+                      {t('header.user.settings')}
+                    </DropdownMenuItem>
+
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate('/admin')} className="cursor-pointer rounded-lg">
+                          <Shield className="w-4 h-4 mr-2.5 text-purple-400" />
+                          {t('header.user.admin')}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg text-red-600 hover:!text-red-700 hover:!bg-red-50">
+                      <LogOut className="w-4 h-4 mr-2.5" />
+                      {t('header.user.logout')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -236,7 +279,7 @@ const Header = ({ user, onLogout }) => {
             )}
           </div>
 
-          {/* ---- Actions mobile ---- */}
+          {/* Actions mobile */}
           <div className="lg:hidden flex items-center gap-2">
             {user ? (
               <Link to="/dashboard" className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm">
@@ -262,7 +305,7 @@ const Header = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* ---- Menu mobile ---- */}
+      {/* Menu mobile */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-[9999]">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
@@ -289,7 +332,6 @@ const Header = ({ user, onLogout }) => {
                 </div>
               )}
 
-              {/* Entreprise active en mobile */}
               {isCompany && activeCompanyId && (
                 <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
                   <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
@@ -338,6 +380,16 @@ const Header = ({ user, onLogout }) => {
                         {t('header.user.dashboard')}
                       </Button>
                     </Link>
+                    <a
+                      href="https://id.actoos.com/account"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button variant="outline" className="w-full justify-start rounded-xl">
+                        <Settings className="w-4 h-4 mr-2" />
+                        {t('header.user.menu.actoosAccount', { defaultValue: 'Mon compte Actoos' })}
+                      </Button>
+                    </a>
                     <Link to={profileLink} onClick={() => setMobileMenuOpen(false)} className="block">
                       <Button variant="outline" className="w-full justify-start rounded-xl">
                         <User className="w-4 h-4 mr-2" />
@@ -366,30 +418,6 @@ const Header = ({ user, onLogout }) => {
                         </Button>
                       </Link>
                     )}
-                    <a
-                      href={process.env.NODE_ENV === 'production' ? 'https://id.actoos.com/account' : 'http://localhost:3001/account'}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block"
-                    >
-                      <Button variant="outline" className="w-full justify-start rounded-xl">
-                        <Settings className="w-4 h-4 mr-2" />
-                        {t('header.user.menu.actoosAccount')}
-                      </Button>
-                    </a>
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        const base = process.env.NODE_ENV === 'production' ? 'https://id.actoos.com' : 'http://localhost:3001';
-                        const redirect = window.location.href;
-                        window.location.href = `${base}/login?addAccount=1&redirect=${encodeURIComponent(redirect)}`;
-                      }}
-                      className="block w-full"
-                    >
-                      <Button variant="outline" className="w-full justify-start rounded-xl">
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t('header.user.menu.addAccount')}
-                      </Button>
-                    </button>
                     <Button
                       variant="outline"
                       className="w-full justify-start rounded-xl text-red-500 border-red-200 hover:bg-red-50"
