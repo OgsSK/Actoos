@@ -8,7 +8,6 @@ import {
   MAX_LINKED_ACCOUNTS,
   createAuthClientSSR,
   getLinkedAccounts,
-  getLinkedAccountsFromSupabase,
   ensureSelfLink,
   saveLinkedAccounts,
   linkAccount,
@@ -100,16 +99,10 @@ export default function AuthButton() {
 
       await ensureSelfLink(client.supabase, account);
 
-      // Propagation famille
+      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source (1 appel = 2 rows)
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
-        const family = await getLinkedAccountsFromSupabase(client.supabase, pendingLinkId);
         await linkAccount(client.supabase, pendingLinkId, account.userId);
-        for (const member of family) {
-          if (member.userId !== account.userId && member.userId !== pendingLinkId) {
-            await linkAccount(client.supabase, member.userId, account.userId);
-          }
-        }
         clearPendingLink();
       }
 

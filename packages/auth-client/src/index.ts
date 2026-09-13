@@ -23,9 +23,8 @@ export type {
 
 export {
   MAX_LINKED_ACCOUNTS,
-  ensureSelfLink,    
+  ensureSelfLink,
   getLinkedAccounts,
-    getLinkedAccountsFromSupabase,  // ← AJOUTER
   saveLinkedAccounts,
   linkAccount,
   unlinkAccount,

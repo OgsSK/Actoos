@@ -8,7 +8,6 @@ import {
 import {
   MAX_LINKED_ACCOUNTS,
   getLinkedAccounts,
-  getLinkedAccountsFromSupabase,
   ensureSelfLink,
   saveLinkedAccounts,
   linkAccount,
@@ -71,36 +70,21 @@ const UserMenu = ({
       setCurrentAccount(account);
       setActiveAccountId(account.userId);
 
-      // Sauvegarder les tokens du compte actif
       saveTokens(account.userId, {
         accessToken: session.access_token,
         refreshToken: session.refresh_token,
         expiresAt: session.expires_at,
       });
 
-      // S'assurer que ce compte est dans sa propre liste
       await ensureSelfLink(supabase, account);
 
-      // Si on vient d'ajouter un compte → lier le nouveau à TOUTE la famille
+      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
-        // Lire tous les membres de la famille existante
-        const family = await getLinkedAccountsFromSupabase(supabase, pendingLinkId);
-
-        // Lier le nouveau compte au compte source
         await linkAccount(supabase, pendingLinkId, account.userId);
-
-        // Lier le nouveau compte à TOUS les autres membres
-        for (const member of family) {
-          if (member.userId !== account.userId && member.userId !== pendingLinkId) {
-            await linkAccount(supabase, member.userId, account.userId);
-          }
-        }
-
         clearPendingLink();
       }
 
-      // Charger la liste des comptes liés
       const accounts = await getLinkedAccounts(supabase, account.userId);
       const withCurrent = upsertAccountInList(accounts, account);
       setLinkedAccounts(sortAccountsByUsage(withCurrent));
@@ -159,7 +143,6 @@ const UserMenu = ({
         removeTokens(userId);
       }
 
-      // Fallback login
       const account = linkedAccounts.find(a => a.userId === userId);
       setPendingLink(userId);
       const redirect = typeof window !== 'undefined' ? window.location.href : 'https://jobs.actoos.com/';
@@ -245,7 +228,6 @@ const UserMenu = ({
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[340px] sm:w-72 bg-white rounded-2xl shadow-xl border border-slate-200/60 z-50 overflow-hidden max-h-[85vh] overflow-y-auto">
 
-            {/* Compte actif */}
             <div className="px-3 py-2.5 bg-slate-50 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
@@ -261,7 +243,6 @@ const UserMenu = ({
               </div>
             </div>
 
-            {/* Entreprise active */}
             {isCompany && activeCompanyId && (
               <div className="px-3 py-2 border-b border-slate-100">
                 <div className="flex items-center gap-2 mb-0.5">
@@ -285,7 +266,6 @@ const UserMenu = ({
               </div>
             )}
 
-            {/* Autres comptes */}
             {otherAccounts.map(acc => {
               const oi = (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') || acc.email[0]?.toUpperCase() || '?';
               return (
@@ -316,7 +296,6 @@ const UserMenu = ({
               );
             })}
 
-            {/* Ajouter un compte */}
             {canAddMore ? (
               <button
                 onClick={handleAddAccount}
@@ -338,7 +317,6 @@ const UserMenu = ({
               </div>
             )}
 
-            {/* Actions produit */}
             <div className="py-1">
               <button
                 onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}
@@ -385,7 +363,6 @@ const UserMenu = ({
               )}
             </div>
 
-            {/* Mon compte Actoos */}
             <div className="border-t border-slate-100 py-1">
               <a
                 href={ACCOUNT_URL}
@@ -398,7 +375,6 @@ const UserMenu = ({
               </a>
             </div>
 
-            {/* Déconnexion */}
             <div className="border-t border-slate-100 py-1">
               <button
                 onClick={handleSignOut}

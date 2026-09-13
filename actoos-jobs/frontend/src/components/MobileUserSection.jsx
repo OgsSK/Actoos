@@ -4,7 +4,6 @@ import { Plus, Check, UserPlus } from 'lucide-react';
 import {
   MAX_LINKED_ACCOUNTS,
   getLinkedAccounts,
-  getLinkedAccountsFromSupabase,
   ensureSelfLink,
   saveLinkedAccounts,
   linkAccount,
@@ -55,25 +54,12 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
         expiresAt: session.expires_at,
       });
 
-      // S'assurer que ce compte est dans sa propre liste
       await ensureSelfLink(supabase, account);
 
-      // Si on vient d'ajouter un compte → lier le nouveau à TOUTE la famille
+      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
-        // Lire tous les membres de la famille existante
-        const family = await getLinkedAccountsFromSupabase(supabase, pendingLinkId);
-
-        // Lier le nouveau compte au compte source
         await linkAccount(supabase, pendingLinkId, account.userId);
-
-        // Lier le nouveau compte à TOUS les autres membres
-        for (const member of family) {
-          if (member.userId !== account.userId && member.userId !== pendingLinkId) {
-            await linkAccount(supabase, member.userId, account.userId);
-          }
-        }
-
         clearPendingLink();
       }
 
@@ -175,7 +161,6 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
 
   return (
     <div className="pb-4 border-b border-slate-100">
-      {/* Compte actif */}
       <div className="flex items-center gap-3 mb-3">
         <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-base font-semibold shrink-0">
           {currentInitials}
@@ -191,7 +176,6 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
         </div>
       </div>
 
-      {/* Autres comptes */}
       {otherAccounts.length > 0 && (
         <div className="space-y-2 mb-3">
           {otherAccounts.map(acc => {
@@ -229,7 +213,6 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
         </div>
       )}
 
-      {/* Ajouter un compte */}
       {canAddMore ? (
         <button
           onClick={handleAddAccount}
