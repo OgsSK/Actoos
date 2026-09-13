@@ -78,7 +78,7 @@ const UserMenu = ({
 
       await ensureSelfLink(supabase, account);
 
-      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source
+      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source (1 appel = 2 rows)
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
         await linkAccount(supabase, pendingLinkId, account.userId);
@@ -184,7 +184,9 @@ const UserMenu = ({
   const handleAddAccount = () => {
     if (!currentAccount) return;
     if (linkedAccounts.length >= MAX_LINKED_ACCOUNTS) {
-      alert(`Vous avez atteint la limite de ${MAX_LINKED_ACCOUNTS} comptes. Retirez-en un avant d'en ajouter un autre.`);
+      alert(t('header.user.menu.limitReached', {
+        defaultValue: 'Limite de 2 comptes atteinte. Retirez-en un avant d\'en ajouter un autre.',
+      }));
       return;
     }
     setPendingLink(currentAccount.userId);
@@ -228,6 +230,7 @@ const UserMenu = ({
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[340px] sm:w-72 bg-white rounded-2xl shadow-xl border border-slate-200/60 z-50 overflow-hidden max-h-[85vh] overflow-y-auto">
 
+            {/* Compte actif */}
             <div className="px-3 py-2.5 bg-slate-50 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
@@ -243,6 +246,7 @@ const UserMenu = ({
               </div>
             </div>
 
+            {/* Entreprise active */}
             {isCompany && activeCompanyId && (
               <div className="px-3 py-2 border-b border-slate-100">
                 <div className="flex items-center gap-2 mb-0.5">
@@ -266,6 +270,7 @@ const UserMenu = ({
               </div>
             )}
 
+            {/* Autres comptes */}
             {otherAccounts.map(acc => {
               const oi = (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') || acc.email[0]?.toUpperCase() || '?';
               return (
@@ -296,6 +301,7 @@ const UserMenu = ({
               );
             })}
 
+            {/* Ajouter un compte */}
             {canAddMore ? (
               <button
                 onClick={handleAddAccount}
@@ -310,13 +316,13 @@ const UserMenu = ({
               </button>
             ) : (
               <div className="px-3 py-2.5 text-xs text-slate-400 italic border-b border-slate-100">
-                {t('header.user.menu.limitReached', {
-                  defaultValue: `Limite de ${MAX_LINKED_ACCOUNTS} comptes atteinte. Retirez-en un pour en ajouter un autre.`,
-                  max: MAX_LINKED_ACCOUNTS,
+                {t('header.user.menu.limitReachedShort', {
+                  defaultValue: 'Limite de 2 comptes atteinte',
                 })}
               </div>
             )}
 
+            {/* Actions produit */}
             <div className="py-1">
               <button
                 onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}
@@ -363,6 +369,7 @@ const UserMenu = ({
               )}
             </div>
 
+            {/* Mon compte Actoos */}
             <div className="border-t border-slate-100 py-1">
               <a
                 href={ACCOUNT_URL}
@@ -375,6 +382,7 @@ const UserMenu = ({
               </a>
             </div>
 
+            {/* Déconnexion */}
             <div className="border-t border-slate-100 py-1">
               <button
                 onClick={handleSignOut}

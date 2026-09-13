@@ -56,7 +56,7 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
 
       await ensureSelfLink(supabase, account);
 
-      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source
+      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source (1 appel = 2 rows)
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
         await linkAccount(supabase, pendingLinkId, account.userId);
@@ -138,7 +138,9 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
   const handleAddAccount = () => {
     if (!currentAccount) return;
     if (linkedAccounts.length >= MAX_LINKED_ACCOUNTS) {
-      alert(`Vous avez atteint la limite de ${MAX_LINKED_ACCOUNTS} comptes. Retirez-en un avant d'en ajouter un autre.`);
+      alert(t('header.user.menu.limitReached', {
+        defaultValue: 'Limite de 2 comptes atteinte. Retirez-en un avant d\'en ajouter un autre.',
+      }));
       return;
     }
     setPendingLink(currentAccount.userId);
@@ -161,6 +163,7 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
 
   return (
     <div className="pb-4 border-b border-slate-100">
+      {/* Compte actif */}
       <div className="flex items-center gap-3 mb-3">
         <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-base font-semibold shrink-0">
           {currentInitials}
@@ -176,6 +179,7 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
         </div>
       </div>
 
+      {/* Autres comptes */}
       {otherAccounts.length > 0 && (
         <div className="space-y-2 mb-3">
           {otherAccounts.map(acc => {
@@ -213,6 +217,7 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
         </div>
       )}
 
+      {/* Ajouter un compte */}
       {canAddMore ? (
         <button
           onClick={handleAddAccount}
@@ -225,9 +230,8 @@ const MobileUserSection = ({ user, profile, onSwitchDone, onCloseMenu }) => {
         </button>
       ) : (
         <div className="w-full p-3 rounded-xl border-2 border-dashed border-slate-100 text-center text-xs text-slate-400 italic">
-          {t('header.user.menu.limitReached', {
-            defaultValue: `Limite de ${MAX_LINKED_ACCOUNTS} comptes atteinte. Retirez-en un pour en ajouter un autre.`,
-            max: MAX_LINKED_ACCOUNTS,
+          {t('header.user.menu.limitReachedShort', {
+            defaultValue: 'Limite de 2 comptes atteinte',
           })}
         </div>
       )}
