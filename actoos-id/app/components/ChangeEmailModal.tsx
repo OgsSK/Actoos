@@ -9,7 +9,7 @@ type Language = 'fr' | 'en';
 const T = {
   fr: {
     title: "Changer d'adresse email",
-    subtitle: 'Un email de confirmation sera envoyé à vos deux adresses.',
+    subtitle: 'Deux emails de confirmation seront envoyés (un à chaque adresse). Vous devrez cliquer sur les 2 liens.',
     currentEmail: 'Email actuel',
     newEmail: 'Nouvel email',
     currentPassword: 'Mot de passe actuel',
@@ -28,7 +28,7 @@ const T = {
   },
   en: {
     title: 'Change email address',
-    subtitle: 'A confirmation email will be sent to both of your addresses.',
+    subtitle: 'Two confirmation emails will be sent (one to each address). You must click both links.',
     currentEmail: 'Current email',
     newEmail: 'New email',
     currentPassword: 'Current password',

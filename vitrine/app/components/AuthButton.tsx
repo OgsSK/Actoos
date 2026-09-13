@@ -19,6 +19,7 @@ import {
   getPendingLink,
   clearPendingLink,
   buildLinkedAccount,
+  upsertAccountInList,
   sortAccountsByUsage,
   clearAll,
   type LinkedAccount,
@@ -109,7 +110,10 @@ export default function AuthButton() {
 
       // Toujours recharger depuis Supabase
       const accounts = await getLinkedAccounts(client.supabase, account.userId);
-      setLinkedAccounts(sortAccountsByUsage(accounts));
+      // Toujours inclure le compte courant en tête de liste (ceinture + bretelles)
+      const withCurrent = upsertAccountInList(accounts, account);
+      setLinkedAccounts(sortAccountsByUsage(withCurrent));
+      console.log('[AuthButton] loaded accounts:', withCurrent.map(a => a.email));
     } catch (err) {
       console.error('[AuthButton] refresh error:', err);
       setCurrentAccount(null);
