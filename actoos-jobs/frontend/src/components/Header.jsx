@@ -6,7 +6,6 @@ import { supabase } from '../lib/supabase';
 import LanguageSwitcher from './LanguageSwitcher';
 import HeaderPreferences from './HeaderPreferences';
 import UserMenu from './UserMenu';
-import MobileUserSection from './MobileUserSection';
 
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -237,11 +236,17 @@ const Header = ({ user, onLogout }) => {
 
             <div className="p-4 space-y-4">
               {user && (
-                <MobileUserSection
-                  user={user}
-                  profile={profile}
-                  onCloseMenu={() => setMobileMenuOpen(false)}
-                />
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                    {getInitials()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">
+                      {firstName || t('header.user.defaultUser')}
+                    </p>
+                    <p className="text-xs text-slate-500">{displayEmail}</p>
+                  </div>
+                </div>
               )}
 
               {isCompany && activeCompanyId && (

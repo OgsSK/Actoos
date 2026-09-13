@@ -1,31 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
-import {
-  MAX_LINKED_ACCOUNTS,
-  createAuthClientSSR,
-  getLinkedAccounts,
-  ensureSelfLink,
-  saveLinkedAccounts,
-  linkAccount,
-  unlinkAccount,
-  saveTokens,
-  getTokens,
-  removeTokens,
-  setActiveAccountId,
-  setPendingLink,
-  getPendingLink,
-  clearPendingLink,
-  buildLinkedAccount,
-  upsertAccountInList,
-  sortAccountsByUsage,
-  clearAll,
-  type LinkedAccount,
-} from '@actoos/auth-client';
-import { Plus, Settings, FolderOpen, LogOut, Check, X } from 'lucide-react';
+import { createAuthClientSSR, clearAll } from '@actoos/auth-client';
+import { Settings, FolderOpen, LogOut, X } from 'lucide-react';
 
 const ACTOOS_ID_BASE = process.env.NODE_ENV === 'production'
   ? 'https://id.actoos.com'
@@ -60,68 +40,47 @@ function useIsMobile() {
 export default function AuthButton() {
   const { language } = useLanguage();
   const isMobile = useIsMobile();
-  const [currentAccount, setCurrentAccount] = useState<LinkedAccount | null>(null);
-  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [user, setUser] = useState<{ email: string; firstName?: string; lastName?: string; avatarUrl?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [switching, setSwitching] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
   const [mounted, setMounted] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
-  const refreshState = useCallback(async () => {
-    try {
-      const client = getClient();
-      const { data } = await client.supabase.auth.getSession();
-      const session = data.session;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const client = getClient();
+        const { data } = await client.supabase.auth.getSession();
+        const session = data.session;
+        if (cancelled) return;
 
-      if (!session?.user) {
-        setCurrentAccount(null);
-        setActiveAccountId(null);
-        setLinkedAccounts([]);
-        setLoading(false);
-        return;
+        if (session?.user) {
+          const meta = session.user.user_metadata || {};
+          setUser({
+            email: session.user.email || '',
+            firstName: meta.first_name,
+            lastName: meta.last_name,
+            avatarUrl: meta.avatar_url,
+          });
+          setAvatarError(false);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('[AuthButton] session error:', err);
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      const account = buildLinkedAccount(session.user, session);
-      setCurrentAccount(account);
-      setActiveAccountId(account.userId);
-      setAvatarError(false);
-
-      saveTokens(account.userId, {
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresAt: session.expires_at,
-      });
-
-      await ensureSelfLink(client.supabase, account);
-
-      // Si on vient d'ajouter un compte → lier UNIQUEMENT au compte source (1 appel = 2 rows)
-      const pendingLinkId = getPendingLink();
-      if (pendingLinkId && pendingLinkId !== account.userId) {
-        await linkAccount(client.supabase, pendingLinkId, account.userId);
-        clearPendingLink();
-      }
-
-      const accounts = await getLinkedAccounts(client.supabase, account.userId);
-      const withCurrent = upsertAccountInList(accounts, account);
-      setLinkedAccounts(sortAccountsByUsage(withCurrent));
-      console.log('[AuthButton] loaded accounts:', withCurrent.map(a => a.email));
-    } catch (err) {
-      console.error('[AuthButton] refresh error:', err);
-      setCurrentAccount(null);
-    } finally {
-      setLoading(false);
-    }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    refreshState();
-  }, [refreshState]);
-
+  // Fermer au clic extérieur (desktop)
   useEffect(() => {
     if (!menuOpen || isMobile) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -141,80 +100,15 @@ export default function AuthButton() {
     };
   }, [menuOpen, isMobile]);
 
-  const handleSwitch = async (userId: string) => {
-    if (switching || userId === currentAccount?.userId) return;
-    setSwitching(true);
-
-    try {
-      const tokens = getTokens(userId);
-
-      if (tokens?.accessToken && tokens?.refreshToken) {
-        const client = getClient();
-        const { error } = await client.supabase.auth.setSession({
-          access_token: tokens.accessToken,
-          refresh_token: tokens.refreshToken,
-        });
-
-        if (!error) {
-          setActiveAccountId(userId);
-          setMenuOpen(false);
-          window.location.reload();
-          return;
-        }
-        console.warn('[AuthButton] Token switch failed:', error.message);
-        removeTokens(userId);
-      }
-
-      const account = linkedAccounts.find(a => a.userId === userId);
-      setPendingLink(userId);
-      const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
-      window.location.href = `${LOGIN_URL}?email=${encodeURIComponent(account?.email || '')}&redirect=${encodeURIComponent(redirect)}`;
-    } catch (err) {
-      console.error('[AuthButton] switch failed:', err);
-      alert(language === 'fr' ? 'Impossible de basculer sur ce compte.' : 'Failed to switch account.');
-      setSwitching(false);
-    }
-  };
-
-  const handleRemove = async (userId: string) => {
-    if (!currentAccount) return;
-    const wasActive = userId === currentAccount.userId;
-    const client = getClient();
-
-    await unlinkAccount(client.supabase, currentAccount.userId, userId);
-    removeTokens(userId);
-
-    const remaining = linkedAccounts.filter(a => a.userId !== userId);
-    await saveLinkedAccounts(remaining, client.supabase, currentAccount.userId);
-    setLinkedAccounts(remaining);
-
-    if (wasActive) {
-      if (remaining.length > 0) {
-        await handleSwitch(remaining[0].userId);
-      } else {
-        await client.supabase.auth.signOut();
-        clearAll();
-        window.location.href = '/';
-      }
-    }
-  };
-
   const handleSignOut = async () => {
-    await getClient().supabase.auth.signOut();
-    clearAll();
+    try {
+      await getClient().supabase.auth.signOut();
+      clearAll();
+    } catch (e) {
+      console.warn('[AuthButton] signOut failed:', e);
+    }
     setMenuOpen(false);
     window.location.href = '/';
-  };
-
-  const handleAddAccount = () => {
-    if (!currentAccount) return;
-    if (linkedAccounts.length >= MAX_LINKED_ACCOUNTS) {
-      alert(`Vous avez atteint la limite de ${MAX_LINKED_ACCOUNTS} comptes. Retirez-en un avant d'en ajouter un autre.`);
-      return;
-    }
-    setPendingLink(currentAccount.userId);
-    const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
-    window.location.href = `${LOGIN_URL}?addAccount=1&redirect=${encodeURIComponent(redirect)}`;
   };
 
   const loginHref = `${LOGIN_URL}?redirect=${encodeURIComponent(
@@ -225,7 +119,7 @@ export default function AuthButton() {
     return <span className="inline-block w-24 h-9 rounded-full bg-slate-200 animate-pulse" aria-hidden />;
   }
 
-  if (!currentAccount) {
+  if (!user) {
     return (
       <a
         href={loginHref}
@@ -237,84 +131,28 @@ export default function AuthButton() {
   }
 
   const initials =
-    (currentAccount.firstName?.[0] ?? '') + (currentAccount.lastName?.[0] ?? '') ||
-    currentAccount.email[0]?.toUpperCase() ||
+    (user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '') ||
+    user.email[0]?.toUpperCase() ||
     '?';
-
-  const otherAccounts = linkedAccounts.filter(a => a.userId !== currentAccount.userId);
-  const hasMultiple = linkedAccounts.length > 1;
-  const canAddMore = linkedAccounts.length < MAX_LINKED_ACCOUNTS;
 
   const menuContent = (
     <>
-      <div className={`px-4 py-3 bg-slate-50 ${isMobile ? '' : ''}`}>
+      {/* Compte actif */}
+      <div className="px-4 py-3 bg-slate-50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-slate-900 truncate">
-              {currentAccount.firstName} {currentAccount.lastName}
+              {user.firstName} {user.lastName}
             </p>
-            <p className="text-xs text-slate-500 truncate">{currentAccount.email}</p>
+            <p className="text-xs text-slate-500 truncate">{user.email}</p>
           </div>
-          <Check size={16} className="text-emerald-600 shrink-0" />
         </div>
       </div>
 
-      {otherAccounts.map(acc => {
-        const oi =
-          (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') ||
-          acc.email[0]?.toUpperCase() ||
-          '?';
-        return (
-          <div key={acc.userId} className="border-t border-slate-100 flex items-center">
-            <button
-              onClick={() => handleSwitch(acc.userId)}
-              disabled={switching}
-              className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left disabled:opacity-50"
-            >
-              <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold shrink-0">
-                {oi}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-700 truncate">
-                  {acc.firstName} {acc.lastName}
-                </p>
-                <p className="text-xs text-slate-500 truncate">{acc.email}</p>
-              </div>
-            </button>
-            <button
-              onClick={() => handleRemove(acc.userId)}
-              className="p-3 mr-1 text-slate-300 hover:text-red-500 transition-colors shrink-0"
-              title={language === 'fr' ? 'Retirer ce compte' : 'Remove this account'}
-            >
-              ✕
-            </button>
-          </div>
-        );
-      })}
-
-      {canAddMore ? (
-        <button
-          onClick={handleAddAccount}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left border-t border-slate-100"
-        >
-          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-            <Plus size={16} className="text-slate-600" />
-          </div>
-          <span className="text-sm font-medium text-slate-700">
-            {language === 'fr' ? 'Ajouter un compte' : 'Add another account'}
-          </span>
-        </button>
-      ) : (
-        <div className="px-4 py-3 text-xs text-slate-400 italic border-t border-slate-100">
-          {language === 'fr'
-            ? `Limite de ${MAX_LINKED_ACCOUNTS} comptes atteinte. Retirez-en un pour en ajouter un autre.`
-            : `Limit of ${MAX_LINKED_ACCOUNTS} accounts reached. Remove one to add another.`}
-        </div>
-      )}
-
+      {/* Actions produit */}
       <div className="border-t border-slate-100">
         <a
           href={ACCOUNT_URL}
@@ -336,6 +174,7 @@ export default function AuthButton() {
         </a>
       </div>
 
+      {/* Déconnexion */}
       <div className="border-t border-slate-100">
         <button
           onClick={handleSignOut}
@@ -343,9 +182,7 @@ export default function AuthButton() {
         >
           <LogOut size={16} className="text-red-500" />
           <span className="text-sm text-red-600">
-            {hasMultiple
-              ? (language === 'fr' ? 'Se déconnecter de tous les comptes' : 'Sign out of all accounts')
-              : (language === 'fr' ? 'Se déconnecter' : 'Sign out')}
+            {language === 'fr' ? 'Se déconnecter' : 'Sign out'}
           </span>
         </button>
       </div>
@@ -359,10 +196,10 @@ export default function AuthButton() {
         className="inline-flex items-center gap-2 p-0.5 rounded-full hover:opacity-90 active:opacity-75 transition-opacity"
         aria-label="Mon compte"
       >
-        {currentAccount.avatarUrl && !avatarError ? (
+        {user.avatarUrl && !avatarError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={currentAccount.avatarUrl}
+            src={user.avatarUrl}
             alt=""
             className="w-9 h-9 rounded-full object-cover"
             onError={() => setAvatarError(true)}
@@ -374,6 +211,7 @@ export default function AuthButton() {
         )}
       </button>
 
+      {/* MOBILE : Bottom Sheet */}
       {menuOpen && isMobile && mounted && createPortal(
         <>
           <div
@@ -391,21 +229,20 @@ export default function AuthButton() {
                 <X size={18} />
               </button>
             </div>
-
             <div className="overflow-y-auto flex-1">
               {menuContent}
             </div>
-
             <div className="h-[env(safe-area-inset-bottom,0px)] shrink-0" />
           </div>
         </>,
         document.body
       )}
 
+      {/* DESKTOP : Dropdown */}
       {menuOpen && !isMobile && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-20 overflow-hidden max-h-[85vh] overflow-y-auto">
+          <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-20 overflow-hidden">
             {menuContent}
           </div>
         </>
