@@ -315,6 +315,8 @@ export async function linkAccount(
 
 /**
  * Unlink account via Supabase delete.
+ * Supprime TOUS les liens impliquant linkedUserId (avec n'importe qui)
+ * pour éviter les liens croisés résiduels qui font "revenir" le compte.
  */
 export async function unlinkAccount(
   supabase: any,
@@ -323,12 +325,12 @@ export async function unlinkAccount(
 ): Promise<void> {
   if (!supabase) return;
   try {
+    // Supprimer TOUS les liens impliquant linkedUserId (avec n'importe qui)
+    // pour éviter les liens croisés résiduels qui font "revenir" le compte
     await supabase
       .from('linked_accounts')
       .delete()
-      .or(
-        `and(user_id.eq.${currentUserId},linked_user_id.eq.${linkedUserId}),and(user_id.eq.${linkedUserId},linked_user_id.eq.${currentUserId})`
-      );
+      .or(`user_id.eq.${linkedUserId},linked_user_id.eq.${linkedUserId}`);
   } catch (e) {
     console.warn('[multiAccount] unlink failed:', e);
   }
