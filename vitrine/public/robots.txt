@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Pages privées (protégées par auth)
+Disallow: /admin
+Disallow: /studio/
+Disallow: /client/
+Disallow: /payment/
+
+# API
+Disallow: /api/
+
+Sitemap: https://actoos.com/sitemap.xml

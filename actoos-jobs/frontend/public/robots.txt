@@ -1,3 +1,15 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /connexion
+Disallow: /inscription
+Disallow: /mot-de-passe-oublie
+Disallow: /reset-password
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /profil
+Disallow: /parametres
+Disallow: /admin
+Disallow: /accept-invitation
+Disallow: /paiement/
+
+Sitemap: https://jobs.actoos.com/sitemap.xml

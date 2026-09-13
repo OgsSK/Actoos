@@ -1,0 +1,5 @@
+# Actoos ID — Identity portal
+# Not for search engines
+
+User-agent: *
+Disallow: /
