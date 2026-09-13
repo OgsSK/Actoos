@@ -7,6 +7,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://actoos-jobs-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
