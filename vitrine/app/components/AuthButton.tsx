@@ -100,9 +100,9 @@ export default function AuthButton() {
     };
   }, [menuOpen, isMobile]);
 
-  const handleSignOut = async () => {
+    const handleSignOut = async () => {
     try {
-      await getClient().supabase.auth.signOut();
+      await fetch('/api/auth/signout', { method: 'POST' });
       clearAll();
     } catch (e) {
       console.warn('[AuthButton] signOut failed:', e);

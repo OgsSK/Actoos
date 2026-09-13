@@ -45,10 +45,10 @@ const UserMenu = ({
     };
   }, [menuOpen]);
 
-  const handleSignOut = async () => {
+    const handleSignOut = async () => {
     setMenuOpen(false);
     try {
-      await supabase.auth.signOut();
+      await fetch('/api/auth/signout', { method: 'POST' });
       clearAll();
     } catch (e) {
       console.warn('[UserMenu] signOut failed:', e);

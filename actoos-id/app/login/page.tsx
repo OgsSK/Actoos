@@ -94,19 +94,27 @@ function LoginForm() {
   const t = T[language];
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    try {
-      await signIn({ email, password });
-      const target = redirect ? decodeURIComponent(redirect) : '/account';
-      window.location.href = target;
-    } catch (err: any) {
-      setError(err?.message || t.errorInvalid);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  e.preventDefault();
+  setError('');
+  setSubmitting(true);
+  try {
+    // Login via API route serveur (compatible Safari)
+    const res = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+
+    const target = redirect ? decodeURIComponent(redirect) : '/account';
+    window.location.href = target;
+  } catch (err: any) {
+    setError(err?.message || t.errorInvalid);
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const handleGoogle = async () => {
     setError('');
