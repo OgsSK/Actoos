@@ -11,5 +11,5 @@ Disallow: /parametres
 Disallow: /admin
 Disallow: /accept-invitation
 Disallow: /paiement/
-
+Disallow: /api/
 Sitemap: https://jobs.actoos.com/sitemap.xml
