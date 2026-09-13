@@ -1,0 +1,54 @@
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = new URL(request.url);
+  const token_hash = searchParams.get('token_hash');
+  const type = searchParams.get('type');
+  const next = searchParams.get('next') ?? '/account';
+  const isProd = process.env.NODE_ENV === 'production';
+
+  if (!token_hash || !type) {
+    return NextResponse.redirect(`${origin}/?error=missing_token`);
+  }
+
+  let response = NextResponse.redirect(`${origin}${next}`);
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: isProd
+        ? {
+            domain: '.actoos.com',
+            path: '/',
+            sameSite: 'lax',
+            secure: true,
+            httpOnly: false,
+          }
+        : undefined,
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  const { error } = await supabase.auth.verifyOtp({
+    type: type as any,
+    token_hash,
+  });
+
+  if (error) {
+    console.error('[auth/confirm] error:', error.message);
+    return NextResponse.redirect(`${origin}/?error=auth`);
+  }
+
+  return response;
+}
