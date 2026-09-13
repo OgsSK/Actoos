@@ -6,11 +6,11 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type');
-  const next = searchParams.get('next') ?? '/';
+  const next = searchParams.get('next') ?? '/account';
   const isProd = process.env.NODE_ENV === 'production';
 
   if (!code && !token_hash) {
-    return NextResponse.redirect(`${origin}/`);
+    return NextResponse.redirect(`${origin}/?error=missing_token`);
   }
 
   let response = NextResponse.redirect(`${origin}${next}`);
@@ -41,14 +41,31 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  let error = null;
+  let error: any = null;
 
+  // Cas 1 : PKCE classique (OAuth Google, magic link récent)
   if (code) {
-    // Flow PKCE (OAuth, magic link)
     const result = await supabase.auth.exchangeCodeForSession(code);
     error = result.error;
-  } else if (token_hash && type) {
-    // Flow OTP (email change, recovery, etc.)
+  }
+  // Cas 2 : token_hash avec préfixe pkce_ (email_change, recovery récents)
+  else if (token_hash?.startsWith('pkce_') && type) {
+    // Supabase PKCE flow : le token_hash contient le code PKCE
+    const pkceCode = token_hash.replace(/^pkce_/, '');
+    const result = await supabase.auth.exchangeCodeForSession(pkceCode);
+    if (result.error) {
+      // Fallback : essayer verifyOtp au cas où
+      const fallback = await supabase.auth.verifyOtp({
+        type: type as any,
+        token_hash,
+      });
+      error = fallback.error;
+    } else {
+      error = result.error;
+    }
+  }
+  // Cas 3 : token_hash classique (OTP pur)
+  else if (token_hash && type) {
     const result = await supabase.auth.verifyOtp({
       type: type as any,
       token_hash,
@@ -58,7 +75,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[callback] auth error:', error.message);
-    return NextResponse.redirect(`${origin}/?error=auth`);
+    return NextResponse.redirect(`${origin}/?error=auth&reason=${encodeURIComponent(error.message)}`);
   }
 
   return response;
