@@ -5,16 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import LanguageSwitcher from './LanguageSwitcher';
 import HeaderPreferences from './HeaderPreferences';
+import UserMenu from './UserMenu';
+import MobileUserSection from './MobileUserSection';
 
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from './ui/dropdown-menu';
 
 import {
   Briefcase,
@@ -22,7 +17,6 @@ import {
   X,
   User,
   Building2,
-  ChevronDown,
   LogOut,
   Settings,
   LayoutDashboard,
@@ -111,32 +105,6 @@ const Header = ({ user, onLogout }) => {
     navigate('/connexion');
   };
 
-  const ActiveCompanyInfo = () => {
-    if (!isCompany || !activeCompanyId) return null;
-    return (
-      <div className="px-3 py-2 border-b border-slate-100 mb-1">
-        <div className="flex items-center gap-2 mb-1">
-          <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
-          <span className="text-sm font-medium text-slate-900 truncate">
-            {activeCompanyName || t('header.user.company', 'Entreprise')}
-          </span>
-        </div>
-        {activeCompanyPlan && (
-          <div className="ml-6">
-            <Badge className="bg-blue-100 text-blue-700 border-0 text-xs font-medium">
-              {t(`pricing.plans.${activeCompanyPlan}.name`, { defaultValue: activeCompanyPlan })}
-              {activeCompanyCycle && (
-                <span className="ml-1 opacity-75">
-                  · {activeCompanyCycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual')}
-                </span>
-              )}
-            </Badge>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <header
       className={cn(
@@ -194,68 +162,18 @@ const Header = ({ user, onLogout }) => {
                   </Button>
                 </Link>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 rounded-full p-1 hover:bg-slate-100 transition-colors">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">
-                        {getInitials()}
-                      </div>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  </DropdownMenuTrigger>
-
-                  <DropdownMenuContent align="end" sideOffset={8} className="w-56 rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-xl p-2 shadow-xl">
-                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                      <p className="text-sm font-medium text-slate-900 truncate">
-                        {firstName || t('header.user.defaultName')}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
-                    </div>
-
-                    <ActiveCompanyInfo />
-
-                    <DropdownMenuItem
-                      onClick={() => { window.location.href = 'https://id.actoos.com/account'; }}
-                      className="cursor-pointer rounded-lg"
-                    >
-                      <Settings className="w-4 h-4 mr-2.5 text-slate-400" />
-                      {t('header.user.menu.actoosAccount', { defaultValue: 'Mon compte Actoos' })}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem onClick={() => navigate(profileLink)} className="cursor-pointer rounded-lg">
-                      <User className="w-4 h-4 mr-2.5 text-slate-400" />
-                      {t('header.user.profile')}
-                    </DropdownMenuItem>
-
-                    {isCandidate && (
-                      <DropdownMenuItem onClick={() => navigate('/alertes')} className="cursor-pointer rounded-lg">
-                        <Bell className="w-4 h-4 mr-2.5 text-slate-400" />
-                        {t('header.user.createAlert')}
-                      </DropdownMenuItem>
-                    )}
-
-                    <DropdownMenuItem onClick={() => navigate('/parametres')} className="cursor-pointer rounded-lg">
-                      <Settings className="w-4 h-4 mr-2.5 text-slate-400" />
-                      {t('header.user.settings')}
-                    </DropdownMenuItem>
-
-                    {isAdmin && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate('/admin')} className="cursor-pointer rounded-lg">
-                          <Shield className="w-4 h-4 mr-2.5 text-purple-400" />
-                          {t('header.user.admin')}
-                        </DropdownMenuItem>
-                      </>
-                    )}
-
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer rounded-lg text-red-600 hover:!text-red-700 hover:!bg-red-50">
-                      <LogOut className="w-4 h-4 mr-2.5" />
-                      {t('header.user.logout')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <UserMenu
+                  user={user}
+                  profile={profile}
+                  isAdmin={isAdmin}
+                  isCandidate={isCandidate}
+                  isCompany={isCompany}
+                  activeCompanyId={activeCompanyId}
+                  activeCompanyName={activeCompanyName}
+                  activeCompanyPlan={activeCompanyPlan}
+                  activeCompanyCycle={activeCompanyCycle}
+                  onLogout={handleLogout}
+                />
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -319,17 +237,11 @@ const Header = ({ user, onLogout }) => {
 
             <div className="p-4 space-y-4">
               {user && (
-                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                    {getInitials()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      {firstName || t('header.user.defaultUser')}
-                    </p>
-                    <p className="text-xs text-slate-500">{displayEmail}</p>
-                  </div>
-                </div>
+                <MobileUserSection
+                  user={user}
+                  profile={profile}
+                  onCloseMenu={() => setMobileMenuOpen(false)}
+                />
               )}
 
               {isCompany && activeCompanyId && (
