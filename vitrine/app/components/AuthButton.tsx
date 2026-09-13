@@ -138,7 +138,7 @@ export default function AuthButton() {
     try {
       const tokens = getTokens(userId);
 
-      // Si on a les tokens en cookie → bascule instantanée
+      // Si on a les tokens en cookie → tentative de bascule instantanée
       if (tokens?.accessToken && tokens?.refreshToken) {
         const client = getClient();
         const { error } = await client.supabase.auth.setSession({
@@ -152,9 +152,12 @@ export default function AuthButton() {
           window.location.reload();
           return;
         }
+        // Si les tokens sont périmés → on continue vers le fallback login
+        console.warn('[AuthButton] Token switch failed, falling back to login:', error.message);
+        removeTokens(userId); // Nettoyer les tokens invalides
       }
 
-      // Sinon → redirection vers login avec le compte pré-rempli
+      // Fallback : redirection vers login avec email prérempli
       const account = linkedAccounts.find(a => a.userId === userId);
       setPendingLink(userId);
       const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
