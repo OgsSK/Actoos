@@ -5,8 +5,10 @@ import { createPortal } from 'react-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
 import {
+  MAX_LINKED_ACCOUNTS,
   createAuthClientSSR,
   getLinkedAccounts,
+  getLinkedAccountsFromSupabase,
   ensureSelfLink,
   saveLinkedAccounts,
   linkAccount,
@@ -45,7 +47,6 @@ function getClient() {
   return _client;
 }
 
-// Détecte si on est en mobile (< 768px)
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -91,26 +92,28 @@ export default function AuthButton() {
       setActiveAccountId(account.userId);
       setAvatarError(false);
 
-      // Sauvegarder le token du compte actif
       saveTokens(account.userId, {
         accessToken: session.access_token,
         refreshToken: session.refresh_token,
         expiresAt: session.expires_at,
       });
 
-      // S'assurer que ce compte est dans sa propre liste
       await ensureSelfLink(client.supabase, account);
 
-      // Si on vient d'ajouter un compte → lier les 2
+      // Propagation famille
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
+        const family = await getLinkedAccountsFromSupabase(client.supabase, pendingLinkId);
         await linkAccount(client.supabase, pendingLinkId, account.userId);
+        for (const member of family) {
+          if (member.userId !== account.userId && member.userId !== pendingLinkId) {
+            await linkAccount(client.supabase, member.userId, account.userId);
+          }
+        }
         clearPendingLink();
       }
 
-      // Toujours recharger depuis Supabase
       const accounts = await getLinkedAccounts(client.supabase, account.userId);
-      // Toujours inclure le compte courant en tête de liste (ceinture + bretelles)
       const withCurrent = upsertAccountInList(accounts, account);
       setLinkedAccounts(sortAccountsByUsage(withCurrent));
       console.log('[AuthButton] loaded accounts:', withCurrent.map(a => a.email));
@@ -126,7 +129,6 @@ export default function AuthButton() {
     refreshState();
   }, [refreshState]);
 
-  // Fermeture au clic extérieur (desktop uniquement)
   useEffect(() => {
     if (!menuOpen || isMobile) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -213,6 +215,10 @@ export default function AuthButton() {
 
   const handleAddAccount = () => {
     if (!currentAccount) return;
+    if (linkedAccounts.length >= MAX_LINKED_ACCOUNTS) {
+      alert(`Vous avez atteint la limite de ${MAX_LINKED_ACCOUNTS} comptes. Retirez-en un avant d'en ajouter un autre.`);
+      return;
+    }
     setPendingLink(currentAccount.userId);
     const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
     window.location.href = `${LOGIN_URL}?addAccount=1&redirect=${encodeURIComponent(redirect)}`;
@@ -244,11 +250,10 @@ export default function AuthButton() {
 
   const otherAccounts = linkedAccounts.filter(a => a.userId !== currentAccount.userId);
   const hasMultiple = linkedAccounts.length > 1;
+  const canAddMore = linkedAccounts.length < MAX_LINKED_ACCOUNTS;
 
-  // ===== Contenu du menu (partagé desktop + mobile) =====
   const menuContent = (
     <>
-      {/* Compte actif */}
       <div className={`px-4 py-3 bg-slate-50 ${isMobile ? '' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
@@ -264,7 +269,6 @@ export default function AuthButton() {
         </div>
       </div>
 
-      {/* Autres comptes */}
       {otherAccounts.map(acc => {
         const oi =
           (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') ||
@@ -298,20 +302,26 @@ export default function AuthButton() {
         );
       })}
 
-      {/* Ajouter un compte */}
-      <button
-        onClick={handleAddAccount}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left border-t border-slate-100"
-      >
-        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-          <Plus size={16} className="text-slate-600" />
+      {canAddMore ? (
+        <button
+          onClick={handleAddAccount}
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left border-t border-slate-100"
+        >
+          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+            <Plus size={16} className="text-slate-600" />
+          </div>
+          <span className="text-sm font-medium text-slate-700">
+            {language === 'fr' ? 'Ajouter un compte' : 'Add another account'}
+          </span>
+        </button>
+      ) : (
+        <div className="px-4 py-3 text-xs text-slate-400 italic border-t border-slate-100">
+          {language === 'fr'
+            ? `Limite de ${MAX_LINKED_ACCOUNTS} comptes atteinte. Retirez-en un pour en ajouter un autre.`
+            : `Limit of ${MAX_LINKED_ACCOUNTS} accounts reached. Remove one to add another.`}
         </div>
-        <span className="text-sm font-medium text-slate-700">
-          {language === 'fr' ? 'Ajouter un compte' : 'Add another account'}
-        </span>
-      </button>
+      )}
 
-      {/* Actions produit */}
       <div className="border-t border-slate-100">
         <a
           href={ACCOUNT_URL}
@@ -333,7 +343,6 @@ export default function AuthButton() {
         </a>
       </div>
 
-      {/* Déconnexion */}
       <div className="border-t border-slate-100">
         <button
           onClick={handleSignOut}
@@ -372,17 +381,13 @@ export default function AuthButton() {
         )}
       </button>
 
-      {/* === MOBILE : Bottom Sheet (via Portal pour échapper au backdrop-blur de la nav) === */}
       {menuOpen && isMobile && mounted && createPortal(
         <>
-          {/* Overlay */}
           <div
             className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] animate-fade-in"
             onClick={() => setMenuOpen(false)}
           />
-          {/* Sheet */}
           <div className="fixed inset-x-0 bottom-0 z-[101] bg-white rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up">
-            {/* Handle */}
             <div className="flex justify-center pt-3 pb-2 shrink-0 border-b border-slate-100 relative">
               <div className="w-10 h-1 bg-slate-300 rounded-full" />
               <button
@@ -394,19 +399,16 @@ export default function AuthButton() {
               </button>
             </div>
 
-            {/* Contenu scrollable */}
             <div className="overflow-y-auto flex-1">
               {menuContent}
             </div>
 
-            {/* Safe area iPhone (encoche en bas) */}
             <div className="h-[env(safe-area-inset-bottom,0px)] shrink-0" />
           </div>
         </>,
         document.body
       )}
 
-      {/* === DESKTOP : Dropdown === */}
       {menuOpen && !isMobile && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
