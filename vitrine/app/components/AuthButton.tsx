@@ -23,7 +23,7 @@ import {
   clearAll,
   type LinkedAccount,
 } from '@actoos/auth-client';
-import { Plus, Settings, FolderOpen, LogOut, Check } from 'lucide-react';
+import { Plus, Settings, FolderOpen, LogOut, Check, X } from 'lucide-react';
 
 const ACTOOS_ID_BASE = process.env.NODE_ENV === 'production'
   ? 'https://id.actoos.com'
@@ -44,8 +44,21 @@ function getClient() {
   return _client;
 }
 
+// Détecte si on est en mobile (< 768px)
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+}
+
 export default function AuthButton() {
   const { language } = useLanguage();
+  const isMobile = useIsMobile();
   const [currentAccount, setCurrentAccount] = useState<LinkedAccount | null>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,29 +86,21 @@ export default function AuthButton() {
       setActiveAccountId(account.userId);
       setAvatarError(false);
 
-      // Sauvegarder le token du compte actif
       saveTokens(account.userId, {
         accessToken: session.access_token,
         refreshToken: session.refresh_token,
         expiresAt: session.expires_at,
       });
 
-      // Détecter un lien en attente (2ᵉ compte en cours d'ajout)
       const pendingLinkId = getPendingLink();
       if (pendingLinkId && pendingLinkId !== account.userId) {
-        // Lier les 2 comptes (RPC + cookie)
         await linkAccount(client.supabase, pendingLinkId, account.userId);
-
-        // Ajouter les 2 dans la liste locale
         const existing = await getLinkedAccounts(client.supabase, account.userId);
-        const accountA = { ...account, userId: pendingLinkId }; // Le compte A est celui du pendingLink
-        // Note: on ne connait pas les infos de A ici, elles viendront de Supabase
         const newList = upsertAccountInList(existing, account);
         await saveLinkedAccounts(newList, client.supabase, account.userId);
         clearPendingLink();
       }
 
-      // Charger la liste des comptes liés
       const accounts = await getLinkedAccounts(client.supabase, account.userId);
       const withCurrent = upsertAccountInList(accounts, account);
       setLinkedAccounts(sortAccountsByUsage(withCurrent));
@@ -111,9 +116,9 @@ export default function AuthButton() {
     refreshState();
   }, [refreshState]);
 
-  // Fermeture au clic extérieur / Escape
+  // Fermeture au clic extérieur (desktop uniquement)
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen || isMobile) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
@@ -129,7 +134,7 @@ export default function AuthButton() {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [menuOpen]);
+  }, [menuOpen, isMobile]);
 
   const handleSwitch = async (userId: string) => {
     if (switching || userId === currentAccount?.userId) return;
@@ -138,7 +143,6 @@ export default function AuthButton() {
     try {
       const tokens = getTokens(userId);
 
-      // Si on a les tokens en cookie → tentative de bascule instantanée
       if (tokens?.accessToken && tokens?.refreshToken) {
         const client = getClient();
         const { error } = await client.supabase.auth.setSession({
@@ -152,12 +156,10 @@ export default function AuthButton() {
           window.location.reload();
           return;
         }
-        // Si les tokens sont périmés → on continue vers le fallback login
-        console.warn('[AuthButton] Token switch failed, falling back to login:', error.message);
-        removeTokens(userId); // Nettoyer les tokens invalides
+        console.warn('[AuthButton] Token switch failed:', error.message);
+        removeTokens(userId);
       }
 
-      // Fallback : redirection vers login avec email prérempli
       const account = linkedAccounts.find(a => a.userId === userId);
       setPendingLink(userId);
       const redirect = typeof window !== 'undefined' ? window.location.href : 'https://actoos.com/';
@@ -174,18 +176,13 @@ export default function AuthButton() {
     const wasActive = userId === currentAccount.userId;
     const client = getClient();
 
-    // 1. Unlink dans Supabase
     await unlinkAccount(client.supabase, currentAccount.userId, userId);
-
-    // 2. Supprimer les tokens
     removeTokens(userId);
 
-    // 3. Retirer de la liste locale
     const remaining = linkedAccounts.filter(a => a.userId !== userId);
     await saveLinkedAccounts(remaining, client.supabase, currentAccount.userId);
     setLinkedAccounts(remaining);
 
-    // 4. Si on a retiré le compte actif → basculer sur le suivant ou logout
     if (wasActive) {
       if (remaining.length > 0) {
         await handleSwitch(remaining[0].userId);
@@ -238,11 +235,116 @@ export default function AuthButton() {
   const otherAccounts = linkedAccounts.filter(a => a.userId !== currentAccount.userId);
   const hasMultiple = linkedAccounts.length > 1;
 
+  // ===== Contenu du menu (partagé desktop + mobile) =====
+  const menuContent = (
+    <>
+      {/* Compte actif */}
+      <div className={`px-4 py-3 bg-slate-50 ${isMobile ? '' : ''}`}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-slate-900 truncate">
+              {currentAccount.firstName} {currentAccount.lastName}
+            </p>
+            <p className="text-xs text-slate-500 truncate">{currentAccount.email}</p>
+          </div>
+          <Check size={16} className="text-emerald-600 shrink-0" />
+        </div>
+      </div>
+
+      {/* Autres comptes */}
+      {otherAccounts.map(acc => {
+        const oi =
+          (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') ||
+          acc.email[0]?.toUpperCase() ||
+          '?';
+        return (
+          <div key={acc.userId} className="border-t border-slate-100 flex items-center">
+            <button
+              onClick={() => handleSwitch(acc.userId)}
+              disabled={switching}
+              className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left disabled:opacity-50"
+            >
+              <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold shrink-0">
+                {oi}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-700 truncate">
+                  {acc.firstName} {acc.lastName}
+                </p>
+                <p className="text-xs text-slate-500 truncate">{acc.email}</p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleRemove(acc.userId)}
+              className="p-3 mr-1 text-slate-300 hover:text-red-500 transition-colors shrink-0"
+              title={language === 'fr' ? 'Retirer ce compte' : 'Remove this account'}
+            >
+              ✕
+            </button>
+          </div>
+        );
+      })}
+
+      {/* Ajouter un compte */}
+      <button
+        onClick={handleAddAccount}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left border-t border-slate-100"
+      >
+        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+          <Plus size={16} className="text-slate-600" />
+        </div>
+        <span className="text-sm font-medium text-slate-700">
+          {language === 'fr' ? 'Ajouter un compte' : 'Add another account'}
+        </span>
+      </button>
+
+      {/* Actions produit */}
+      <div className="border-t border-slate-100">
+        <a
+          href={ACCOUNT_URL}
+          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+        >
+          <Settings size={16} className="text-slate-500" />
+          <span className="text-sm text-slate-700">
+            {language === 'fr' ? 'Mon compte Actoos' : 'My Actoos account'}
+          </span>
+        </a>
+        <a
+          href="https://actoos.com/studio/account"
+          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+        >
+          <FolderOpen size={16} className="text-slate-500" />
+          <span className="text-sm text-slate-700">
+            {language === 'fr' ? 'Mes projets' : 'My projects'}
+          </span>
+        </a>
+      </div>
+
+      {/* Déconnexion */}
+      <div className="border-t border-slate-100">
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 active:bg-red-100 transition-colors text-left"
+        >
+          <LogOut size={16} className="text-red-500" />
+          <span className="text-sm text-red-600">
+            {hasMultiple
+              ? (language === 'fr' ? 'Se déconnecter de tous les comptes' : 'Sign out of all accounts')
+              : (language === 'fr' ? 'Se déconnecter' : 'Sign out')}
+          </span>
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setMenuOpen(v => !v)}
-        className="inline-flex items-center gap-2 p-0.5 rounded-full hover:opacity-90 transition-opacity"
+        className="inline-flex items-center gap-2 p-0.5 rounded-full hover:opacity-90 active:opacity-75 transition-opacity"
         aria-label="Mon compte"
       >
         {currentAccount.avatarUrl && !avatarError ? (
@@ -260,104 +362,40 @@ export default function AuthButton() {
         )}
       </button>
 
-      {menuOpen && (
+      {/* === MOBILE : Bottom Sheet === */}
+      {menuOpen && isMobile && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
-          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[340px] sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-20 overflow-hidden max-h-[85vh] overflow-y-auto">
-
-            {/* Compte actif */}
-            <div className="px-4 py-3 bg-slate-50">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                  {initials}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 truncate">
-                    {currentAccount.firstName} {currentAccount.lastName}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">{currentAccount.email}</p>
-                </div>
-                <Check size={14} className="text-emerald-600 shrink-0" />
-              </div>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] animate-fade-in"
+            onClick={() => setMenuOpen(false)}
+          />
+          {/* Sheet */}
+          <div className="fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto animate-slide-up">
+            {/* Handle + Close */}
+            <div className="sticky top-0 bg-white z-10 flex justify-center pt-3 pb-2 border-b border-slate-100">
+              <div className="w-10 h-1 bg-slate-300 rounded-full" />
             </div>
-
-            {/* Autres comptes */}
-            {otherAccounts.map(acc => {
-              const oi =
-                (acc.firstName?.[0] ?? '') + (acc.lastName?.[0] ?? '') ||
-                acc.email[0]?.toUpperCase() ||
-                '?';
-              return (
-                <div key={acc.userId} className="border-t border-slate-100 flex items-center">
-                  <button
-                    onClick={() => handleSwitch(acc.userId)}
-                    disabled={switching}
-                    className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left disabled:opacity-50"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold shrink-0">
-                      {oi}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-700 truncate">
-                        {acc.firstName} {acc.lastName}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">{acc.email}</p>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleRemove(acc.userId)}
-                    className="p-3 mr-1 text-slate-300 hover:text-red-500 transition-colors shrink-0"
-                    title={language === 'fr' ? 'Retirer ce compte' : 'Remove this account'}
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-
-            {/* Ajouter un compte */}
             <button
-              onClick={handleAddAccount}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+              onClick={() => setMenuOpen(false)}
+              className="absolute top-3 right-3 p-2 text-slate-400 hover:text-slate-700 transition-colors"
+              aria-label="Close"
             >
-              <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                <Plus size={14} className="text-slate-600" />
-              </div>
-              <span className="text-sm font-medium text-slate-700">
-                {language === 'fr' ? 'Ajouter un compte' : 'Add another account'}
-              </span>
+              <X size={18} />
             </button>
 
-            {/* Actions produit */}
-            <div className="border-t border-slate-100">
-              <a href={ACCOUNT_URL} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                <Settings size={14} className="text-slate-500" />
-                <span className="text-sm text-slate-700">
-                  {language === 'fr' ? 'Mon compte Actoos' : 'My Actoos account'}
-                </span>
-              </a>
-              <a href="https://actoos.com/studio/account" className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                <FolderOpen size={14} className="text-slate-500" />
-                <span className="text-sm text-slate-700">
-                  {language === 'fr' ? 'Mes projets' : 'My projects'}
-                </span>
-              </a>
-            </div>
+            {menuContent}
+            <div className="h-6" />
+          </div>
+        </>
+      )}
 
-            {/* Déconnexion */}
-            <div className="border-t border-slate-100">
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-left"
-              >
-                <LogOut size={14} className="text-red-500" />
-                <span className="text-sm text-red-600">
-                  {hasMultiple
-                    ? (language === 'fr' ? 'Se déconnecter de tous les comptes' : 'Sign out of all accounts')
-                    : (language === 'fr' ? 'Se déconnecter' : 'Sign out')}
-                </span>
-              </button>
-            </div>
+      {/* === DESKTOP : Dropdown === */}
+      {menuOpen && !isMobile && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
+          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-20 overflow-hidden max-h-[85vh] overflow-y-auto">
+            {menuContent}
           </div>
         </>
       )}
