@@ -146,14 +146,15 @@ const Header = ({ user, onLogout }) => {
           <div className="flex-1 hidden lg:block" />
 
           {/* Actions desktop */}
-          <div className="hidden lg:flex items-center gap-1.5 shrink-0">
+          {/* Ajout de la classe 'relative' pour s'assurer que le menu déroulant de UserMenu se positionne correctement */}
+          <div className="hidden lg:flex items-center gap-1.5 shrink-0 relative">
             <HeaderPreferences isTransparent={false} />
             <LanguageSwitcher isTransparent={false} />
 
             <div className="w-px h-5 bg-slate-200 mx-1" />
 
             {user ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 relative">
                 <Link to="/dashboard">
                   <Button variant="ghost" size="sm" className="rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium">
                     <LayoutDashboard className="w-4 h-4 mr-1.5" />
