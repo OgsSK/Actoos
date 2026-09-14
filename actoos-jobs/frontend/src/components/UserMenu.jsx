@@ -76,7 +76,7 @@ const UserMenu = ({
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setMenuOpen(v => !v)}
-        className="flex items-center gap-2 rounded-full p-1 hover:bg-slate-100 transition-colors"
+        className="flex items-center gap-2 rounded-full p-1 hover:bg-slate-100 transition-colors shrink-0"
       >
         <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">
           {initials}
@@ -87,7 +87,7 @@ const UserMenu = ({
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[320px] sm:w-72 bg-white rounded-2xl shadow-xl border border-slate-200/60 z-50 overflow-hidden max-h-[85vh] overflow-y-auto">
+          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[320px] lg:w-72 lg:min-w-[280px] bg-white rounded-2xl shadow-xl border border-slate-200/60 z-50 overflow-hidden max-h-[85vh] overflow-y-auto">
 
             {/* Compte actif */}
             <div className="px-3 py-2.5 bg-slate-50 border-b border-slate-100">
@@ -111,7 +111,7 @@ const UserMenu = ({
                 className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
               >
                 <LayoutDashboard className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-700">{t('header.user.dashboard')}</span>
+                <span className="text-sm text-slate-700 whitespace-nowrap">{t('header.user.dashboard')}</span>
               </button>
 
               <button
@@ -119,7 +119,7 @@ const UserMenu = ({
                 className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
               >
                 <UserIcon className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-700">{t('header.user.profile')}</span>
+                <span className="text-sm text-slate-700 whitespace-nowrap">{t('header.user.profile')}</span>
               </button>
 
               {isCandidate && (
@@ -128,7 +128,7 @@ const UserMenu = ({
                   className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
                 >
                   <Bell className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-700">{t('header.user.createAlert')}</span>
+                  <span className="text-sm text-slate-700 whitespace-nowrap">{t('header.user.createAlert')}</span>
                 </button>
               )}
 
@@ -137,7 +137,7 @@ const UserMenu = ({
                 className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
               >
                 <Settings className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-700">{t('header.user.settings')}</span>
+                <span className="text-sm text-slate-700 whitespace-nowrap">{t('header.user.settings')}</span>
               </button>
 
               {isAdmin && (
@@ -146,7 +146,7 @@ const UserMenu = ({
                   className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
                 >
                   <Shield className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-slate-700">{t('header.user.admin')}</span>
+                  <span className="text-sm text-slate-700 whitespace-nowrap">{t('header.user.admin')}</span>
                 </button>
               )}
             </div>
@@ -158,7 +158,7 @@ const UserMenu = ({
                 className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 transition-colors"
               >
                 <Settings className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-700">
+                <span className="text-sm text-slate-700 whitespace-nowrap">
                   {t('header.user.menu.actoosAccount', { defaultValue: 'Mon compte Actoos' })}
                 </span>
               </a>
@@ -171,7 +171,7 @@ const UserMenu = ({
                 className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-red-50 transition-colors text-left"
               >
                 <LogOut className="w-4 h-4 text-red-500" />
-                <span className="text-sm text-red-600">{t('header.user.logout')}</span>
+                <span className="text-sm text-red-600 whitespace-nowrap">{t('header.user.logout')}</span>
               </button>
             </div>
           </div>
