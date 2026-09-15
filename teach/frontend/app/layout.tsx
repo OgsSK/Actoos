@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { AuthProvider } from './context/AuthContext';
-import { LanguageProvider } from './context/LanguageContext';
+import Providers from './providers';
+import { AuthProvider } from '@/app/context/AuthContext';
+import { LanguageProvider } from '@/app/context/LanguageContext';
+import { BRAND } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: 'Actoos Teach',
-  description: 'La plateforme de mise en relation entre enseignants et parents',
+  title: `${BRAND.name} — Trouvez le prof idéal`,
+  description:
+    'La plateforme de mise en relation entre enseignants et parents au Mali.',
   icons: {
     icon: [
       { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
@@ -24,10 +27,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className="antialiased font-sans bg-white text-slate-900">
-        <LanguageProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </LanguageProvider>
+      <body className="antialiased bg-slate-50 text-slate-900">
+        <Providers>
+          <AuthProvider>
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
+          </AuthProvider>
+        </Providers>
       </body>
     </html>
   );

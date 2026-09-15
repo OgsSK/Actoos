@@ -6,9 +6,9 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
 import {
-  createAuthClientSSR,
   createAuthCore,
   buildBaseProfile,
   enrichProfile,
@@ -17,29 +17,14 @@ import {
   isAdmin as checkIsAdmin,
 } from '@actoos/auth-client';
 import type { AuthUser, Profile } from '@actoos/auth-client';
+import { authClient } from '@/lib/supabase';
 
-// ============ Configuration ============
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'development'
-    ? 'http://localhost:8001'
-    : 'https://actoos-jobs-api.onrender.com');
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('[AuthContext] Missing NEXT_PUBLIC_SUPABASE_* environment variables');
-}
-
-const client = createAuthClientSSR({
-  supabaseUrl: SUPABASE_URL,
-  supabaseAnonKey: SUPABASE_ANON_KEY,
-  appName: 'vitrine',
-  apiUrl: API_URL,
-  cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
-});
-
+// Client unique importé de lib/supabase.ts (appName: 'teach')
+const client = authClient;
 const authCore = createAuthCore(client);
+
+// ⏱ Safety net : si getSession ne répond pas en 6s, on force loading=false
+const AUTH_TIMEOUT_MS = 6000;
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -55,6 +40,7 @@ interface AuthContextType {
     firstName: string;
     lastName: string;
     language?: string;
+    extraMetadata?: Record<string, any>;
   }) => Promise<any>;
   signIn: (params: { email: string; password: string }) => Promise<any>;
   signInWithGoogle: () => Promise<void>;
@@ -89,56 +75,103 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const handleSession = useCallback(async (authUser: AuthUser | null) => {
-    if (!authUser) {
-      setUser(null);
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
+  const mountedRef = useRef(true);
+  const loadingResolvedRef = useRef(false);
 
-    const baseProfile = buildBaseProfile(authUser);
-    setUser(authUser);
-    setProfile(baseProfile);
-    setLoading(false);
-
-    try {
-      const enriched = await enrichProfile(client, authUser, baseProfile);
-      setProfile(enriched);
-    } catch (err) {
-      console.warn('[AuthContext] enrichProfile failed:', err);
-    }
+  const setLoadingOnce = useCallback((value: boolean) => {
+    if (!mountedRef.current) return;
+    if (!value) loadingResolvedRef.current = true;
+    setLoading(value);
   }, []);
 
+  const handleSession = useCallback(
+    async (authUser: AuthUser | null) => {
+      if (!mountedRef.current) return;
+
+      if (!authUser) {
+        setUser(null);
+        setProfile(null);
+        setLoadingOnce(false);
+        return;
+      }
+
+      const baseProfile = buildBaseProfile(authUser);
+      setUser(authUser);
+      setProfile(baseProfile);
+      setLoadingOnce(false);
+
+      try {
+        const enriched = await enrichProfile(client, authUser, baseProfile);
+        if (mountedRef.current) setProfile(enriched);
+      } catch (err) {
+        console.warn('[AuthContext] enrichProfile failed:', err);
+      }
+    },
+    [setLoadingOnce]
+  );
+
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
+    let initialSessionResolved = false;
+
+    const timeoutId = setTimeout(() => {
+      if (!loadingResolvedRef.current && mountedRef.current) {
+        console.warn(
+          '[AuthContext] getSession timed out — forcing loading=false'
+        );
+        setLoadingOnce(false);
+      }
+    }, AUTH_TIMEOUT_MS);
 
     client.supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
-        if (mounted) {
-          const authUser = (session?.user as AuthUser | undefined) ?? null;
-          handleSession(authUser);
-        }
+        if (!mountedRef.current) return;
+        initialSessionResolved = true;
+        const authUser = (session?.user as AuthUser | undefined) ?? null;
+        console.log(
+          '[AuthContext] getSession resolved:',
+          authUser?.email ?? 'no user'
+        );
+        handleSession(authUser);
       })
-      .catch(() => {
-        if (mounted) setLoading(false);
+      .catch((err) => {
+        console.error('[AuthContext] getSession error:', err);
+        if (mountedRef.current) {
+          initialSessionResolved = true;
+          setLoadingOnce(false);
+        }
       });
 
     const {
       data: { subscription },
-    } = client.supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (mounted) {
-        const authUser = (session?.user as AuthUser | undefined) ?? null;
-        handleSession(authUser);
+    } = client.supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mountedRef.current) return;
+
+      console.log(
+        '[AuthContext] onAuthStateChange:',
+        event,
+        session?.user?.email ?? 'no user'
+      );
+
+      if (event === 'INITIAL_SESSION') {
+        if (!initialSessionResolved && session?.user) {
+          initialSessionResolved = true;
+          handleSession(session.user as AuthUser);
+        }
+        return;
       }
+
+      const authUser = (session?.user as AuthUser | undefined) ?? null;
+      handleSession(authUser);
     });
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, [handleSession]);
+  }, [handleSession, setLoadingOnce]);
 
   const signUp: AuthContextType['signUp'] = async (params) => {
     return await authCore.signUp({
@@ -148,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       firstName: params.firstName,
       lastName: params.lastName,
       language: params.language,
+      extraMetadata: params.extraMetadata,
     });
   };
 
@@ -160,9 +194,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await authCore.signOut();
-    setUser(null);
-    setProfile(null);
+    try {
+      await authCore.signOut();
+    } finally {
+      setUser(null);
+      setProfile(null);
+    }
   };
 
   const resetPassword = async (email: string) => {
@@ -186,18 +223,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = async () => {
     if (!user) return;
-
-    await client.supabase.auth.refreshSession();
-    const {
-      data: { session },
-    } = await client.supabase.auth.getSession();
-    const currentUser = (session?.user as AuthUser | undefined) ?? null;
-
-    if (currentUser) {
-      const baseProfile = buildBaseProfile(currentUser);
-      const enriched = await enrichProfile(client, currentUser, baseProfile);
-      setProfile(enriched);
-      setUser(currentUser);
+    try {
+      await client.supabase.auth.refreshSession();
+      const {
+        data: { session },
+      } = await client.supabase.auth.getSession();
+      const currentUser = (session?.user as AuthUser | undefined) ?? null;
+      if (currentUser) {
+        const baseProfile = buildBaseProfile(currentUser);
+        const enriched = await enrichProfile(client, currentUser, baseProfile);
+        setProfile(enriched);
+        setUser(currentUser);
+      }
+    } catch (err) {
+      console.error('[AuthContext] refreshProfile failed:', err);
     }
   };
 

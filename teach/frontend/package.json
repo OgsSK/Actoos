@@ -12,6 +12,8 @@
     "@actoos/auth-client": "*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.108.2",
+    "@tanstack/react-query": "^5.102.8",
+    "@tanstack/react-query-devtools": "^5.102.8",
     "lucide-react": "^0.454.0",
     "next": "14.2.35",
     "react": "18.3.1",

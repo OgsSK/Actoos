@@ -2,9 +2,11 @@
 const nextConfig = {
   transpilePackages: ['@actoos/auth-client'],
   eslint: {
-    // ESLint est bloquant sur Vercel par défaut.
-    // On le désactive : TypeScript fait déjà la vérification des types.
     ignoreDuringBuilds: true,
+  },
+  // Désactive l'optimisation CSS de Next.js (fix 404 fonts)
+  experimental: {
+    optimizeCss: false,
   },
   webpack: (config) => {
     config.resolve.extensionAlias = {
