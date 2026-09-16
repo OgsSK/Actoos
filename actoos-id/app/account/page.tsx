@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   LogOut, Mail, User as UserIcon, Shield, Lock,
   Globe, ArrowRight, Briefcase, Search, Pencil,
-  GraduationCap, Sparkles, Check, Trash2,
+  GraduationCap, Check, Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -31,7 +31,7 @@ interface ProductCard {
 const PRODUCTS: ProductCard[] = [
   {
     id: 'teach',
-    name: 'Actoos Teach',
+    name: 'Kalanden',
     descriptionFr: 'Trouver un prof pour vos enfants',
     descriptionEn: 'Find a teacher for your children',
     url: process.env.NODE_ENV === 'production'
@@ -112,8 +112,8 @@ interface Translation {
 
 const TRANSLATIONS: Record<Language, Translation> = {
   fr: {
-    myProducts: 'Mes produits',
-    discover: 'Découvrir Actoos',
+    myProducts: 'Mes produits actifs',
+    discover: 'Autres produits',
     noProducts: 'Vous n\'utilisez encore aucun produit Actoos.',
     noProductsDesc: 'Découvrez nos produits ci-dessous pour commencer.',
     open: 'Ouvrir',
@@ -145,8 +145,8 @@ const TRANSLATIONS: Record<Language, Translation> = {
     footer: 'Actoos ID — Un compte pour tous vos produits',
   },
   en: {
-    myProducts: 'My products',
-    discover: 'Discover Actoos',
+    myProducts: 'My active products',
+    discover: 'Other products',
     noProducts: 'You are not using any Actoos product yet.',
     noProductsDesc: 'Discover our products below to get started.',
     open: 'Open',
@@ -217,6 +217,26 @@ export default function AccountPage() {
 
     async function checkUsage() {
       try {
+        // 1. Vérifier d'abord si l'user est admin
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('is_admin, role')
+          .eq('id', user!.id)
+          .maybeSingle();
+
+        const isAdminUser =
+          userRow?.is_admin === true ||
+          userRow?.role === 'admin';
+
+        // 🔥 Si admin → tous les produits sont considérés comme "utilisés"
+        if (isAdminUser) {
+          if (cancelled) return;
+          setUsedProducts(new Set(['teach', 'studio', 'jobs']));
+          setUsageLoading(false);
+          return;
+        }
+
+        // 2. Sinon → détection classique par données
         const [studioRes, jobsCandidateRes, jobsCompanyRes, teachTeacherRes, teachParentRes] = await Promise.all([
           supabase.from('projets').select('id', { count: 'exact', head: true }).eq('client_email', user!.email),
           supabase.from('candidate_profiles').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
@@ -370,11 +390,10 @@ export default function AccountPage() {
           )}
         </section>
 
-        {/* DÉCOUVRIR */}
+        {/* AUTRES PRODUITS */}
         {discoverProducts.length > 0 && (
           <section>
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Sparkles size={12} />
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
               {t.discover}
             </h2>
             <div className="space-y-3">
