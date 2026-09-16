@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 type Language = 'fr' | 'en';
@@ -67,6 +67,7 @@ function LoginForm() {
   const [language, setLanguage] = useState<Language>('fr');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -164,14 +165,23 @@ function LoginForm() {
           <div className="relative">
             <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder={t.password}
               required
               autoComplete="current-password"
-              className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
+              className="w-full border border-slate-200 rounded-lg pl-10 pr-11 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-colors"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
 
           <div className="text-right">
