@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -176,9 +176,9 @@ function TeachersListSkeleton() {
 }
 
 // ============================================================
-// PAGE
+// PAGE CONTENT
 // ============================================================
-export default function TeachersPage() {
+function TeachersPageContent() {
   const { language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { isTeacher } = useTeachRole();
@@ -1030,5 +1030,20 @@ function TeacherCardItem({
         </div>
       </div>
     </Link>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// WRAPPER SUSPENSE (obligatoire pour useSearchParams)
+// ═══════════════════════════════════════════════════════════
+export default function TeachersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-emerald-600" />
+      </div>
+    }>
+      <TeachersPageContent />
+    </Suspense>
   );
 }
