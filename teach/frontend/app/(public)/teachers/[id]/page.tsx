@@ -1179,14 +1179,6 @@ function RatingSection({
     await load();
   }
 
-  async function handleReport(ratingId: string) {
-    const reason = prompt(isFr ? 'Pourquoi signalez-vous cet avis ? (optionnel)' : 'Why are you reporting this review? (optional)');
-    if (reason === null) return;
-    if (!currentUserId) return;
-    await supabase.from('rating_reports').insert({ rating_id: ratingId, reported_by: currentUserId, reason: reason || null });
-    alert(isFr ? 'Merci, votre signalement a été envoyé.' : 'Thanks, your report was sent.');
-  }
-
   const avg = ratings.length
     ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length)
     : 0;
@@ -1445,15 +1437,7 @@ function RatingSection({
                       </div>
                     </div>
 
-                    {currentUserId && !isMine && (
-                      <button
-                        onClick={() => handleReport(r.id)}
-                        aria-label={isFr ? 'Signaler' : 'Report'}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
-                      >
-                        <Flag className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    {/* 🚫 Bouton Signaler de l'avis supprimé pour l'instant */}
                   </div>
 
                   {r.comment && <p className="text-sm text-slate-700 mt-3 leading-relaxed">{r.comment}</p>}
