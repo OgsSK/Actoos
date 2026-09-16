@@ -31,7 +31,7 @@ const FAQ_CONTENT_FR: FAQCategory[] = [
     questions: [
       {
         q: `Qu'est-ce que ${BRAND.name} ?`,
-        a: `${BRAND.name} est une plateforme qui met en relation les parents et les enseignants particuliers au Mali. Les parents peuvent rechercher des profs selon la matière, le niveau et la ville, échanger directement avec eux, et organiser des cours à domicile ou en ligne.`,
+        a: `${BRAND.name} est une plateforme qui met en relation les parents et les enseignants particuliers. Les parents peuvent rechercher des profs selon la matière, le niveau et la ville, échanger directement avec eux, et organiser des cours à domicile ou en ligne.`,
       },
       {
         q: 'Est-ce que la plateforme est gratuite ?',
@@ -39,7 +39,7 @@ const FAQ_CONTENT_FR: FAQCategory[] = [
       },
       {
         q: 'Dans quelles villes êtes-vous disponibles ?',
-        a: 'Nous couvrons actuellement plusieurs villes du Mali, avec une présence forte à Bamako. La liste des villes disponibles évolue régulièrement, consultez les filtres de recherche sur la page des profs.',
+        a: 'Nous couvrons plusieurs villes, et la liste s\'agrandit régulièrement. Consultez les filtres de recherche sur la page des profs pour voir les villes disponibles près de chez vous.',
       },
       {
         q: 'Comment fonctionne la mise en relation ?',
@@ -160,7 +160,7 @@ const FAQ_CONTENT_EN: FAQCategory[] = [
     questions: [
       {
         q: `What is ${BRAND.name}?`,
-        a: `${BRAND.name} is a platform that connects parents and private teachers in Mali. Parents can search for teachers by subject, level, and city, chat with them directly, and organize lessons at home or online.`,
+        a: `${BRAND.name} is a platform that connects parents and private teachers. Parents can search for teachers by subject, level, and city, chat with them directly, and organize lessons at home or online.`,
       },
       {
         q: 'Is the platform free?',
@@ -168,7 +168,7 @@ const FAQ_CONTENT_EN: FAQCategory[] = [
       },
       {
         q: 'In which cities are you available?',
-        a: 'We currently cover several cities in Mali, with a strong presence in Bamako. The list of available cities is regularly updated — check the search filters on the teachers page.',
+        a: 'We cover several cities, and the list keeps growing. Check the search filters on the teachers page to see the cities available near you.',
       },
       {
         q: 'How does the connection work?',

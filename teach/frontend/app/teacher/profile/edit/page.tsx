@@ -896,8 +896,8 @@ export default function TeacherProfileEditPage() {
                 onChange={e => setHeadline(e.target.value)}
                 placeholder={
                   isFr
-                    ? 'Ex : Prof de maths, spécialisé en préparation bac'
-                    : 'Ex: Math tutor, exam prep specialist'
+                    ? 'Ex : Enseignant particulier, spécialisé dans…'
+                    : 'Ex: Private tutor, specialized in…'
                 }
                 maxLength={120}
               />
@@ -933,7 +933,7 @@ export default function TeacherProfileEditPage() {
                   type="text"
                   value={diploma}
                   onChange={e => setDiploma(e.target.value)}
-                  placeholder={isFr ? 'Ex : Master en Mathématiques' : 'Ex: Master in Mathematics'}
+                  placeholder={isFr ? 'Ex : Master, Licence, Doctorat…' : 'Ex: Master, Bachelor, PhD…'}
                 />
               </Field>
             </div>
@@ -943,7 +943,7 @@ export default function TeacherProfileEditPage() {
                 type="text"
                 value={university}
                 onChange={e => setUniversity(e.target.value)}
-                placeholder={isFr ? 'Ex : Université de Bamako' : 'Ex: University of Bamako'}
+                placeholder={isFr ? 'Nom de votre établissement' : 'Name of your institution'}
               />
             </Field>
           </div>
@@ -964,7 +964,7 @@ export default function TeacherProfileEditPage() {
           <div className="space-y-5">
             <Field
               label={isFr ? 'Téléphone' : 'Phone'}
-              hint={isFr ? 'Ex : +223 66 12 34 56' : 'Ex: +223 66 12 34 56'}
+              hint={isFr ? 'Avec indicatif pays' : 'With country code'}
             >
               <div className="relative max-w-md group">
                 <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-colors group-focus-within:text-blue-500" />
@@ -972,7 +972,7 @@ export default function TeacherProfileEditPage() {
                   type="tel"
                   value={contactPhone}
                   onChange={e => setContactPhone(e.target.value)}
-                  placeholder="+223 66 12 34 56"
+                  placeholder="+000 00 00 00 00"
                   className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
@@ -988,7 +988,7 @@ export default function TeacherProfileEditPage() {
                   type="tel"
                   value={contactWhatsapp}
                   onChange={e => setContactWhatsapp(e.target.value)}
-                  placeholder="+223 66 12 34 56"
+                  placeholder="+000 00 00 00 00"
                   className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
@@ -1018,8 +1018,8 @@ export default function TeacherProfileEditPage() {
                 maxLength={200}
                 placeholder={
                   isFr
-                    ? "Ex : Merci de m'appeler après 18h, ou d'envoyer un message WhatsApp en journée."
-                    : 'Ex: Please call after 6pm, or send a WhatsApp message during the day.'
+                    ? "Ex : Préférence d'horaires, consignes de contact…"
+                    : 'Ex: Preferred hours, contact instructions…'
                 }
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all"
               />
@@ -1176,7 +1176,7 @@ export default function TeacherProfileEditPage() {
             isFr={isFr}
             customLabel={isFr ? 'Ajouter une autre matière' : 'Add another subject'}
             customPlaceholder={
-              isFr ? 'Ex : Coran, Couture, Bambara…' : 'Ex: Quran, Sewing, Bambara…'
+              isFr ? 'Saisir une matière…' : 'Enter a subject…'
             }
             accent="blue"
           />
@@ -1193,9 +1193,7 @@ export default function TeacherProfileEditPage() {
             isFr={isFr}
             customLabel={isFr ? 'Ajouter un autre niveau' : 'Add another level'}
             customPlaceholder={
-              isFr
-                ? 'Ex : 3ème année primaire, Classe préparatoire…'
-                : 'Ex: Primary 3rd year…'
+              isFr ? 'Saisir un niveau…' : 'Enter a level…'
             }
             accent="blue"
           />
@@ -1214,8 +1212,8 @@ export default function TeacherProfileEditPage() {
               onChange={e => setLanguagesText(e.target.value)}
               placeholder={
                 isFr
-                  ? 'Ex : Français, Anglais, Bambara'
-                  : 'Ex: French, English, Bambara'
+                  ? 'Ex : Français, Anglais, Espagnol…'
+                  : 'Ex: French, English, Spanish…'
               }
             />
           </Field>

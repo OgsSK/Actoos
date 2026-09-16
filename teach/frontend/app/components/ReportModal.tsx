@@ -6,18 +6,12 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 
-type Category = 'harassment' | 'fake_profile' | 'inappropriate' | 'spam' | 'other';
+// ─── Catégories ───
+type ProfileCategory = 'harassment' | 'fake_profile' | 'inappropriate' | 'spam' | 'other';
+type ReviewCategory = 'spam' | 'offensive' | 'fake_review' | 'harassment' | 'other';
+type Category = ProfileCategory | ReviewCategory;
 
-interface ReportModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  reportedUserId: string;
-  reportedUserName?: string;
-  context?: 'profile' | 'message' | 'request';
-  contextId?: string;
-}
-
-const CATEGORIES: { value: Category; labelFr: string; labelEn: string }[] = [
+const PROFILE_CATEGORIES: { value: ProfileCategory; labelFr: string; labelEn: string }[] = [
   { value: 'harassment',     labelFr: 'Harcèlement',              labelEn: 'Harassment' },
   { value: 'fake_profile',   labelFr: 'Faux profil',              labelEn: 'Fake profile' },
   { value: 'inappropriate',  labelFr: 'Comportement inapproprié', labelEn: 'Inappropriate behavior' },
@@ -25,11 +19,33 @@ const CATEGORIES: { value: Category; labelFr: string; labelEn: string }[] = [
   { value: 'other',          labelFr: 'Autre',                    labelEn: 'Other' },
 ];
 
+const REVIEW_CATEGORIES: { value: ReviewCategory; labelFr: string; labelEn: string }[] = [
+  { value: 'spam',        labelFr: 'Spam',              labelEn: 'Spam' },
+  { value: 'offensive',   labelFr: 'Contenu offensant', labelEn: 'Offensive content' },
+  { value: 'fake_review', labelFr: 'Faux avis',         labelEn: 'Fake review' },
+  { value: 'harassment',  labelFr: 'Harcèlement',       labelEn: 'Harassment' },
+  { value: 'other',       labelFr: 'Autre',             labelEn: 'Other' },
+];
+
+interface ReportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  // Cible = profil utilisateur (parents, profs…)
+  reportedUserId?: string;
+  reportedUserName?: string;
+  // Cible = avis/commentaire
+  reviewId?: string;
+  // Contexte
+  context?: 'profile' | 'message' | 'request' | 'review';
+  contextId?: string;
+}
+
 export default function ReportModal({
   isOpen,
   onClose,
   reportedUserId,
   reportedUserName,
+  reviewId,
   context = 'profile',
   contextId,
 }: ReportModalProps) {
@@ -37,7 +53,11 @@ export default function ReportModal({
   const { user } = useAuth();
   const isFr = language === 'fr';
 
-  const [category, setCategory] = useState<Category>('inappropriate');
+  const isReview = context === 'review';
+  const categories = isReview ? REVIEW_CATEGORIES : PROFILE_CATEGORIES;
+  const defaultCategory: Category = isReview ? 'spam' : 'inappropriate';
+
+  const [category, setCategory] = useState<Category>(defaultCategory);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -45,12 +65,13 @@ export default function ReportModal({
 
   useEffect(() => {
     if (isOpen) {
-      setCategory('inappropriate');
+      setCategory(defaultCategory);
       setDescription('');
       setError('');
       setSuccess(false);
     }
-  }, [isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, context]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,8 +82,18 @@ export default function ReportModal({
       return;
     }
 
-    if (user.id === reportedUserId) {
+    if (!isReview && reportedUserId && user.id === reportedUserId) {
       setError(isFr ? 'Vous ne pouvez pas vous signaler vous-même.' : 'You cannot report yourself.');
+      return;
+    }
+
+    if (!isReview && !reportedUserId) {
+      setError(isFr ? 'Utilisateur cible manquant.' : 'Target user missing.');
+      return;
+    }
+
+    if (isReview && !reviewId) {
+      setError(isFr ? 'Avis cible manquant.' : 'Target review missing.');
       return;
     }
 
@@ -78,19 +109,24 @@ export default function ReportModal({
         .from('moderation_reports')
         .insert({
           reporter_id: user.id,
-          reported_id: reportedUserId,
+          reported_id: isReview ? reportedUserId : reportedUserId,
           category,
           description: description.trim(),
           context,
-          context_id: contextId || null,
+          context_id: isReview ? reviewId : (contextId || null),
+          status: 'new',
         });
 
       if (insertError) {
         if (insertError.code === '23505') {
           setError(
-            isFr
-              ? 'Vous avez déjà un signalement actif contre cette personne. Attendez qu\'il soit traité par notre équipe.'
-              : 'You already have an active report against this person. Wait for it to be processed by our team.'
+            isReview
+              ? (isFr
+                  ? 'Vous avez déjà signalé cet avis. Attendez qu\'il soit traité.'
+                  : 'You already reported this review. Wait for it to be processed.')
+              : (isFr
+                  ? 'Vous avez déjà un signalement actif contre cette personne.'
+                  : 'You already have an active report against this person.')
           );
         } else {
           throw insertError;
@@ -129,7 +165,9 @@ export default function ReportModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {isFr ? 'Signaler' : 'Report'}
+                {isReview
+                  ? (isFr ? 'Signaler cet avis' : 'Report this review')
+                  : (isFr ? 'Signaler' : 'Report')}
               </h2>
               {reportedUserName && (
                 <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[240px]">
@@ -178,7 +216,7 @@ export default function ReportModal({
                 <span className="text-red-500 ml-1">*</span>
               </label>
               <div className="space-y-1.5">
-                {CATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <button
                     key={cat.value}
                     type="button"

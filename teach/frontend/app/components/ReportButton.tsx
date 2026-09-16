@@ -6,9 +6,13 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import ReportModal from './ReportModal';
 
 interface ReportButtonProps {
-  reportedUserId: string;
+  // Cible = profil utilisateur
+  reportedUserId?: string;
   reportedUserName?: string;
-  context?: 'profile' | 'message' | 'request';
+  // Cible = avis/commentaire
+  reviewId?: string;
+  // Contexte
+  context?: 'profile' | 'message' | 'request' | 'review';
   contextId?: string;
   variant?: 'icon' | 'text' | 'both';
   className?: string;
@@ -17,6 +21,7 @@ interface ReportButtonProps {
 export default function ReportButton({
   reportedUserId,
   reportedUserName,
+  reviewId,
   context = 'profile',
   contextId,
   variant = 'icon',
@@ -41,8 +46,9 @@ export default function ReportButton({
         aria-label={label}
       >
         <Flag className="w-4 h-4" />
-        {variant === 'text' && <span className="text-xs font-medium">{label}</span>}
-        {variant === 'both' && <span className="text-xs font-medium">{label}</span>}
+        {(variant === 'text' || variant === 'both') && (
+          <span className="text-xs font-medium">{label}</span>
+        )}
       </button>
 
       <ReportModal
@@ -50,6 +56,7 @@ export default function ReportButton({
         onClose={() => setOpen(false)}
         reportedUserId={reportedUserId}
         reportedUserName={reportedUserName}
+        reviewId={reviewId}
         context={context}
         contextId={contextId}
       />

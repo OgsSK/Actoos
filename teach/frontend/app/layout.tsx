@@ -15,14 +15,14 @@ export const metadata: Metadata = {
     template: `%s | ${BRAND.name}`,
   },
   description:
-    'La plateforme de mise en relation entre enseignants et parents au Mali. Trouvez un prof vérifié, à domicile ou en ligne.',
+    'La plateforme de mise en relation entre enseignants et parents. Trouvez un prof vérifié, à domicile ou en ligne.',
 
   keywords: [
     'prof particulier',
     'cours à domicile',
     'soutien scolaire',
     'professeur en ligne',
-    'cours particuliers Mali',
+    'cours particuliers',
     'prof vérifié',
     'tutorat',
     BRAND.name,

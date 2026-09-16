@@ -230,7 +230,7 @@ export default function ContactPage() {
                           type="text"
                           value={name}
                           onChange={e => setName(e.target.value)}
-                          placeholder={isFr ? 'Ex : Amadou Diarra' : 'E.g. John Doe'}
+                          placeholder={isFr ? 'Votre nom complet' : 'Your full name'}
                           disabled={isSending}
                           required
                           maxLength={100}

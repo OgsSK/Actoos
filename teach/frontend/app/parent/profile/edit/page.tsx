@@ -834,7 +834,7 @@ export default function ParentProfileEditPage() {
                   type="tel"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  placeholder="+223 XX XX XX XX"
+                  placeholder="+000 00 00 00 00"
                 />
               </Field>
               <Field
@@ -845,7 +845,7 @@ export default function ParentProfileEditPage() {
                   type="text"
                   value={city}
                   onChange={e => setCity(e.target.value)}
-                  placeholder={isFr ? 'Ex : Bamako, Badalabougou' : 'Ex: Bamako'}
+                  placeholder={isFr ? 'Votre ville ou quartier' : 'Your city or area'}
                 />
               </Field>
             </div>
@@ -866,8 +866,8 @@ export default function ParentProfileEditPage() {
               maxLength={400}
               placeholder={
                 isFr
-                  ? 'Ex : Maman de deux enfants à Bamako, je cherche un prof de maths pour ma fille.'
-                  : 'Ex: Mother of two in Bamako, looking for a math tutor.'
+                  ? 'Ex : Parent de deux enfants, je cherche un prof de maths pour ma fille.'
+                  : 'Ex: Parent of two, looking for a math tutor for my daughter.'
               }
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 resize-none transition-all"
             />
@@ -1248,7 +1248,7 @@ function ChildModal({
                 autoFocus
                 value={draft.first_name}
                 onChange={e => onChange({ first_name: e.target.value })}
-                placeholder={isFr ? 'Ex : Aïcha' : 'Ex: Aisha'}
+                placeholder={isFr ? 'Prénom de l\'enfant' : 'Child\'s first name'}
               />
             </Field>
             <Field
@@ -1290,7 +1290,7 @@ function ChildModal({
                   <option value="">{isFr ? 'Sélectionner…' : 'Select…'}</option>
 
                   {malian.length > 0 && (
-                    <optgroup label="Mali">
+                    <optgroup label={isFr ? 'Système local' : 'Local system'}>
                       {malian.map(level => (
                         <option key={level.id} value={`${REF_PREFIX}${level.id}`}>
                           {isFr ? level.name_fr : level.name_en}
@@ -1300,7 +1300,7 @@ function ChildModal({
                   )}
 
                   {french.length > 0 && (
-                    <optgroup label="France">
+                    <optgroup label={isFr ? 'Système francophone' : 'Francophone system'}>
                       {french.map(level => (
                         <option key={level.id} value={`${REF_PREFIX}${level.id}`}>
                           {isFr ? level.name_fr : level.name_en}
@@ -1344,7 +1344,7 @@ function ChildModal({
                     }
                   }}
                   placeholder={
-                    isFr ? 'Ex : 3ème année coranique' : 'Ex: 3rd year Quranic'
+                    isFr ? 'Saisir un niveau…' : 'Enter a level…'
                   }
                   className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 />

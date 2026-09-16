@@ -569,7 +569,7 @@ function RegisterForm() {
                       type="text"
                       value={firstName}
                       onChange={e => setFirstName(e.target.value)}
-                      placeholder={isFr ? 'Aïcha' : 'Aisha'}
+                      placeholder={isFr ? 'Votre prénom' : 'Your first name'}
                       required
                       autoComplete="given-name"
                       className={`w-full h-12 pl-10 pr-3 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all focus:outline-none ${accent.ring} border-slate-200 hover:border-slate-300`}
@@ -594,7 +594,7 @@ function RegisterForm() {
                       type="text"
                       value={lastName}
                       onChange={e => setLastName(e.target.value)}
-                      placeholder="Diallo"
+                      placeholder={isFr ? 'Votre nom' : 'Your last name'}
                       required
                       autoComplete="family-name"
                       className={`w-full h-12 pl-10 pr-3 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all focus:outline-none ${accent.ring} border-slate-200 hover:border-slate-300`}

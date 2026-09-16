@@ -360,7 +360,12 @@ export default function TeacherDetailPage() {
 
   async function refreshRatingsSummary() {
     if (!id) return;
-    const { data } = await supabase.from('teacher_ratings').select('rating').eq('teacher_id', id);
+    const { data } = await supabase
+      .from('teacher_ratings')
+      .select('rating')
+      .eq('teacher_id', id)
+      .is('hidden_at', null); // 🚫 Ignorer les avis masqués
+
     const list = data || [];
     const count = list.length;
     const avg = count ? list.reduce((s, r: any) => s + r.rating, 0) / count : 0;
@@ -399,7 +404,7 @@ export default function TeacherDetailPage() {
           : Promise.resolve({ data: null } as any),
         supabase.from('teacher_subjects').select('subject_id, custom_name, subjects(id, name_fr, name_en)').eq('teacher_id', p.id),
         supabase.from('teacher_levels').select('level_id, custom_name, levels(id, name_fr, name_en)').eq('teacher_id', p.id),
-        supabase.from('teacher_ratings').select('rating').eq('teacher_id', p.id),
+        supabase.from('teacher_ratings').select('rating').eq('teacher_id', p.id).is('hidden_at', null),
       ]);
 
       // 🚫 Double sécurité : si le user est globalement suspendu → 404
@@ -1028,6 +1033,7 @@ function RatingSection({
         .from('teacher_ratings')
         .select('id, parent_id, rating, comment, created_at, updated_at, teacher_reply, teacher_reply_at, users:parent_id(first_name, last_name)')
         .eq('teacher_id', teacherId)
+        .is('hidden_at', null) // 🚫 Ne pas afficher les avis masqués par l'admin
         .order('created_at', { ascending: false });
 
       const list: Rating[] = (data || []).map((r: any) => ({
@@ -1437,7 +1443,18 @@ function RatingSection({
                       </div>
                     </div>
 
-                    {/* 🚫 Bouton Signaler de l'avis supprimé pour l'instant */}
+                    {/* 🚩 Signaler cet avis — discret, style icône */}
+                    {currentUserId && !isMine && (
+                      <div className="shrink-0 [&>button]:inline-flex [&>button]:items-center [&>button]:justify-center [&>button]:w-8 [&>button]:h-8 [&>button]:rounded-lg [&>button]:text-slate-300 [&>button]:hover:text-red-500 [&>button]:hover:bg-red-50 [&>button]:transition-colors [&>button]:bg-transparent [&>button]:border-0 [&>button]:cursor-pointer">
+                        <ReportButton
+                          reportedUserId={r.parent_id}
+                          reportedUserName={name}
+                          reviewId={r.id}
+                          context="review"
+                          variant="icon"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {r.comment && <p className="text-sm text-slate-700 mt-3 leading-relaxed">{r.comment}</p>}

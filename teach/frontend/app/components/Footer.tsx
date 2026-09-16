@@ -43,8 +43,8 @@ export default function Footer() {
 
             <p className="text-sm text-slate-500 leading-relaxed mb-5 max-w-sm">
               {isFr
-                ? 'La plateforme qui relie parents et enseignants particuliers au Mali. Trouvez le bon prof, échangez en confiance.'
-                : 'The platform connecting parents and private teachers in Mali. Find the right teacher, chat with confidence.'}
+                ? 'La plateforme qui relie parents et enseignants particuliers. Trouvez le bon prof, échangez en confiance.'
+                : 'The platform connecting parents and private teachers. Find the right teacher, chat with confidence.'}
             </p>
 
             <a

@@ -551,8 +551,8 @@ function TeachersPageContent() {
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-16">
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-[1.1] mb-3">
             {isFr
-              ? 'Des enseignants vérifiés, partout au Mali.'
-              : 'Verified teachers, all across Mali.'}
+              ? 'Des enseignants vérifiés, près de chez vous.'
+              : 'Verified teachers, near you.'}
           </h1>
           <p className="text-sm sm:text-base text-slate-300 max-w-2xl mb-6 sm:mb-8">
             {countMessage}

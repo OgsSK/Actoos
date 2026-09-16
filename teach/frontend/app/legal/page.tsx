@@ -155,7 +155,7 @@ export default function LegalPage() {
                     contact@actoos.com
                   </a>
                 </p>
-                <p><strong>{isFr ? 'Zone desservie :' : 'Service area:'}</strong> Mali</p>
+                <p><strong>{isFr ? 'Zone desservie :' : 'Service area:'}</strong> {isFr ? 'International' : 'International'}</p>
               </div>
             </section>
 
@@ -218,8 +218,8 @@ export default function LegalPage() {
               </h3>
               <p className="mb-3">
                 {isFr
-                  ? `${BRAND.name} est une plateforme de mise en relation entre parents et enseignants particuliers au Mali. La plateforme permet :`
-                  : `${BRAND.name} is a platform connecting parents and private teachers in Mali. The platform allows:`}
+                  ? `${BRAND.name} est une plateforme de mise en relation entre parents et enseignants particuliers. La plateforme permet :`
+                  : `${BRAND.name} is a platform connecting parents and private teachers. The platform allows:`}
               </p>
               <ul className="list-disc pl-6 space-y-1.5 mb-3">
                 <li>{isFr ? 'aux parents de rechercher des enseignants et d\'envoyer des demandes de cours ;' : 'parents to search for teachers and send lesson requests;'}</li>
@@ -310,8 +310,8 @@ export default function LegalPage() {
               </h2>
               <p className="mb-3">
                 {isFr
-                  ? `Les présentes conditions générales d'utilisation sont régies par le droit malien. En cas de litige, les tribunaux compétents de Bamako (Mali) seront seuls saisis.`
-                  : `These general terms of use are governed by Malian law. In case of dispute, the competent courts of Bamako (Mali) shall have exclusive jurisdiction.`}
+                  ? `Les présentes conditions générales d'utilisation sont régies par le droit applicable au siège social de l'éditeur. En cas de litige, les tribunaux compétents seront seuls saisis.`
+                  : `These general terms of use are governed by the law applicable at the publisher's registered office. In case of dispute, the competent courts shall have exclusive jurisdiction.`}
               </p>
               <p>
                 {isFr
