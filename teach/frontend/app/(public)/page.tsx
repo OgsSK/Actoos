@@ -17,8 +17,6 @@ import { BRAND } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import {
   useFeaturedTeachers,
-  useCities,
-  useSubjects,
   useSavedTeachers,
   useToggleSave,
   type FeaturedTeacher,
@@ -206,8 +204,6 @@ export default function HomePage() {
   const canSave = !isTeacher;
 
   const { data: featured = [], isLoading: loadingFeatured } = useFeaturedTeachers(6);
-  const { data: cities = [] } = useCities();
-  const { data: allSubjects = [] } = useSubjects();
   const { data: savedIds = [] } = useSavedTeachers(canSave ? user?.id : undefined);
   const toggleSave = useToggleSave();
 
@@ -294,22 +290,13 @@ export default function HomePage() {
   const isLoadingSubjects = usedSubjects === null;
   const subjectsForDisplay: RefSubject[] = isLoadingSubjects
     ? []
-    : usedSubjects.length > 0
-      ? usedSubjects
-      : allSubjects.slice(0, 12);
+    : usedSubjects;
 
   const heroSubjects = subjectsForDisplay.slice(0, 5);
 
-  // Villes à afficher dans le sélecteur :
-  // - Pendant le chargement : vide (pas de flash de toutes les villes)
-  // - Après : uniquement celles où il y a au moins un prof vérifié
-  // - Fallback : si aucun prof n'a de ville, on montre toutes les villes actives
+  // Villes à afficher dans le sélecteur : uniquement celles où il y a au moins un prof vérifié
   const citiesForDisplay: RefCity[] =
-    usedCities === null
-      ? []
-      : usedCities.length > 0
-        ? usedCities
-        : cities;
+    usedCities === null ? [] : usedCities;
 
   async function handleToggleSave(teacherId: string) {
     if (!canSave) return;
