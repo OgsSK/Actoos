@@ -2,167 +2,198 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, ArrowLeft, Loader2 } from 'lucide-react';
+import { GraduationCap, Users, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTeachRole } from '../hooks/useTeachRole';
 import { useIsAdmin } from '../hooks/useIsAdmin';
+import { supabase } from '@/lib/supabase';   // ← AJOUT : import manquant
 import TeacherDashboard from './TeacherDashboard';
 import ParentDashboard from './ParentDashboard';
 
-// ============================================================
-// PRIMITIVES
-// ============================================================
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm ${className}`}>
-      {children}
-    </div>
-  );
-}
+type Role = 'teacher' | 'parent';
+const STORAGE_KEY = 'actoos-teach-active-role';
 
-function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { className?: string }) {
-  return (
-    <button
-      {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
+type Decision =
+  | 'pending'                // En cours de vérification
+  | 'redirect-login'         // Pas connecté
+  | 'redirect-suspended'     // Compte suspendu
+  | 'redirect-admin'         // Admin → /admin
+  | 'redirect-onboarding'    // Pas de profil → onboarding
+  | 'render-teacher'         // Prof
+  | 'render-parent'          // Parent
+  | 'render-both';           // Les 2 rôles → toggle
 
-// ============================================================
-// SKELETON
-// ============================================================
-function SkeletonLine({ className = '' }: { className?: string }) {
-  return <div className={`bg-slate-100 rounded animate-pulse ${className}`} />;
-}
-
-function DashboardRouterSkeleton() {
-  return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-8">
-        <SkeletonLine className="w-16 h-16 rounded-xl shrink-0" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <SkeletonLine className="h-7 w-56 max-w-full" />
-          <SkeletonLine className="h-4 w-full max-w-md" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full sm:w-auto">
-          <SkeletonLine className="h-11 w-full sm:w-40 rounded-xl" />
-          <SkeletonLine className="h-11 w-full sm:w-32 rounded-xl" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        {[0, 1, 2].map(i => (
-          <div key={i} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <SkeletonLine className="h-3.5 w-24" />
-                  <SkeletonLine className="h-6 w-16" />
-                </div>
-                <SkeletonLine className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl shrink-0" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 h-40" />
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 h-56" />
-        </div>
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 h-40" />
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 h-32" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// PAGE
-// ============================================================
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { isTeacher, isParent, loading: roleLoading } = useTeachRole();
+  const {
+    isTeacher,
+    isParent,
+    isTeacherRejected,
+    loading: roleLoading,
+  } = useTeachRole();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
 
-  // Redirection login si non connecté
-  useEffect(() => {
-    if (!authLoading && !user) {
-      window.location.href = '/login';
-    }
-  }, [user, authLoading]);
+  const [decision, setDecision] = useState<Decision>('pending');
+  const [activeRole, setActiveRole] = useState<Role | null>(null);
+  const [isSuspended, setIsSuspended] = useState<boolean | null>(null);
 
-  // ✅ Redirection admin → /admin
+  // Charge l'état de suspension
   useEffect(() => {
-    if (adminLoading || authLoading) return;
+    if (authLoading || !user?.id) {
+      setIsSuspended(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('suspended_at')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!cancelled) setIsSuspended(!!data?.suspended_at);
+    })();
+
+    return () => { cancelled = true; };
+  }, [user?.id, authLoading]);
+
+  // Charge le rôle actif depuis localStorage (pour les users avec 2 rôles)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'teacher' || stored === 'parent') setActiveRole(stored);
+  }, []);
+
+  // ⚡️ UNE SEULE décision, prise quand TOUT est chargé
+  useEffect(() => {
+    // 1. Attendre que tous les checks soient terminés
+    if (authLoading || roleLoading || adminLoading) return;
+    if (isSuspended === null) return;   // ← Attendre le check suspension
+
+    // 2. Si on a déjà décidé, ne pas recalculer
+    if (decision !== 'pending') return;
+
+    // 3. Aucun user → login
+    if (!user) {
+      setDecision('redirect-login');
+      router.replace('/login');
+      return;
+    }
+
+    // 3.b. Compte suspendu → /suspended (AVANT tout le reste)
+    if (isSuspended) {
+      setDecision('redirect-suspended');
+      router.replace('/suspended');
+      return;
+    }
+
+    // 4. Admin → /admin
     if (isAdmin) {
+      setDecision('redirect-admin');
       router.replace('/admin');
+      return;
     }
-  }, [isAdmin, adminLoading, authLoading, router]);
 
-  // Skeleton pendant le chargement (auth + rôle + admin)
-  if (authLoading || roleLoading || adminLoading) {
-    return <DashboardRouterSkeleton />;
-  }
+    // 5. Prof refusé sans profil parent → onboarding
+    if (isTeacherRejected && !isParent) {
+      setDecision('redirect-onboarding');
+      router.replace('/onboarding');
+      return;
+    }
 
-  // ✅ Si admin → on affiche un mini loader le temps de la redirection
-  if (isAdmin) {
+    // 6. Aucun profil → onboarding
+    if (!isTeacher && !isParent) {
+      setDecision('redirect-onboarding');
+      router.replace('/onboarding');
+      return;
+    }
+
+    // 7. Prof seul → TeacherDashboard
+    if (isTeacher && !isParent) {
+      setDecision('render-teacher');
+      return;
+    }
+
+    // 8. Parent seul → ParentDashboard
+    if (isParent && !isTeacher) {
+      setDecision('render-parent');
+      return;
+    }
+
+    // 9. Les 2 rôles → toggle
+    if (isTeacher && isParent) {
+      setDecision('render-both');
+      // Définit le rôle par défaut si pas dans localStorage
+      if (!activeRole) setActiveRole('teacher');
+    }
+  }, [
+    authLoading, roleLoading, adminLoading, isSuspended,
+    user, isAdmin, isTeacher, isParent, isTeacherRejected,
+    decision, activeRole, router,
+  ]);
+
+  const changeRole = (role: Role) => {
+    setActiveRole(role);
+    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, role);
+  };
+
+  // 🚫 TANT QUE LA DÉCISION N'EST PAS PRISE → LOADER UNIQUEMENT
+  if (
+    decision === 'pending' ||
+    decision === 'redirect-login' ||
+    decision === 'redirect-suspended' ||
+    decision === 'redirect-admin' ||
+    decision === 'redirect-onboarding'
+  ) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
-          <p className="text-sm text-slate-500">Redirection vers l'espace admin…</p>
+          <Loader2 className="w-7 h-7 text-slate-400 animate-spin" />
         </div>
       </div>
     );
   }
 
-  if (!user) return null;
+  // ✅ Rendu
+  if (decision === 'render-teacher') return <TeacherDashboard />;
+  if (decision === 'render-parent') return <ParentDashboard />;
 
-  // Prof → dashboard prof
-  if (isTeacher && !isParent) return <TeacherDashboard />;
-
-  // Parent → dashboard parent
-  if (isParent && !isTeacher) return <ParentDashboard />;
-
-  // Les deux rôles → dashboard prof
-  if (isTeacher && isParent) {
-    return <TeacherDashboard />;
-  }
-
-  // Aucun profil
+  // Les 2 rôles → toggle
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Card className="max-w-md w-full">
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
-              <GraduationCap className="w-7 h-7 text-emerald-500" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">
-              Profil introuvable
-            </h1>
-            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-              Aucun profil Teach n'est associé à ce compte.
-            </p>
-            <a href="/">
-              <PrimaryButton>
-                <ArrowLeft className="w-4 h-4" />
-                Retour à l'accueil
-              </PrimaryButton>
-            </a>
+    <div className="relative">
+      <div className="pt-6 pb-2">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+          <div className="inline-flex items-center gap-1 p-1 bg-slate-100 rounded-full shadow-sm">
+            <button
+              onClick={() => changeRole('teacher')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                activeRole === 'teacher'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              Enseignant
+            </button>
+            <button
+              onClick={() => changeRole('parent')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                activeRole === 'parent'
+                  ? 'bg-white text-emerald-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Parent
+            </button>
           </div>
-        </Card>
+        </div>
       </div>
+      {activeRole === 'teacher' ? <TeacherDashboard /> : <ParentDashboard />}
     </div>
   );
 }

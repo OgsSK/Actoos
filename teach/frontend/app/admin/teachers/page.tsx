@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
-import AdminGuard from '../AdminGuard';
+import { handleSuspensionSideEffects } from '@/lib/suspension';
+
 
 interface TeacherRow {
   id: string;
@@ -63,6 +64,23 @@ function StatusBadge({ status, isFr }: { status: string | null; isFr: boolean })
   );
 }
 
+// ═══════════════════════════════════════════════════════
+// HELPER — appel non bloquant à la fonction email
+// ═══════════════════════════════════════════════════════
+function sendMail(payload: Record<string, any>) {
+  fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    }
+  ).catch((e) => console.warn('[Email] Non envoyé:', e));
+}
+
 function AdminTeachers() {
   const { language } = useLanguage();
   const searchParams = useSearchParams();
@@ -81,6 +99,10 @@ function AdminTeachers() {
   const [suspendReason, setSuspendReason] = useState('');
   const [sendSuspendEmail, setSendSuspendEmail] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<TeacherRow | null>(null);
+
+  // ✨ Nouveaux states pour la modale de refus
+  const [rejectTarget, setRejectTarget] = useState<TeacherRow | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
     load();
@@ -149,33 +171,37 @@ function AdminTeachers() {
   }), [teachers]);
 
   // ─── Actions ───
-  async function updateStatus(id: string, status: 'verified' | 'rejected') {
+  async function updateStatus(id: string, status: 'verified' | 'rejected', reason?: string) {
     setActionId(id);
     try {
+      // ⚠️ On met à jour les 2 champs pour rester cohérent avec la recherche publique
+      // (les pages /teachers et /teacher/[id] filtrent sur is_verified=true)
+      const updates: any = { verification_status: status };
+      if (status === 'rejected' && reason) {
+        updates.rejected_reason = reason;
+      }
+      if (status === 'verified') {
+        updates.verified_at = new Date().toISOString();
+        updates.rejected_reason = null;
+        updates.is_verified = true; // ✅ champ critique pour la recherche publique
+      } else {
+        updates.is_verified = false; // rejected, suspended → plus visible
+      }
+
       const { error } = await supabase
         .from('teacher_profiles')
-        .update({ verification_status: status })
+        .update(updates)
         .eq('id', id);
       if (error) throw error;
 
       // Récupère l'email du prof pour notif (non bloquant)
       const target = teachers.find(t => t.id === id);
       if (target?.user?.email) {
-        fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({
-              action: 'teacher-verification',
-              teacher_id: id,
-              status,
-            }),
-          }
-        ).catch((e) => console.warn('[Email] Non envoyé:', e));
+        sendMail({
+          action: status === 'verified' ? 'teacher-verified' : 'teacher-rejected',
+          teacher_id: id,
+          reason,
+        });
       }
 
       setTeachers(prev => prev.map(t =>
@@ -209,30 +235,23 @@ function AdminTeachers() {
         .eq('id', suspendTarget.id);
       if (err1) throw err1;
 
-      // 2) update teacher_profiles : statut suspended
+      // 2) update teacher_profiles : statut suspended + is_verified=false
       const { error: err2 } = await supabase
         .from('teacher_profiles')
-        .update({ verification_status: 'suspended' })
+        .update({
+          verification_status: 'suspended',
+          is_verified: false, // ✅ masqué de la recherche publique
+        })
         .eq('id', suspendTarget.id);
       if (err2) throw err2;
 
       // 3) email (non bloquant)
       if (sendSuspendEmail) {
-        fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({
-              action: 'teacher-suspended',
-              teacher_id: suspendTarget.id,
-              reason: suspendReason.trim(),
-            }),
-          }
-        ).catch((e) => console.warn('[Email] Non envoyé:', e));
+        sendMail({
+          action: 'account-suspended',
+          user_id: suspendTarget.id,
+          reason: suspendReason.trim(),
+        });
       }
 
       setTeachers(prev => prev.map(t =>
@@ -248,6 +267,13 @@ function AdminTeachers() {
             }
           : t
       ));
+
+      // ⚙️ Effets de bord : annuler les demandes en cours, notifier les contreparties
+      try {
+        await handleSuspensionSideEffects(suspendTarget.id);
+      } catch (e) {
+        console.warn('[AdminTeachers] suspension side effects failed:', e);
+      }
 
       setSuspendTarget(null);
       setSuspendReason('');
@@ -269,11 +295,21 @@ function AdminTeachers() {
         .eq('id', id);
       if (err1) throw err1;
 
+      // ⚠️ On réactive en remettant verified + is_verified=true
       const { error: err2 } = await supabase
         .from('teacher_profiles')
-        .update({ verification_status: 'verified' })
+        .update({
+          verification_status: 'verified',
+          is_verified: true, // ✅ réapparaît dans la recherche publique
+        })
         .eq('id', id);
       if (err2) throw err2;
+
+      // Email réactivation (non bloquant)
+      sendMail({
+        action: 'account-reactivated',
+        user_id: id,
+      });
 
       setTeachers(prev => prev.map(t =>
         t.id === id
@@ -296,11 +332,21 @@ function AdminTeachers() {
     if (!deleteTarget) return;
     setActionId(deleteTarget.id);
     try {
-      const { error } = await supabase
-        .from('users')
+      // ⚠️ ATTENTION : on supprime UNIQUEMENT le profil Teach
+      // La table public.users est PARTAGÉE avec Jobs, Vitrine, Actoos ID
+      // Ne JAMAIS la supprimer d'ici !
+
+      // 1. Supprimer le profil teacher (Teach uniquement)
+      const { error: err1 } = await supabase
+        .from('teacher_profiles')
         .delete()
         .eq('id', deleteTarget.id);
-      if (error) throw error;
+      if (err1) throw err1;
+
+      // 2. Supprimer aussi le profil parent s'il existe (Teach uniquement)
+      await supabase.from('parent_profiles').delete().eq('id', deleteTarget.id);
+
+      // 3. NE PAS toucher à auth.users ni public.users
 
       setTeachers(prev => prev.filter(t => t.id !== deleteTarget.id));
       setDeleteTarget(null);
@@ -403,7 +449,9 @@ function AdminTeachers() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <a
-                        href={`/admin/teachers/${t.id}`}
+                        href={`/teachers/${t.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="font-semibold text-slate-900 hover:text-slate-600 truncate transition-colors"
                       >
                         {name}
@@ -442,8 +490,10 @@ function AdminTeachers() {
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                     <a
-                      href={`/admin/teachers/${t.id}`}
-                      title={isFr ? 'Voir la fiche' : 'View details'}
+                      href={`/teachers/${t.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={isFr ? 'Voir le profil public' : 'View public profile'}
                       className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     >
                       <Eye className="w-4 h-4" />
@@ -460,7 +510,7 @@ function AdminTeachers() {
                           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         </button>
                         <button
-                          onClick={() => updateStatus(t.id, 'rejected')}
+                          onClick={() => { setRejectTarget(t); setRejectReason(''); }}
                           disabled={busy}
                           title={isFr ? 'Refuser' : 'Reject'}
                           className="w-9 h-9 rounded-lg flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
@@ -532,6 +582,81 @@ function AdminTeachers() {
             {isFr ? 'Suivant' : 'Next'}
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
+        </div>
+      )}
+
+      {/* ═══ MODALE REFUS ═══ */}
+      {rejectTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => actionId !== rejectTarget.id && setRejectTarget(null)}
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {isFr ? 'Refuser ce profil ?' : 'Reject this profile?'}
+                </h3>
+                <p className="text-sm text-slate-500 truncate mt-0.5">
+                  {rejectTarget.user?.email}
+                </p>
+              </div>
+              <button
+                onClick={() => setRejectTarget(null)}
+                disabled={actionId === rejectTarget.id}
+                className="p-1 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                {isFr ? 'Raison du refus' : 'Reason for rejection'}
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+                rows={4}
+                placeholder={isFr
+                  ? 'Ex : Profil incomplet, diplômes non vérifiables…'
+                  : 'Ex: Incomplete profile, unverifiable diplomas…'}
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/10 resize-none"
+                autoFocus
+              />
+              <p className="text-xs text-slate-500 mt-1.5">
+                {isFr
+                  ? 'Le prof recevra cette raison par email et pourra retenter sa candidature.'
+                  : 'The teacher will receive this reason by email and can retry their application.'}
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRejectTarget(null)}
+                disabled={actionId === rejectTarget.id}
+                className="flex-1 h-11 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+              >
+                {isFr ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={async () => {
+                  await updateStatus(rejectTarget.id, 'rejected', rejectReason.trim());
+                  setRejectTarget(null);
+                  setRejectReason('');
+                }}
+                disabled={actionId === rejectTarget.id || !rejectReason.trim()}
+                className="flex-1 h-11 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+              >
+                {actionId === rejectTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                {isFr ? 'Refuser' : 'Reject'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -626,15 +751,15 @@ function AdminTeachers() {
                 <AlertCircle className="w-7 h-7 text-red-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">
-                {isFr ? 'Supprimer définitivement ?' : 'Permanently delete?'}
+                {isFr ? 'Supprimer le profil enseignant ?' : 'Delete teacher profile?'}
               </h3>
               <p className="text-sm text-slate-500 mb-1">
                 {[deleteTarget.user?.first_name, deleteTarget.user?.last_name].filter(Boolean).join(' ')}
               </p>
               <p className="text-xs text-red-600 mt-3 leading-relaxed">
                 {isFr
-                  ? 'Cette action supprime le compte, le profil, les demandes associées et toutes les données liées. Irréversible.'
-                  : 'This deletes the account, profile, associated requests, and all related data. Irreversible.'}
+                  ? 'Cette action supprime UNIQUEMENT le profil enseignant sur Kalanden. Le compte Actoos ID reste actif sur les autres produits (Jobs, Vitrine). L\'utilisateur pourra se réinscrire sur Kalanden plus tard.'
+                  : 'This action deletes ONLY the teacher profile on Kalanden. The Actoos ID account remains active on other products (Jobs, Vitrine). The user can re-register on Kalanden later.'}
               </p>
             </div>
             <div className="border-t border-slate-200 p-4 flex items-center justify-end gap-3">
@@ -662,9 +787,5 @@ function AdminTeachers() {
 }
 
 export default function AdminTeachersPage() {
-  return (
-    <AdminGuard>
-      <AdminTeachers />
-    </AdminGuard>
-  );
+  return <AdminTeachers />;
 }

@@ -9,7 +9,7 @@ if (!_client) {
   _client = createAuthClientSSR({
     supabaseUrl: SUPABASE_URL,
     supabaseAnonKey: SUPABASE_ANON_KEY,
-    appName: 'teach',
+    appName: 'actoos-id',
     cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
   });
 }

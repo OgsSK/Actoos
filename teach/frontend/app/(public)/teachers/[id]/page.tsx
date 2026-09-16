@@ -7,8 +7,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, MapPin, Home, Monitor, CheckCircle2, Heart,
-  Phone, Mail, MessageCircle, BookOpen, GraduationCap, Award,
-  Clock, Calendar, User as UserIcon, Copy, Check, Pencil, Eye,
+  BookOpen, GraduationCap, Award, Clock, Calendar,
+  User as UserIcon, Check, Pencil, Eye,
   Send, X, Loader2, AlertCircle, Star, ShieldCheck, Flag, Trash2,
   ChevronLeft, ChevronRight, SlidersHorizontal,
 } from 'lucide-react';
@@ -16,6 +16,7 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTeachRole } from '@/app/hooks/useTeachRole';
 import { supabase } from '@/lib/supabase';
+import ReportButton from '@/app/components/ReportButton';
 
 // ============================================================
 // TYPES
@@ -42,10 +43,8 @@ interface TeacherProfile {
   profile_photo_url: string | null;
   cover_url: string | null;
   free_trial: boolean | null;
-  contact_phone: string | null;
-  contact_whatsapp: string | null;
-  contact_email: string | null;
-  contact_note: string | null;
+  // 🚫 Les champs contact_* ne sont plus chargés côté public
+  // (ils sont affichés uniquement après acceptation d'une demande)
   user: { first_name: string | null; last_name: string | null } | null;
   city: { id: string; name: string } | null;
   subjects: SubjectRef[];
@@ -59,7 +58,7 @@ interface RatingsSummary {
   count: number;
 }
 
-type ActiveTab = 'about' | 'subjects' | 'availability' | 'contact' | 'reviews';
+type ActiveTab = 'about' | 'subjects' | 'availability' | 'reviews';
 
 // ============================================================
 // HELPERS
@@ -162,10 +161,6 @@ const PERIODS: Record<string, { fr: string; en: string }> = {
   afternoon: { fr: 'Après-midi', en: 'Afternoon' },
   evening: { fr: 'Soir', en: 'Evening' },
 };
-
-function cleanPhoneForLink(p: string) {
-  return p.replace(/\s+/g, '').replace(/[^\d+]/g, '');
-}
 
 // ============================================================
 // PRIMITIVES
@@ -350,7 +345,6 @@ export default function TeacherDetailPage() {
 
   const [isSaved, setIsSaved] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
@@ -398,7 +392,8 @@ export default function TeacherDetailPage() {
       }
 
       const [userRes, cityRes, tsubsRes, tlevelsRes, ratingsRes] = await Promise.all([
-        supabase.from('users').select('id, first_name, last_name').eq('id', p.id).maybeSingle(),
+        // 🚫 AJOUT : suspended_at pour double check
+        supabase.from('users').select('id, first_name, last_name, suspended_at').eq('id', p.id).maybeSingle(),
         p.city_id
           ? supabase.from('cities').select('id, name').eq('id', p.city_id).maybeSingle()
           : Promise.resolve({ data: null } as any),
@@ -406,6 +401,12 @@ export default function TeacherDetailPage() {
         supabase.from('teacher_levels').select('level_id, custom_name, levels(id, name_fr, name_en)').eq('teacher_id', p.id),
         supabase.from('teacher_ratings').select('rating').eq('teacher_id', p.id),
       ]);
+
+      // 🚫 Double sécurité : si le user est globalement suspendu → 404
+      if (!isOwner && userRes.data?.suspended_at) {
+        setNotFound(true);
+        return;
+      }
 
       const tsubs = (tsubsRes.data || []) as Array<{ subject_id: string | null; custom_name: string | null; subjects: any; }>;
       const tlevels = (tlevelsRes.data || []) as Array<{ level_id: string | null; custom_name: string | null; levels: any; }>;
@@ -455,10 +456,7 @@ export default function TeacherDetailPage() {
         profile_photo_url: p.profile_photo_url,
         cover_url: p.cover_url,
         free_trial: p.free_trial,
-        contact_phone: p.contact_phone || null,
-        contact_whatsapp: p.contact_whatsapp || null,
-        contact_email: p.contact_email || null,
-        contact_note: p.contact_note || null,
+        // 🚫 On ne mappe plus contact_* côté public
         user: userRes.data || null,
         city: cityRes.data || null,
         subjects: subjectsList,
@@ -520,7 +518,6 @@ export default function TeacherDetailPage() {
     }
   }
 
-  // ✅ NOUVEAU : redirige vers la page de connexion si le parent n'est pas connecté
   function handleRequestLesson() {
     if (!user?.id) {
       router.push(`/login?redirect=/teachers/${id}`);
@@ -529,13 +526,6 @@ export default function TeacherDetailPage() {
     setShowRequestModal(true);
   }
 
-  function copyToClipboard(text: string, field: string) {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  }
-
-  // ✅ Fix : ne plus bloquer sur authLoading, on ne bloque que sur le 1er chargement
   if (loading && !hasLoadedOnce) {
     return <TeacherDetailSkeleton />;
   }
@@ -590,15 +580,11 @@ export default function TeacherDetailPage() {
   const hasAboutInfo =
     Boolean(profile.bio) || hasExperience || Boolean(profile.diploma) || Boolean(profile.university) || hasLanguages;
 
-  const hasContact =
-    Boolean(profile.contact_phone) || Boolean(profile.contact_whatsapp) ||
-    Boolean(profile.contact_email) || Boolean(profile.contact_note);
-
+  // 🚫 Onglet contact supprimé
   const tabs: Array<{ key: ActiveTab; label: string; icon: React.ElementType; }> = [];
   if (hasAboutInfo) tabs.push({ key: 'about', label: isFr ? 'À propos' : 'About', icon: UserIcon });
   if (allSubjects.length > 0 || allLevels.length > 0) tabs.push({ key: 'subjects', label: isFr ? 'Matières & niveaux' : 'Subjects & levels', icon: BookOpen });
   if (hasAvailability) tabs.push({ key: 'availability', label: isFr ? 'Disponibilités' : 'Availability', icon: Calendar });
-  if (hasContact) tabs.push({ key: 'contact', label: isFr ? 'Coordonnées' : 'Contact', icon: Phone });
   tabs.push({
     key: 'reviews',
     label: isFr
@@ -734,11 +720,16 @@ export default function TeacherDetailPage() {
                     </>
                   )}
 
-                  {hasContact && (
-                    <OutlineButton onClick={() => setActiveTab('contact')}>
-                      <Phone className="w-4 h-4" />
-                      {isFr ? 'Coordonnées' : 'Contact'}
-                    </OutlineButton>
+                  {/* 🚩 Bouton Signaler — discret, aligné avec le texte */}
+                  {user && user.id !== profile.id && (
+                    <div className="inline-flex self-start sm:self-center [&>button]:inline-flex [&>button]:items-center [&>button]:gap-1.5 [&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-lg [&>button]:text-xs [&>button]:font-medium [&>button]:text-slate-500 [&>button]:hover:text-red-600 [&>button]:hover:bg-red-50 [&>button]:transition-colors [&>button]:bg-transparent [&>button]:border-0 [&>button]:cursor-pointer">
+                      <ReportButton
+                        reportedUserId={profile.id}
+                        reportedUserName={displayName}
+                        context="profile"
+                        variant="both"
+                      />
+                    </div>
                   )}
                 </>
               )}
@@ -910,54 +901,7 @@ export default function TeacherDetailPage() {
             </div>
           )}
 
-          {activeTabSafe === 'contact' && hasContact && (
-            <div className="space-y-4 max-w-2xl">
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">{isFr ? 'Coordonnées' : 'Contact'}</h2>
-              {profile.contact_phone && (
-                <ContactRow
-                  icon={Phone}
-                  label={isFr ? 'Téléphone' : 'Phone'}
-                  value={profile.contact_phone}
-                  href={`tel:${cleanPhoneForLink(profile.contact_phone)}`}
-                  onCopy={() => copyToClipboard(profile.contact_phone!, 'phone')}
-                  copied={copiedField === 'phone'}
-                  copyLabel={isFr ? 'Copier' : 'Copy'}
-                  copiedLabel={isFr ? 'Copié' : 'Copied'}
-                />
-              )}
-              {profile.contact_whatsapp && (
-                <ContactRow
-                  icon={MessageCircle}
-                  label="WhatsApp"
-                  value={profile.contact_whatsapp}
-                  href={`https://wa.me/${cleanPhoneForLink(profile.contact_whatsapp).replace(/^\+/, '')}`}
-                  target="_blank"
-                  onCopy={() => copyToClipboard(profile.contact_whatsapp!, 'whatsapp')}
-                  copied={copiedField === 'whatsapp'}
-                  copyLabel={isFr ? 'Copier' : 'Copy'}
-                  copiedLabel={isFr ? 'Copié' : 'Copied'}
-                />
-              )}
-              {profile.contact_email && (
-                <ContactRow
-                  icon={Mail}
-                  label="Email"
-                  value={profile.contact_email}
-                  href={`mailto:${profile.contact_email}`}
-                  onCopy={() => copyToClipboard(profile.contact_email!, 'email')}
-                  copied={copiedField === 'email'}
-                  copyLabel={isFr ? 'Copier' : 'Copy'}
-                  copiedLabel={isFr ? 'Copié' : 'Copied'}
-                />
-              )}
-              {profile.contact_note && (
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
-                  <h3 className="text-sm font-medium text-emerald-700 mb-2">{isFr ? 'Note' : 'Note'}</h3>
-                  <p className="text-sm text-emerald-900/80 leading-relaxed whitespace-pre-line">{profile.contact_note}</p>
-                </div>
-              )}
-            </div>
-          )}
+          {/* 🚫 Onglet contact supprimé — les coordonnées apparaissent uniquement après acceptation d'une demande */}
 
           {activeTabSafe === 'reviews' && (
             <RatingSection
@@ -1012,60 +956,6 @@ function InfoBlock({ icon: Icon, label, value }: { icon: React.ElementType; labe
         <h3 className="text-sm font-medium text-slate-700">{label}</h3>
       </div>
       <p className="text-sm text-slate-900 font-medium">{value}</p>
-    </div>
-  );
-}
-
-function ContactRow({
-  icon: Icon, label, value, href, target, onCopy, copied, copyLabel, copiedLabel,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  href: string;
-  target?: string;
-  onCopy: () => void;
-  copied: boolean;
-  copyLabel: string;
-  copiedLabel: string;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3 sm:gap-4 hover:border-emerald-200 hover:shadow-sm transition-all">
-      <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-        <Icon className="w-5 h-5 text-emerald-600" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-slate-500 mb-0.5">{label}</p>
-        <a
-          href={href}
-          target={target}
-          rel={target === '_blank' ? 'noopener noreferrer' : undefined}
-          className="text-sm sm:text-base font-semibold text-slate-900 hover:text-emerald-600 transition-colors truncate block"
-        >
-          {value}
-        </a>
-      </div>
-      <button
-        onClick={onCopy}
-        aria-label={copied ? copiedLabel : copyLabel}
-        className={`shrink-0 inline-flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg text-xs font-medium border transition-all ${
-          copied
-            ? 'border-emerald-600 bg-emerald-600 text-white'
-            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700'
-        }`}
-      >
-        {copied ? (
-          <>
-            <Check className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{copiedLabel}</span>
-          </>
-        ) : (
-          <>
-            <Copy className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{copyLabel}</span>
-          </>
-        )}
-      </button>
     </div>
   );
 }
@@ -1571,7 +1461,7 @@ function RatingSection({
                   {r.teacher_reply && replyingId !== r.id && (
                     <div className="mt-3 ml-4 pl-3 border-l-2 border-emerald-200">
                       <div className="flex items-center gap-2">
-                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                         <p className="text-xs font-medium text-emerald-700">{isFr ? 'Réponse du prof' : "Teacher's reply"}</p>
                       </div>
                       <p className="text-sm text-slate-700 mt-1">{r.teacher_reply}</p>
@@ -1593,7 +1483,7 @@ function RatingSection({
                       onClick={() => { setReplyingId(r.id); setReplyText(''); }}
                       className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <ShieldCheck className="w-3.5 h-3.5" />
                       {isFr ? 'Répondre' : 'Reply'}
                     </button>
                   )}

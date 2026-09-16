@@ -7,15 +7,19 @@ import {
   Lightbulb, Bookmark, Phone, MapPin, User, ArrowRight,
   GraduationCap, School, Plus, Baby, Eye, Home,
   LayoutDashboard, LogOut, Settings, Inbox, Clock,
-  CheckCircle2, XCircle, Flag,
+  CheckCircle2, XCircle, Flag, UserPlus,
+  Trash2, AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTeachRole } from '@/app/hooks/useTeachRole';
 import { supabase } from '@/lib/supabase';
+import { ACTOOS_ID_BASE } from '@/lib/constants';
 
 // ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
+
+const STORAGE_KEY = 'actoos-teach-active-role';
 
 // ═══════════════════════════════════════════════════════
 // HELPERS
@@ -284,7 +288,7 @@ const FALLBACK_STATUS = REQUEST_STATUS.pending;
 export default function ParentDashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { language } = useLanguage();
-  const { parentProfile } = useTeachRole();
+  const { parentProfile, isTeacher } = useTeachRole();
   const isFr = language === 'fr';
 
   const [stats, setStats] = useState({ savedCount: 0, childrenCount: 0, pendingRequests: 0 });
@@ -293,6 +297,7 @@ export default function ParentDashboard() {
   const [recentRequests, setRecentRequests] = useState<LessonRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
@@ -448,6 +453,43 @@ export default function ParentDashboard() {
     await signOut();
     window.location.href = '/';
   };
+
+  async function handleDeleteParentProfile() {
+    if (!user || deleting) return;
+
+    const confirmed = window.confirm(
+      isFr
+        ? 'Supprimer votre profil parent ?\n\nVos enfants, favoris et demandes associées seront également supprimés. Vous pourrez recréer ce profil plus tard depuis l\'onboarding.'
+        : 'Delete your parent profile?\n\nYour children, favorites and related requests will also be deleted. You can recreate this profile later from onboarding.'
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('parent_profiles')
+        .delete()
+        .eq('id', user.id);
+      if (error) throw error;
+
+      // Si l'user est aussi teacher → bascule sur teacher. Sinon → onboarding.
+      if (isTeacher) {
+        localStorage.setItem(STORAGE_KEY, 'teacher');
+        window.location.href = '/dashboard';
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.href = '/onboarding';
+      }
+    } catch (err: any) {
+      console.error('[ParentDashboard] delete failed:', err);
+      alert(
+        isFr
+          ? `Impossible de supprimer : ${err?.message ?? 'erreur inconnue'}`
+          : `Cannot delete: ${err?.message ?? 'unknown error'}`
+      );
+      setDeleting(false);
+    }
+  }
 
   function formatRelative(iso: string) {
     const d = new Date(iso);
@@ -770,6 +812,13 @@ export default function ParentDashboard() {
               <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View my public profile'} href={`/parents/${user.id}`} />
               <QuickAction icon={Baby} label={isFr ? 'Gérer mes enfants' : 'Manage my children'} href="/parent/profile/edit" />
               <QuickAction icon={Heart} label={isFr ? 'Mes profs sauvegardés' : 'My saved teachers'} href="/parent/favorites" />
+              {!isTeacher && (
+                <QuickAction
+                  icon={UserPlus}
+                  label={isFr ? 'Devenir aussi enseignant' : 'Become also a teacher'}
+                  href="/onboarding"
+                />
+              )}
             </ul>
           </Card>
 
@@ -792,7 +841,7 @@ export default function ParentDashboard() {
           <Card>
             <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href="https://id.actoos.com/account" external />
+              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external />
             </ul>
             <div className="p-2 pt-0">
               <button
@@ -805,6 +854,40 @@ export default function ParentDashboard() {
                 </span>
               </button>
             </div>
+          </Card>
+
+          {/* Zone de danger — Supprimer le rôle parent */}
+          <Card className="border-red-200">
+            <CardHeader
+              icon={AlertTriangle}
+              title={isFr ? 'Zone de danger' : 'Danger zone'}
+              subtitle={isFr ? 'Action irréversible' : 'Irreversible action'}
+            />
+            <CardContent>
+              <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                {isFr
+                  ? 'Supprimez votre profil parent. Vous pourrez le recréer plus tard.'
+                  : 'Delete your parent profile. You can recreate it later.'}
+              </p>
+              <button
+                type="button"
+                onClick={handleDeleteParentProfile}
+                disabled={deleting}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-red-200 border-t-red-600 rounded-full animate-spin" />
+                    {isFr ? 'Suppression…' : 'Deleting…'}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    {isFr ? 'Supprimer mon profil parent' : 'Delete my parent profile'}
+                  </>
+                )}
+              </button>
+            </CardContent>
           </Card>
         </div>
       </div>
@@ -1015,8 +1098,6 @@ function QuickAction({
       {external ? (
         <a
           href={href}
-          target="_blank"
-          rel="noopener"
           className="group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors"
         >
           {content}

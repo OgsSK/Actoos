@@ -8,7 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, GraduationCap, Clock, CheckCircle2, XCircle,
   Home, Monitor, ExternalLink, AlertCircle, Eye, Baby, MessageSquare,
-  Phone, MessageCircle, Mail, Trash2, Flag, Copy, Check,
+  Phone, MessageCircle, Mail, Trash2, Flag, Copy, Check, MapPin,
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -133,9 +133,10 @@ export default function ParentRequestDetailPage() {
           .select('id, first_name, last_name, avatar_url')
           .eq('id', req.teacher_id)
           .maybeSingle(),
+        // 🎯 Élargi : récupère plus de champs pour un rendu riche inline
         supabase
           .from('teacher_profiles')
-          .select('headline, profile_photo_url, contact_phone, contact_whatsapp, contact_email, contact_note')
+          .select('headline, bio, profile_photo_url, city_id, contact_phone, contact_whatsapp, contact_email, contact_note')
           .eq('id', req.teacher_id)
           .maybeSingle(),
         childIds.length > 0
@@ -147,7 +148,20 @@ export default function ParentRequestDetailPage() {
       ]);
 
       setTeacher(teacherRes.data || null);
-      setTeacherProfile(profileRes.data || null);
+
+      // 🎯 Charge le nom de la ville si city_id présent
+           let teacherProfileData: any = profileRes.data || null;
+      if (teacherProfileData?.city_id) {
+        const { data: cityData } = await supabase
+          .from('cities')
+          .select('id, name')
+          .eq('id', teacherProfileData.city_id)
+          .maybeSingle();
+        if (cityData) {
+          teacherProfileData = { ...teacherProfileData, city: cityData };
+        }
+      }
+      setTeacherProfile(teacherProfileData);
 
       const loaded: any[] = childrenRes.data || [];
       const ordered = childIds.map(id => loaded.find(c => c.id === id)).filter(Boolean);
@@ -252,7 +266,7 @@ export default function ParentRequestDetailPage() {
 
   const teacherName = [teacher?.first_name, teacher?.last_name].filter(Boolean).join(' ') || '—';
   const initials = teacherName.split(' ').map((w: string) => w.charAt(0)).slice(0, 2).join('').toUpperCase();
-  const photoUrl = teacherProfile?.profile_photo_url || teacher?.avatar_url;
+  const photoUrl = teacherProfile?.profile_photo_url || teacher?.avatar_url || null;
   const mode = modeLabel(request.teaching_mode, isFr);
   const ModeIcon = request.teaching_mode === 'home' ? Home : request.teaching_mode === 'online' ? Monitor : Home;
 
@@ -271,68 +285,107 @@ export default function ParentRequestDetailPage() {
       </button>
 
       <div className="space-y-6">
+        {/* ═══════════ CARTE PROF (enrichie) ═══════════ */}
         <Card>
           <div className="p-5 sm:p-6">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 flex items-center justify-center">
+              {/* Avatar plus grand + cliquable */}
+              <Link
+                href={`/teachers/${teacher?.id}`}
+                prefetch
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 flex items-center justify-center hover:ring-2 hover:ring-emerald-300 transition-all"
+              >
                 {photoUrl ? (
                   <img src={photoUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-emerald-700 text-lg font-bold">{initials}</span>
+                  <span className="text-emerald-700 text-lg sm:text-xl font-bold">{initials}</span>
                 )}
-              </div>
+              </Link>
 
               <div className="min-w-0 flex-1">
-                <h1 className="text-xl font-bold text-slate-900 truncate">{teacherName}</h1>
-                {teacherProfile?.headline && (
-                  <p className="text-sm text-slate-500 mt-0.5 line-clamp-1">{teacherProfile.headline}</p>
-                )}
-                <p className="text-xs text-slate-400 mt-1">
-                  {isFr ? 'Demande envoyée' : 'Request sent'} · {formatRelative(request.created_at)}
-                </p>
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
+                      {teacherName}
+                    </h1>
+                    {teacherProfile?.headline && (
+                      <p className="text-sm text-slate-500 mt-0.5 line-clamp-1">
+                        {teacherProfile.headline}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-400 mt-1">
+                      {isFr ? 'Demande envoyée' : 'Request sent'} · {formatRelative(request.created_at)}
+                    </p>
+                  </div>
 
-                {/* ✅ FIX : Link prefetch */}
-                <Link
-                  href={`/teachers/${teacher?.id}`}
-                  prefetch
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors mt-3"
-                >
-                  <Eye className="w-4 h-4" />
-                  {isFr ? 'Voir le profil du prof' : 'See teacher profile'}
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              </div>
+                  <div className="shrink-0">
+                    {request.status === 'pending' && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                        <Clock className="w-3 h-3" />
+                        {isFr ? 'En attente' : 'Pending'}
+                      </span>
+                    )}
+                    {request.status === 'accepted' && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                        <CheckCircle2 className="w-3 h-3" />
+                        {isFr ? 'Acceptée' : 'Accepted'}
+                      </span>
+                    )}
+                    {request.status === 'declined' && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-700">
+                        <XCircle className="w-3 h-3" />
+                        {isFr ? 'Refusée' : 'Declined'}
+                      </span>
+                    )}
+                    {request.status === 'completed' && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+                        <Flag className="w-3 h-3" />
+                        {isFr ? 'Terminée' : 'Completed'}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-              <div className="shrink-0">
-                {request.status === 'pending' && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-700">
-                    <Clock className="w-3 h-3" />
-                    {isFr ? 'En attente' : 'Pending'}
-                  </span>
+                {/* Infos inline : ville + bio courte */}
+                {(teacherProfile?.city?.name || teacherProfile?.bio) && (
+                  <div className="mt-3 space-y-2">
+                    {teacherProfile?.city?.name && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+                        <MapPin className="w-3 h-3" />
+                        {teacherProfile.city.name}
+                      </span>
+                    )}
+                    {teacherProfile?.bio && (
+                      <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">
+                        {teacherProfile.bio}
+                      </p>
+                    )}
+                  </div>
                 )}
-                {request.status === 'accepted' && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                    <CheckCircle2 className="w-3 h-3" />
-                    {isFr ? 'Acceptée' : 'Accepted'}
-                  </span>
-                )}
-                {request.status === 'declined' && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-red-100 text-red-700">
-                    <XCircle className="w-3 h-3" />
-                    {isFr ? 'Refusée' : 'Declined'}
-                  </span>
-                )}
-                {request.status === 'completed' && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700">
-                    <Flag className="w-3 h-3" />
-                    {isFr ? 'Terminée' : 'Completed'}
-                  </span>
-                )}
+
+                {/* 🎯 CTA compact — mobile-first, ne wrap pas */}
+                <div className="mt-3">
+                  <Link
+                    href={`/teachers/${teacher?.id}`}
+                    prefetch
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                  >
+                    <Eye className="w-4 h-4 shrink-0" />
+                    <span className="hidden sm:inline">
+                      {isFr ? 'Voir le profil complet' : 'See full profile'}
+                    </span>
+                    <span className="sm:hidden">
+                      {isFr ? 'Voir le profil' : 'See profile'}
+                    </span>
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </Card>
 
+        {/* ═══════════ RÉPONSE DU PROF ═══════════ */}
         {request.teacher_response && request.status !== 'pending' && (
           <Card className={request.status === 'accepted' ? 'border-emerald-200 bg-emerald-50' : request.status === 'completed' ? 'border-slate-200 bg-slate-50' : 'border-red-200 bg-red-50'}>
             <div className="p-5 sm:p-6">
@@ -349,6 +402,7 @@ export default function ParentRequestDetailPage() {
           </Card>
         )}
 
+        {/* ═══════════ CONTACTS DU PROF ═══════════ */}
         {showContacts && (teacherProfile?.contact_phone || teacherProfile?.contact_whatsapp || teacherProfile?.contact_email) && (
           <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-50/40">
             <div className="p-5 sm:p-6">
@@ -414,6 +468,7 @@ export default function ParentRequestDetailPage() {
           </Card>
         )}
 
+        {/* ═══════════ VOTRE DEMANDE ═══════════ */}
         <Card>
           <div className="p-5 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">
@@ -453,6 +508,7 @@ export default function ParentRequestDetailPage() {
           </div>
         </Card>
 
+        {/* ═══════════ ENFANTS ═══════════ */}
         {children.length > 0 && (
           <Card>
             <div className="p-5 sm:p-6">
@@ -505,6 +561,7 @@ export default function ParentRequestDetailPage() {
           </Card>
         )}
 
+        {/* ═══════════ ACTIONS ═══════════ */}
         <div className="flex flex-col sm:flex-row gap-3">
           {isAccepted && (
             <button

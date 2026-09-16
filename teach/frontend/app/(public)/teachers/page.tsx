@@ -203,6 +203,9 @@ export default function TeachersPage() {
   const [fMode, setFMode] = useState<string>(searchParams.get('mode') || '');
   const [fRating, setFRating] = useState<string>(searchParams.get('rating') || '');
 
+  // 🚫 Un prof ne peut PAS sauvegarder de profs en favoris
+  const canSave = !isTeacher;
+
   // ============================================================
   // LOAD
   // ============================================================
@@ -215,10 +218,11 @@ export default function TeachersPage() {
     if (authLoading) return;
     loadSavedTeachers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, authLoading]);
+  }, [user?.id, authLoading, isTeacher]);
 
   async function loadSavedTeachers() {
-    if (!user?.id) { setSavedIds([]); return; }
+    // 🚫 Un prof ne charge pas ses favoris (il n'en a pas)
+    if (isTeacher || !user?.id) { setSavedIds([]); return; }
     try {
       const { data } = await supabase
         .from('saved_teachers')
@@ -231,6 +235,12 @@ export default function TeachersPage() {
   }
 
   async function toggleSave(teacherId: string) {
+    // 🚫 Sécurité : un prof ne peut PAS sauvegarder, même si le bouton est caché
+    if (isTeacher) {
+      console.warn('[Teachers] toggleSave blocked: user is a teacher');
+      return;
+    }
+
     if (!user?.id) { window.location.href = '/login'; return; }
     setSavingId(teacherId);
     try {
@@ -258,10 +268,14 @@ export default function TeachersPage() {
   async function loadAll() {
     if (!hasLoadedOnce) setLoading(true);
     try {
+      // ⚙️ Filtre : verified + is_available + headline non-null
+      // ⚠️ On ne joint PAS users ici (RLS anon bloque la lecture de public.users)
       const [profilesRes, citiesRes, subjectsRes, levelsRes] = await Promise.all([
         supabase
           .from('teacher_profiles')
-          .select('id, headline, bio, hourly_rate, rate_period, teaching_mode, profile_photo_url, cover_url, is_verified, experience_years, city_id, rating_avg, rating_count')
+          .select(`
+            id, headline, bio, hourly_rate, rate_period, teaching_mode, profile_photo_url, cover_url, is_verified, experience_years, city_id, rating_avg, rating_count
+          `)
           .eq('is_available', true)
           .eq('verification_status', 'verified')
           .not('headline', 'is', null)
@@ -286,26 +300,59 @@ export default function TeachersPage() {
 
       const profileIds = profiles.map(p => p.id);
 
-      const [usersRes, tsubsRes, tlevelsRes, savesRes] = await Promise.all([
-        supabase.from('users').select('id, first_name, last_name').in('id', profileIds),
-        supabase.from('teacher_subjects').select('teacher_id, subjects(id, name_fr, name_en)').in('teacher_id', profileIds),
-        supabase.from('teacher_levels').select('teacher_id, levels(id, name_fr, name_en)').in('teacher_id', profileIds),
-        supabase.from('saved_teachers').select('teacher_id').in('teacher_id', profileIds),
+      // ⚠️ On retire saved_teachers du Promise.all : il peut échouer en anon (RLS)
+      const [usersRes, tsubsRes, tlevelsRes] = await Promise.all([
+        supabase
+          .from('users')
+          .select('id, first_name, last_name, suspended_at')
+          .in('id', profileIds),
+        supabase
+          .from('teacher_subjects')
+          .select('teacher_id, subjects(id, name_fr, name_en)')
+          .in('teacher_id', profileIds),
+        supabase
+          .from('teacher_levels')
+          .select('teacher_id, levels(id, name_fr, name_en)')
+          .in('teacher_id', profileIds),
       ]);
 
-      const users = (usersRes.data || []) as Array<{ id: string; first_name: string | null; last_name: string | null; }>;
+      const users = (usersRes.data || []) as Array<{
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        suspended_at: string | null;
+      }>;
       const tsubs = (tsubsRes.data || []) as Array<{ teacher_id: string; subjects: any; }>;
       const tlevels = (tlevelsRes.data || []) as Array<{ teacher_id: string; levels: any; }>;
 
+      // 🚫 FILTRE SUSPENDUS : on retire les profs dont l'user est suspendu
+      const activeProfileIds = new Set(
+        users.filter(u => !u.suspended_at).map(u => u.id)
+      );
+      const activeProfiles = profiles.filter(p => activeProfileIds.has(p.id));
+
+      // ⚠️ saved_teachers séparé : peut échouer en anon (RLS)
+      let savesData: any[] = [];
+      try {
+        const savesRes = await supabase
+          .from('saved_teachers')
+          .select('teacher_id')
+          .in('teacher_id', profileIds);
+        savesData = savesRes.data || [];
+      } catch (err) {
+        console.warn('[Teachers] saved_teachers échoué (probablement RLS anon):', err);
+      }
+
       const savesByTeacher = new Map<string, number>();
-      (savesRes.data || []).forEach((s: any) => {
+      savesData.forEach((s: any) => {
         savesByTeacher.set(s.teacher_id, (savesByTeacher.get(s.teacher_id) || 0) + 1);
       });
 
       const cityMap: Record<string, City> = {};
       (citiesRes.data || []).forEach(c => { cityMap[c.id] = c; });
 
-      const merged: TeacherCard[] = profiles.map(p => {
+      // 🎯 Utilise activeProfiles (filtré) et non profiles
+      const merged: TeacherCard[] = activeProfiles.map(p => {
         const subjectsList = tsubs
           .filter(t => t.teacher_id === p.id)
           .flatMap(t => asArray(t.subjects))
@@ -474,7 +521,6 @@ export default function TeachersPage() {
       : `${filtered.length} teacher${filtered.length !== 1 ? 's' : ''} available on ${BRAND.name}.`;
   })();
 
-  // ✅ FIX : on ne dépend plus de authLoading (qui peut être bloqué)
   const isInitialLoading = loading && !hasLoadedOnce;
 
   return (
@@ -639,6 +685,7 @@ export default function TeachersPage() {
                 isSaved={savedIds.includes(t.id)}
                 isSaving={savingId === t.id}
                 onToggleSave={() => toggleSave(t.id)}
+                canSave={canSave}
               />
             ))}
           </div>
@@ -754,7 +801,7 @@ function RatingFilterSelect({
 }
 
 function TeacherCardItem({
-  teacher, isFr, displayName, isSaved, isSaving, onToggleSave,
+  teacher, isFr, displayName, isSaved, isSaving, onToggleSave, canSave,
 }: {
   teacher: TeacherCard;
   isFr: boolean;
@@ -762,6 +809,7 @@ function TeacherCardItem({
   isSaved: boolean;
   isSaving: boolean;
   onToggleSave: () => void;
+  canSave: boolean;
 }) {
   const rate = formatRate(teacher.hourly_rate, teacher.rate_period, isFr);
   const mode = modeLabel(teacher.teaching_mode, isFr);
@@ -820,22 +868,25 @@ function TeacherCardItem({
           <div className="w-full h-full bg-gradient-to-br from-emerald-100 via-slate-100 to-emerald-50" />
         )}
 
-        <button
-          onClick={handleSaveClick}
-          disabled={isSaving}
-          aria-label={isSaved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-          className={`absolute top-3 right-3 z-20 w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-sm border transition-all duration-200 disabled:opacity-50 ${
-            isSaved
-              ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-              : 'bg-white/95 border-white/40 text-slate-700 shadow-sm hover:bg-white hover:border-emerald-300 hover:text-emerald-600'
-          }`}
-        >
-          <Heart
-            size={16}
-            className={isSaved ? 'fill-white' : ''}
-            strokeWidth={2.5}
-          />
-        </button>
+        {/* 🚫 Bouton favori : uniquement visible si l'user n'est PAS prof */}
+        {canSave && (
+          <button
+            onClick={handleSaveClick}
+            disabled={isSaving}
+            aria-label={isSaved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            className={`absolute top-3 right-3 z-20 w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-sm border transition-all duration-200 disabled:opacity-50 ${
+              isSaved
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                : 'bg-white/95 border-white/40 text-slate-700 shadow-sm hover:bg-white hover:border-emerald-300 hover:text-emerald-600'
+            }`}
+          >
+            <Heart
+              size={16}
+              className={isSaved ? 'fill-white' : ''}
+              strokeWidth={2.5}
+            />
+          </button>
+        )}
       </div>
 
       <div className="p-5 pt-4 flex flex-col flex-1">

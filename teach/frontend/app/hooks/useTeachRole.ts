@@ -1,65 +1,87 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
-interface TeachRoleInfo {
-  isTeacher: boolean;
-  isParent: boolean;
-  loading: boolean;
-  teacherProfile: any | null;
-  parentProfile: any | null;
+interface TeacherProfile {
+  id: string;
+  headline?: string | null;
+  bio?: string | null;
+  hourly_rate?: number | null;
+  profile_photo_url?: string | null;
+  verification_status?: string | null;
+  rejected_reason?: string | null;
+  verified_at?: string | null;
+  [key: string]: any;
 }
 
-export function useTeachRole(): TeachRoleInfo {
+interface ParentProfile {
+  id: string;
+  phone?: string | null;
+  bio?: string | null;
+  profile_photo_url?: string | null;
+  [key: string]: any;
+}
+
+export function useTeachRole() {
   const { user, loading: authLoading } = useAuth();
-  const [isTeacher, setIsTeacher] = useState(false);
-  const [isParent, setIsParent] = useState(false);
-  const [teacherProfile, setTeacherProfile] = useState<any | null>(null);
-  const [parentProfile, setParentProfile] = useState<any | null>(null);
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function check() {
-      if (authLoading) return;
-      if (!user?.id) {
-        if (!cancelled) {
-          setIsTeacher(false);
-          setIsParent(false);
-          setTeacherProfile(null);
-          setParentProfile(null);
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const [teacherRes, parentRes] = await Promise.all([
-          supabase.from('teacher_profiles').select('*').eq('id', user.id).maybeSingle(),
-          supabase.from('parent_profiles').select('*').eq('id', user.id).maybeSingle(),
-        ]);
-
-        if (cancelled) return;
-
-        setTeacherProfile(teacherRes.data);
-        setParentProfile(parentRes.data);
-        setIsTeacher(!!teacherRes.data);
-        setIsParent(!!parentRes.data);
-      } catch (err) {
-        console.error('[useTeachRole]', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const load = useCallback(async () => {
+    if (!user?.id) {
+      setTeacherProfile(null);
+      setParentProfile(null);
+      setLoading(false);
+      return;
     }
 
-    check();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, authLoading]);
+    try {
+      const [tRes, pRes] = await Promise.all([
+        supabase.from('teacher_profiles').select('*').eq('id', user.id).maybeSingle(),
+        supabase.from('parent_profiles').select('*').eq('id', user.id).maybeSingle(),
+      ]);
 
-  return { isTeacher, isParent, loading, teacherProfile, parentProfile };
+      setTeacherProfile(tRes.data || null);
+      setParentProfile(pRes.data || null);
+    } catch (err) {
+      console.error('[useTeachRole]', err);
+      setTeacherProfile(null);
+      setParentProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    load();
+  }, [authLoading, load]);
+
+  const isTeacher = !!teacherProfile;
+  const isParent = !!parentProfile;
+  const hasProfile = isTeacher || isParent;
+
+  // ✨ Nouveaux champs dérivés
+  const teacherStatus = teacherProfile?.verification_status || null;
+  const isTeacherRejected = teacherStatus === 'rejected';
+  const isTeacherVerified = teacherStatus === 'verified';
+  const isTeacherPending = teacherStatus === 'pending';
+
+  return {
+    teacherProfile,
+    parentProfile,
+    isTeacher,
+    isParent,
+    hasProfile,
+    // ✨ Nouveaux retours
+    teacherStatus,
+    isTeacherRejected,
+    isTeacherVerified,
+    isTeacherPending,
+    loading: authLoading || loading,
+    refresh: load,
+  };
 }

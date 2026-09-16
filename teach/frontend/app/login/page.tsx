@@ -71,7 +71,25 @@ function LoginForm() {
         throw new Error(isFr ? 'Connexion échouée' : 'Login failed');
       }
 
-      console.log('🟢 [Login] Session OK, redirection...');
+      console.log('🟢 [Login] Session OK, vérification suspension...');
+
+      // 🚫 Vérifier si le compte est suspendu AVANT de rediriger
+      const userId = data.session.user?.id;
+      if (userId) {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('suspended_at')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (userRow?.suspended_at) {
+          console.log('🔴 [Login] Compte suspendu → /suspended');
+          window.location.href = '/suspended';
+          return;
+        }
+      }
+
+      console.log('🟢 [Login] Compte OK, redirection...');
 
       // Rafraîchit le profil (optionnel, non bloquant)
       try {

@@ -83,7 +83,6 @@ export default function LessonRequestDetailPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
 
-  // ✅ FIX : on n'attend plus authLoading (qui peut être bloqué)
   useEffect(() => {
     if (!requestId) return;
     if (!user?.id) return;
@@ -125,9 +124,10 @@ export default function LessonRequestDetailPage() {
           .select('id, first_name, last_name, avatar_url')
           .eq('id', req.parent_id)
           .maybeSingle(),
+        // 🎯 Élargi : récupère plus de champs pour afficher un vrai profil inline
         supabase
           .from('parent_profiles')
-          .select('id, phone, city, bio, profile_photo_url')
+          .select('id, phone, city, bio, profile_photo_url, created_at')
           .eq('id', req.parent_id)
           .maybeSingle(),
         childIds.length > 0
@@ -262,7 +262,6 @@ export default function LessonRequestDetailPage() {
     return isFr ? 'il y a ' + days + ' j' : days + ' d ago';
   }
 
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
@@ -302,6 +301,10 @@ export default function LessonRequestDetailPage() {
 
   const parentName = [parent?.first_name, parent?.last_name].filter(Boolean).join(' ') || '—';
   const initials = parentName.split(' ').map((w: string) => w.charAt(0)).slice(0, 2).join('').toUpperCase();
+
+  // 🎯 FIX : on privilégie la photo du parent_profiles, avec fallback sur users.avatar_url
+  const parentPhoto = parentProfile?.profile_photo_url || parent?.avatar_url || null;
+
   const mode = modeLabel(request.teaching_mode, isFr);
   const ModeIcon = request.teaching_mode === 'home' ? Home : request.teaching_mode === 'online' ? Monitor : Home;
   const isPending = request.status === 'pending';
@@ -341,71 +344,108 @@ export default function LessonRequestDetailPage() {
           </div>
         )}
 
+        {/* ═══════════ CARTE PARENT (enrichie) ═══════════ */}
         <Card>
           <div className="p-5 sm:p-6">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 overflow-hidden shrink-0 flex items-center justify-center">
-                {parent?.avatar_url ? (
-                  <img src={parent.avatar_url} alt="" className="w-full h-full object-cover" />
+              {/* Photo de profil — plus grande et avec vrai fallback */}
+              <Link
+                href={`/parents/${parent?.id}`}
+                prefetch
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-50 border border-blue-100 overflow-hidden shrink-0 flex items-center justify-center hover:ring-2 hover:ring-blue-300 transition-all"
+              >
+                {parentPhoto ? (
+                  <img src={parentPhoto} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-blue-700 text-lg font-bold">{initials}</span>
+                  <span className="text-blue-700 text-lg sm:text-xl font-bold">{initials}</span>
                 )}
-              </div>
+              </Link>
 
               <div className="min-w-0 flex-1">
-                <h1 className="text-xl font-bold text-slate-900 truncate">{parentName}</h1>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  {isFr ? 'Demande envoyée' : 'Request sent'} · {formatRelative(request.created_at)}
-                </p>
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
+                      {parentName}
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                      {isFr ? 'Demande envoyée' : 'Request sent'} · {formatRelative(request.created_at)}
+                    </p>
+                  </div>
 
-                {/* ✅ FIX : Link prefetch à la place de <a> */}
-                <Link
-                  href={'/parents/' + parent?.id}
-                  prefetch
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors mt-3"
-                >
-                  <Eye className="w-4 h-4" />
-                  {isFr ? 'Voir le profil complet du parent' : 'See parent full profile'}
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              </div>
+                  <div className="shrink-0">
+                    {isPending && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                        <Clock className="w-3 h-3" />
+                        {isFr ? 'Nouvelle' : 'New'}
+                      </span>
+                    )}
+                    {isAccepted && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                        <CheckCircle2 className="w-3 h-3" />
+                        {isFr ? 'Acceptée' : 'Accepted'}
+                      </span>
+                    )}
+                    {isDeclined && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-700">
+                        <XCircle className="w-3 h-3" />
+                        {isFr ? 'Refusée' : 'Declined'}
+                      </span>
+                    )}
+                    {isCompleted && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">
+                        <Flag className="w-3 h-3" />
+                        {isFr ? 'Terminée' : 'Completed'}
+                      </span>
+                    )}
+                    {isArchived && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                        <Inbox className="w-3 h-3" />
+                        {isFr ? 'Archivée' : 'Archived'}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-              <div className="shrink-0">
-                {isPending && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-700">
-                    <Clock className="w-3 h-3" />
-                    {isFr ? 'Nouvelle' : 'New'}
-                  </span>
+                {/* Infos inline : ville + bio courte */}
+                {(parentProfile?.city || parentProfile?.bio) && (
+                  <div className="mt-3 space-y-2">
+                    {parentProfile?.city && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+                        <MapPin className="w-3 h-3" />
+                        {parentProfile.city}
+                      </span>
+                    )}
+                    {parentProfile?.bio && (
+                      <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">
+                        {parentProfile.bio}
+                      </p>
+                    )}
+                  </div>
                 )}
-                {isAccepted && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                    <CheckCircle2 className="w-3 h-3" />
-                    {isFr ? 'Acceptée' : 'Accepted'}
-                  </span>
-                )}
-                {isDeclined && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-red-100 text-red-700">
-                    <XCircle className="w-3 h-3" />
-                    {isFr ? 'Refusée' : 'Declined'}
-                  </span>
-                )}
-                {isCompleted && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-slate-200 text-slate-700">
-                    <Flag className="w-3 h-3" />
-                    {isFr ? 'Terminée' : 'Completed'}
-                  </span>
-                )}
-                {isArchived && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600">
-                    <Inbox className="w-3 h-3" />
-                    {isFr ? 'Archivée' : 'Archived'}
-                  </span>
-                )}
+
+                {/* 🎯 CTA compact — mobile-first, ne wrap pas */}
+                <div className="mt-3">
+                  <Link
+                    href={`/parents/${parent?.id}`}
+                    prefetch
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <Eye className="w-4 h-4 shrink-0" />
+                    <span className="hidden sm:inline">
+                      {isFr ? 'Voir le profil complet' : 'See full profile'}
+                    </span>
+                    <span className="sm:hidden">
+                      {isFr ? 'Voir le profil' : 'See profile'}
+                    </span>
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </Card>
 
+        {/* Coordonnées du parent (si accepté/terminé) */}
         {showContacts && (parentProfile?.phone || parentProfile?.city) && (
           <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/40">
             <div className="p-5 sm:p-6">
@@ -451,6 +491,7 @@ export default function LessonRequestDetailPage() {
           </Card>
         )}
 
+        {/* ═══════════ DEMANDE ═══════════ */}
         <Card>
           <div className="p-5 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">
@@ -519,6 +560,7 @@ export default function LessonRequestDetailPage() {
           </div>
         </Card>
 
+        {/* ═══════════ ENFANTS ═══════════ */}
         {children.length > 0 && (
           <Card>
             <div className="p-5 sm:p-6">
@@ -571,6 +613,7 @@ export default function LessonRequestDetailPage() {
           </Card>
         )}
 
+        {/* ═══════════ BOUTONS ACCEPT / REFUSE ═══════════ */}
         {isPending && !showResponseInput && (
           <div className="flex flex-col sm:flex-row gap-3">
             <button
@@ -643,6 +686,7 @@ export default function LessonRequestDetailPage() {
           </Card>
         )}
 
+        {/* ═══════════ RETIRER / RESTAURER ═══════════ */}
         {!isRemoved ? (
           <button
             onClick={handleRemove}

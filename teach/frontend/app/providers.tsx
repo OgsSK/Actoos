@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -16,13 +15,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             // Garde en cache pendant 30 min après le dernier composant qui l'utilise
             gcTime: 30 * 60 * 1000,
 
-            // Revalide en arrière-plan si la page reprend le focus
+            // Ne revalide pas en arrière-plan si la page reprend le focus
             refetchOnWindowFocus: false,
 
             // Revalide quand la connexion revient
             refetchOnReconnect: true,
 
-            // Pas de refetch à chaque mount si les données sont fraîches
+            // Ne refetch pas à chaque mount si les données sont fraîches
             refetchOnMount: false,
 
             // Retry 1 fois en cas d'erreur réseau
@@ -37,9 +36,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {process.env.NODE_ENV === 'development' && (
-        <ReactQueryDevtools initialIsOpen={false} position="bottom" />
-      )}
     </QueryClientProvider>
   );
 }

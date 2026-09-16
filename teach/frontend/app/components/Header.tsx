@@ -439,8 +439,6 @@ function DropdownLink({
     return (
       <a
         href={href}
-        target="_blank"
-        rel="noopener"
         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 rounded-lg mx-1.5 transition-colors"
       >
         <Icon className="w-4 h-4 text-slate-400 shrink-0" />
@@ -474,8 +472,6 @@ function DrawerLink({
     return (
       <a
         href={href}
-        target="_blank"
-        rel="noopener"
         onClick={onClick}
         className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
       >

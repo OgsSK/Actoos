@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
+import ReportButton from '@/app/components/ReportButton';
 
 // ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
@@ -390,14 +391,25 @@ export default function ParentPublicProfilePage() {
               <p className="text-sm text-slate-500 mt-1.5">{subtitle}</p>
             </div>
 
-            {isOwnProfile && (
+            {/* 🎯 Actions : Modifier (owner) | Signaler (user connecté) | rien (visiteur) */}
+            {isOwnProfile ? (
               <Link href="/parent/profile/edit" prefetch className="shrink-0">
                 <PrimaryButton>
                   <Pencil className="w-4 h-4" />
                   {isFr ? 'Modifier mon profil' : 'Edit my profile'}
                 </PrimaryButton>
               </Link>
-            )}
+            ) : user ? (
+              /* ✨ Style discret : comme un lien texte, sans bordure ni gros padding */
+              <div className="shrink-0 self-start sm:self-center inline-flex [&>button]:inline-flex [&>button]:items-center [&>button]:gap-1.5 [&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-lg [&>button]:text-xs [&>button]:font-medium [&>button]:text-slate-500 [&>button]:hover:text-red-600 [&>button]:hover:bg-red-50 [&>button]:transition-colors [&>button]:bg-transparent [&>button]:border-0 [&>button]:cursor-pointer">
+                <ReportButton
+                  reportedUserId={profile.id}
+                  reportedUserName={displayName}
+                  context="profile"
+                  variant="both"
+                />
+              </div>
+            ) : null}
           </div>
 
           {(profile.city || profile.children.length > 0 || memberSince) && (

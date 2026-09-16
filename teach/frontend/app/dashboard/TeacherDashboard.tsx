@@ -5,15 +5,19 @@ import Link from 'next/link';
 import {
   Pencil, Eye, Check, BookOpen, GraduationCap, Heart,
   ChevronRight, Clock, AlertCircle, TrendingUp, Lightbulb, Sparkles,
-  LayoutDashboard, Users, Home, LogOut, Settings, User, Inbox,
+  LayoutDashboard, Users, Home, LogOut, Settings, User, Inbox, UserPlus,
+  Trash2, AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTeachRole } from '../hooks/useTeachRole';
 import { supabase } from '../../lib/supabase';
+import { ACTOOS_ID_BASE } from '../../lib/constants';
 
 // ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
+
+const STORAGE_KEY = 'actoos-teach-active-role';
 
 // ═══════════════════════════════════════════════════════
 // PRIMITIVES
@@ -236,7 +240,7 @@ function DashboardSkeleton() {
 export default function TeacherDashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { language } = useLanguage();
-  const { teacherProfile } = useTeachRole();
+  const { teacherProfile, isParent } = useTeachRole();
   const isFr = language === 'fr';
 
   const [stats, setStats] = useState({ subjectsCount: 0, levelsCount: 0, savedCount: 0 });
@@ -244,6 +248,7 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [subjectNames, setSubjectNames] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
   // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
@@ -320,6 +325,43 @@ export default function TeacherDashboard() {
     await signOut();
     window.location.href = '/';
   };
+
+  async function handleDeleteTeacherProfile() {
+    if (!user || deleting) return;
+
+    const confirmed = window.confirm(
+      isFr
+        ? 'Supprimer votre profil enseignant ?\n\nVos matières, niveaux et demandes associées seront également supprimés. Vous pourrez le recréer plus tard depuis l\'onboarding.'
+        : 'Delete your teacher profile?\n\nYour subjects, levels and related requests will also be deleted. You can recreate this profile later from onboarding.'
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('teacher_profiles')
+        .delete()
+        .eq('id', user.id);
+      if (error) throw error;
+
+      // Si l'user est aussi parent → bascule sur parent. Sinon → onboarding.
+      if (isParent) {
+        localStorage.setItem(STORAGE_KEY, 'parent');
+        window.location.href = '/dashboard';
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.href = '/onboarding';
+      }
+    } catch (err: any) {
+      console.error('[TeacherDashboard] delete failed:', err);
+      alert(
+        isFr
+          ? `Impossible de supprimer : ${err?.message ?? 'erreur inconnue'}`
+          : `Cannot delete: ${err?.message ?? 'unknown error'}`
+      );
+      setDeleting(false);
+    }
+  }
 
   // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
@@ -504,6 +546,13 @@ export default function TeacherDashboard() {
               <QuickAction icon={Pencil} label={isFr ? 'Modifier mon profil' : 'Edit my profile'} href="/teacher/profile/edit" />
               <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View public profile'} href={`/teachers/${user.id}`} />
               <QuickAction icon={Inbox} label={isFr ? 'Demandes de cours' : 'Lesson requests'} href="/teacher/requests" badge={pendingRequestsCount > 0 ? String(pendingRequestsCount) : undefined} />
+              {!isParent && (
+                <QuickAction
+                  icon={UserPlus}
+                  label={isFr ? 'Devenir aussi parent' : 'Become also a parent'}
+                  href="/onboarding"
+                />
+              )}
             </ul>
           </Card>
 
@@ -544,7 +593,7 @@ export default function TeacherDashboard() {
           <Card>
             <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href="https://id.actoos.com/account" external />
+              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external />
             </ul>
             <div className="p-2 pt-0">
               <button
@@ -555,6 +604,40 @@ export default function TeacherDashboard() {
                 <span className="flex-1 text-left">{isFr ? 'Se déconnecter' : 'Sign out'}</span>
               </button>
             </div>
+          </Card>
+
+          {/* Zone de danger — Supprimer le rôle enseignant */}
+          <Card className="border-red-200">
+            <CardHeader
+              icon={AlertTriangle}
+              title={isFr ? 'Zone de danger' : 'Danger zone'}
+              subtitle={isFr ? 'Action irréversible' : 'Irreversible action'}
+            />
+            <CardContent>
+              <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                {isFr
+                  ? 'Supprimez votre profil enseignant. Vous pourrez le recréer plus tard.'
+                  : 'Delete your teacher profile. You can recreate it later.'}
+              </p>
+              <button
+                type="button"
+                onClick={handleDeleteTeacherProfile}
+                disabled={deleting}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-red-200 border-t-red-600 rounded-full animate-spin" />
+                    {isFr ? 'Suppression…' : 'Deleting…'}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    {isFr ? 'Supprimer mon profil enseignant' : 'Delete my teacher profile'}
+                  </>
+                )}
+              </button>
+            </CardContent>
           </Card>
         </div>
       </div>
@@ -622,8 +705,6 @@ function QuickAction({ icon: Icon, label, href, badge, external }: {
       {external ? (
         <a
           href={href}
-          target="_blank"
-          rel="noopener"
           className="group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition-colors"
         >
           {content}
