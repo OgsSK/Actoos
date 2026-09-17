@@ -332,78 +332,116 @@ export default function AdminPage() {
   };
 
   const handleDecision = async (projet: any, action: 'accept' | 'archive' | 'refuse') => {
-    const projLang = projet.language || 'fr';
+  const projLang = projet.language || 'fr';
 
-    if (action === 'refuse') {
-      const reason = prompt(t[language].adminRefuseReasonPrompt);
-      if (!reason) return;
-      if (!confirm(t[language].adminRefuseConfirm)) return;
-      setActionLoading(projet.id);
-      try {
-        await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id: projet.id, action: 'refuse', decision_message: reason }),
-        });
+  if (action === 'refuse') {
+    const reason = prompt(t[language].adminRefuseReasonPrompt);
+    if (!reason) return;
+    if (!confirm(t[language].adminRefuseConfirm)) return;
+    setActionLoading(projet.id);
+    try {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: projet.id, action: 'refuse', decision_message: reason }),
+      });
 
-        await fetch('/api/send-project-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: projet.client_email,
-            subject: projLang === 'en' ? 'Update about your project' : 'Suite de votre projet',
-            title: projLang === 'en' ? 'Project update' : 'Suite de votre projet',
-            message: projLang === 'en'
-              ? `Hello ${projet.client_name},<br><br>After careful review, we regret to inform you that we cannot move forward with your project <strong>${getProjectTitle(projet, 'your project')}</strong> at this time.<br><br>Reason: ${reason}<br><br>Feel free to reach out if you have any questions.`
-              : `Bonjour ${projet.client_name},<br><br>Après étude approfondie, nous sommes au regret de ne pas donner suite à votre projet <strong>${getProjectTitle(projet, 'votre projet')}</strong> pour le moment.<br><br>Motif : ${reason}<br><br>N'hésitez pas à nous contacter si vous avez des questions.`,
-            buttonText: projLang === 'en' ? 'Contact us' : 'Nous contacter',
-            buttonUrl: 'mailto:contact@actoos.com',
-            language: projLang,
-          }),
-        });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Erreur ${res.status}`);
+      }
 
-        setProjets(prev => prev.filter(p => p.id !== projet.id));
-      } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
+      await fetch('/api/send-project-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: projet.client_email,
+          subject: projLang === 'en' ? 'Update about your project' : 'Suite de votre projet',
+          title: projLang === 'en' ? 'Project update' : 'Suite de votre projet',
+          message: projLang === 'en'
+            ? `Hello ${projet.client_name},<br><br>After careful review, we regret to inform you that we cannot move forward with your project <strong>${getProjectTitle(projet, 'your project')}</strong> at this time.<br><br>Reason: ${reason}<br><br>Feel free to reach out if you have any questions.`
+            : `Bonjour ${projet.client_name},<br><br>Après étude approfondie, nous sommes au regret de ne pas donner suite à votre projet <strong>${getProjectTitle(projet, 'votre projet')}</strong> pour le moment.<br><br>Motif : ${reason}<br><br>N'hésitez pas à nous contacter si vous avez des questions.`,
+          buttonText: projLang === 'en' ? 'Contact us' : 'Nous contacter',
+          buttonUrl: 'mailto:contact@actoos.com',
+          language: projLang,
+        }),
+      });
 
-    } else if (action === 'accept') {
-      setActionLoading(projet.id);
-      try {
-        await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id: projet.id, action: 'accept' }),
-        });
-        const clientLink = `https://actoos.com/client/${projet.client_token}`;
-
-        await fetch('/api/send-project-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: projet.client_email,
-            subject: projLang === 'en' ? 'Your project has been accepted!' : 'Votre projet a été accepté !',
-            title: projLang === 'en' ? 'Project accepted!' : 'Projet accepté !',
-            message: projLang === 'en'
-              ? `Hello ${projet.client_name},<br><br>We are pleased to inform you that your project <strong>${getProjectTitle(projet, 'your project')}</strong> has been accepted!<br><br>Our team will contact you shortly to discuss the next steps.`
-              : `Bonjour ${projet.client_name},<br><br>Nous avons le plaisir de vous annoncer que votre projet <strong>${getProjectTitle(projet, 'votre projet')}</strong> a été accepté !<br><br>Notre équipe vous contactera très prochainement pour échanger sur les prochaines étapes.`,
-            buttonText: projLang === 'en' ? 'View my project' : 'Voir mon projet',
-            buttonUrl: clientLink,
-            language: projLang,
-          }),
-        });
-
-        setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, status: 'gagné' } : p));
-      } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
-
-    } else if (action === 'archive') {
-      if (!confirm(t[language].adminArchiveConfirm)) return;
-      setActionLoading(projet.id);
-      try {
-        await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id: projet.id, action: 'archive' }),
-        });
-        setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, archived: true, status: 'perdu' } : p));
-      } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
+      // ✅ Recharger depuis le serveur
+      await loadProjects();
+    } catch (err: any) {
+      console.error('[Admin] Refuse error:', err);
+      alert(err.message || t[language].adminError);
+    } finally {
+      setActionLoading(null);
     }
-  };
+
+  } else if (action === 'accept') {
+    setActionLoading(projet.id);
+    try {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: projet.id, action: 'accept' }),
+      });
+
+      // ✅ VÉRIFICATION CRITIQUE : le serveur a-t-il accepté la requête ?
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Erreur ${res.status}`);
+      }
+
+      const clientLink = `https://actoos.com/client/${projet.client_token}`;
+
+      await fetch('/api/send-project-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: projet.client_email,
+          subject: projLang === 'en' ? 'Your project has been accepted!' : 'Votre projet a été accepté !',
+          title: projLang === 'en' ? 'Project accepted!' : 'Projet accepté !',
+          message: projLang === 'en'
+            ? `Hello ${projet.client_name},<br><br>We are pleased to inform you that your project <strong>${getProjectTitle(projet, 'your project')}</strong> has been accepted!<br><br>Our team will contact you shortly to discuss the next steps.`
+            : `Bonjour ${projet.client_name},<br><br>Nous avons le plaisir de vous annoncer que votre projet <strong>${getProjectTitle(projet, 'votre projet')}</strong> a été accepté !<br><br>Notre équipe vous contactera très prochainement pour échanger sur les prochaines étapes.`,
+          buttonText: projLang === 'en' ? 'View my project' : 'Voir mon projet',
+          buttonUrl: clientLink,
+          language: projLang,
+        }),
+      });
+
+      // ✅ Recharger depuis le serveur (au lieu de juste mettre à jour en local)
+      await loadProjects();
+    } catch (err: any) {
+      console.error('[Admin] Accept error:', err);
+      alert(err.message || t[language].adminError);
+    } finally {
+      setActionLoading(null);
+    }
+
+  } else if (action === 'archive') {
+    if (!confirm(t[language].adminArchiveConfirm)) return;
+    setActionLoading(projet.id);
+    try {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/update-projet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: projet.id, action: 'archive' }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Erreur ${res.status}`);
+      }
+
+      await loadProjects();
+    } catch (err: any) {
+      console.error('[Admin] Archive error:', err);
+      alert(err.message || t[language].adminError);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+};
 
   const handleRestore = async (id: string) => {
     setActionLoading(id);
