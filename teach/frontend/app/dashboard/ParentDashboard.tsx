@@ -7,7 +7,7 @@ import {
   Lightbulb, Bookmark, Phone, MapPin, User, ArrowRight,
   GraduationCap, School, Plus, Baby, Eye, Home,
   LayoutDashboard, LogOut, Settings, Inbox, Clock,
-  CheckCircle2, XCircle, Flag, UserPlus,
+  CheckCircle2, XCircle, Flag, UserPlus, Sparkles,
   Trash2, AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
@@ -34,6 +34,212 @@ function calcAge(birthDate: string | null): number | null {
   const m = today.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
   return age;
+}
+
+// ═══════════════════════════════════════════════════════
+// SMART TIP — moteur de conseils contextuels
+// ═══════════════════════════════════════════════════════
+
+type TipTone = 'info' | 'warning' | 'success' | 'growth';
+
+interface SmartTip {
+  tone: TipTone;
+  icon: React.ElementType;
+  eyebrow: string;
+  title: string;
+  text: string;
+  cta?: { label: string; href: string };
+}
+
+const TIP_TONES: Record<TipTone, {
+  card: string; iconBg: string; iconText: string; eyebrow: string; title: string; text: string; cta: string;
+}> = {
+  info: {
+    card: 'border-blue-200 bg-blue-50',
+    iconBg: 'bg-white border-blue-100',
+    iconText: 'text-blue-600',
+    eyebrow: 'text-blue-600',
+    title: 'text-blue-900',
+    text: 'text-blue-900/80',
+    cta: 'text-blue-700 hover:text-blue-800',
+  },
+  warning: {
+    card: 'border-amber-200 bg-amber-50',
+    iconBg: 'bg-white border-amber-100',
+    iconText: 'text-amber-600',
+    eyebrow: 'text-amber-600',
+    title: 'text-amber-900',
+    text: 'text-amber-900/80',
+    cta: 'text-amber-700 hover:text-amber-800',
+  },
+  success: {
+    card: 'border-emerald-200 bg-emerald-50',
+    iconBg: 'bg-white border-emerald-100',
+    iconText: 'text-emerald-600',
+    eyebrow: 'text-emerald-600',
+    title: 'text-emerald-900',
+    text: 'text-emerald-900/80',
+    cta: 'text-emerald-700 hover:text-emerald-800',
+  },
+  growth: {
+    card: 'border-purple-200 bg-purple-50',
+    iconBg: 'bg-white border-purple-100',
+    iconText: 'text-purple-600',
+    eyebrow: 'text-purple-600',
+    title: 'text-purple-900',
+    text: 'text-purple-900/80',
+    cta: 'text-purple-700 hover:text-purple-800',
+  },
+};
+
+function SmartTipCard({ tip }: { tip: SmartTip }) {
+  const tone = TIP_TONES[tip.tone];
+  const Icon = tip.icon;
+
+  return (
+    <Card className={tone.card}>
+      <CardContent>
+        <div className="flex items-start gap-3">
+          <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${tone.iconBg}`}>
+            <Icon className={`w-5 h-5 ${tone.iconText}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${tone.eyebrow}`}>
+              {tip.eyebrow}
+            </p>
+            <p className={`text-sm font-semibold leading-snug ${tone.title}`}>
+              {tip.title}
+            </p>
+            <p className={`text-sm leading-relaxed mt-1 ${tone.text}`}>
+              {tip.text}
+            </p>
+            {tip.cta && (
+              <Link
+                href={tip.cta.href}
+                prefetch
+                className={`inline-flex items-center gap-1 text-xs font-semibold mt-3 transition-colors ${tone.cta}`}
+              >
+                {tip.cta.label}
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getParentTip(ctx: {
+  isFr: boolean;
+  parentProfile: any;
+  childrenCount: number;
+  savedCount: number;
+  pendingRequests: number;
+  completionPercent: number;
+  userId: string;
+}): SmartTip {
+  const { isFr, parentProfile, childrenCount, savedCount, pendingRequests, completionPercent, userId } = ctx;
+  const t = (fr: string, en: string) => (isFr ? fr : en);
+
+  if (childrenCount === 0) {
+    return {
+      tone: 'warning',
+      icon: Baby,
+      eyebrow: t('Priorité', 'Priority'),
+      title: t('Ajoutez votre premier enfant', 'Add your first child'),
+      text: t(
+        'Les profs regardent le profil des enfants avant de répondre. Sans enfant, votre demande est souvent ignorée.',
+        'Teachers look at your children\'s profiles before replying. Without a child, your request is often ignored.',
+      ),
+      cta: { label: t('Ajouter un enfant', 'Add a child'), href: '/parent/profile/edit' },
+    };
+  }
+
+  if (!parentProfile?.city) {
+    return {
+      tone: 'info',
+      icon: MapPin,
+      eyebrow: t('Conseil', 'Tip'),
+      title: t('Renseignez votre ville', 'Set your city'),
+      text: t(
+        'La recherche est locale : une ville renseignée vous donne accès aux profs disponibles près de chez vous.',
+        'Search is local: a filled city gives you access to teachers available near you.',
+      ),
+      cta: { label: t('Renseigner ma ville', 'Set my city'), href: '/parent/profile/edit' },
+    };
+  }
+
+  if (savedCount === 0) {
+    return {
+      tone: 'info',
+      icon: Heart,
+      eyebrow: t('Conseil', 'Tip'),
+      title: t('Sauvegardez vos profs préférés', 'Save your favorite teachers'),
+      text: t(
+        'Sauvegardez 3 profs avant de contacter : vous pourrez comparer tranquillement et décider sans pression.',
+        'Save 3 teachers before contacting: compare calmly and decide without pressure.',
+      ),
+      cta: { label: t('Chercher un prof', 'Find a teacher'), href: '/teachers' },
+    };
+  }
+
+  if (pendingRequests > 0) {
+    return {
+      tone: 'warning',
+      icon: Inbox,
+      eyebrow: t('Action', 'Action'),
+      title: t(
+        `${pendingRequests} demande${pendingRequests > 1 ? 's' : ''} en attente`,
+        `${pendingRequests} pending request${pendingRequests > 1 ? 's' : ''}`,
+      ),
+      text: t(
+        'Les profs répondent généralement en quelques heures. Si un prof ne répond pas sous 48 h, n\'hésitez pas à en contacter un autre.',
+        'Teachers usually reply within hours. If a teacher doesn\'t reply in 48h, feel free to contact another one.',
+      ),
+      cta: { label: t('Voir mes demandes', 'See my requests'), href: '/parent/requests' },
+    };
+  }
+
+  if (completionPercent >= 70 && savedCount > 0) {
+    return {
+      tone: 'growth',
+      icon: Search,
+      eyebrow: t('Passez à l\'action', 'Take action'),
+      title: t('Contactez votre premier prof', 'Contact your first teacher'),
+      text: t(
+        'Votre profil est complet : les profs vous répondront plus vite. Envoyez une demande, c\'est gratuit et sans engagement.',
+        'Your profile is complete: teachers will reply faster. Send a request, it\'s free and with no commitment.',
+      ),
+      cta: { label: t('Trouver un prof', 'Find a teacher'), href: '/teachers' },
+    };
+  }
+
+  if (completionPercent === 100) {
+    return {
+      tone: 'success',
+      icon: Sparkles,
+      eyebrow: t('Bravo', 'Great job'),
+      title: t('Profil parent complet', 'Parent profile complete'),
+      text: t(
+        'Vous êtes prêt ! N\'hésitez pas à laisser un avis après chaque cours : cela aide les autres parents à choisir.',
+        'You\'re all set! Don\'t forget to leave a review after each lesson: it helps other parents choose.',
+      ),
+      cta: { label: t('Voir mon profil', 'View my profile'), href: `/parents/${userId}` },
+    };
+  }
+
+  return {
+    tone: 'info',
+    icon: Lightbulb,
+    eyebrow: t('Conseil', 'Tip'),
+    title: t('Ajoutez les profils de vos enfants', 'Add your children\'s profiles'),
+    text: t(
+      'Plus votre profil est détaillé, plus les profs répondent vite et avec des propositions adaptées.',
+      'The more detailed your profile, the faster teachers respond with tailored offers.',
+    ),
+    cta: { label: t('Compléter', 'Complete'), href: '/parent/profile/edit' },
+  };
 }
 
 // ═══════════════════════════════════════════════════════
@@ -101,7 +307,7 @@ function OutlineButton({ children, className = '', ...props }: React.ButtonHTMLA
 }
 
 // ═══════════════════════════════════════════════════════
-// NAV TAB — utilise <Link prefetch>
+// NAV TAB
 // ═══════════════════════════════════════════════════════
 
 function NavTab({ href, icon: Icon, active = false, disabled = false, badge, children }: {
@@ -299,14 +505,12 @@ export default function ParentDashboard() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ FIX : on n'attend plus authLoading seul
   useEffect(() => {
     if (authLoading && !authTimeoutExpired) return;
     if (!user?.id) return;
@@ -449,6 +653,53 @@ export default function ParentDashboard() {
     user?.email?.[0]?.toUpperCase() ||
     '?';
 
+  const steps = [
+    {
+      done: Boolean(parentProfile?.city),
+      icon: MapPin,
+      label: isFr ? 'Renseigner votre ville' : 'Set your city',
+      hint: isFr ? 'Pour trouver des profs près de chez vous' : 'To find teachers near you',
+    },
+    {
+      done: Boolean(parentProfile?.phone),
+      icon: Phone,
+      label: isFr ? 'Ajouter votre téléphone' : 'Add your phone',
+      hint: isFr ? 'Pour être joignable rapidement' : 'To be reachable quickly',
+    },
+    {
+      done: children.length > 0,
+      icon: Baby,
+      label: isFr ? 'Ajouter un enfant' : 'Add a child',
+      hint: isFr ? 'Aidez les profs à comprendre vos besoins' : 'Help teachers understand your needs',
+    },
+    {
+      done: Boolean(parentProfile?.bio),
+      icon: Lightbulb,
+      label: isFr ? 'Ajouter une présentation' : 'Add a presentation',
+      hint: isFr ? 'Quelques mots sur votre projet' : 'A few words about your project',
+    },
+    {
+      done: Boolean(parentProfile?.profile_photo_url),
+      icon: User,
+      label: isFr ? 'Ajouter une photo' : 'Add a photo',
+      hint: isFr ? 'Inspirez confiance aux profs' : 'Inspire trust with teachers',
+    },
+  ];
+
+  const completedSteps = steps.filter(s => s.done).length;
+  const totalSteps = steps.length;
+  const currentStepIndex = steps.findIndex(s => !s.done);
+
+  const parentTip = getParentTip({
+    isFr,
+    parentProfile,
+    childrenCount: children.length,
+    savedCount: stats.savedCount,
+    pendingRequests: stats.pendingRequests,
+    completionPercent,
+    userId: user?.id ?? '',
+  });
+
   const handleSignOut = async () => {
     await signOut();
     window.location.href = '/';
@@ -472,7 +723,6 @@ export default function ParentDashboard() {
         .eq('id', user.id);
       if (error) throw error;
 
-      // Si l'user est aussi teacher → bascule sur teacher. Sinon → onboarding.
       if (isTeacher) {
         localStorage.setItem(STORAGE_KEY, 'teacher');
         window.location.href = '/dashboard';
@@ -503,7 +753,6 @@ export default function ParentDashboard() {
     return isFr ? `il y a ${days} j` : `${days} d ago`;
   }
 
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return <DashboardSkeleton />;
   }
@@ -712,18 +961,45 @@ export default function ParentDashboard() {
             </CardContent>
           </Card>
 
+          {/* ✅ PROCHAINES ÉTAPES — checklist sobre */}
           <Card>
             <CardHeader
               icon={Check}
               title={isFr ? 'Prochaines étapes' : 'Next steps'}
-              subtitle={isFr ? 'Complétez votre profil parent' : 'Complete your parent profile'}
+              subtitle={
+                isFr
+                  ? `${completedSteps} sur ${totalSteps} étapes complétées`
+                  : `${completedSteps} of ${totalSteps} steps completed`
+              }
+              action={
+                <span className="text-xs font-semibold text-slate-500 tabular-nums">
+                  {Math.round((completedSteps / totalSteps) * 100)}%
+                </span>
+              }
             />
+
+            <div className="h-0.5 w-full bg-slate-100">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-700"
+                style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
+              />
+            </div>
+
             <ul className="divide-y divide-slate-100">
-              <NextStep done={Boolean(parentProfile?.city)} label={isFr ? 'Renseigner votre ville' : 'Set your city'} href="/parent/profile/edit" />
-              <NextStep done={Boolean(parentProfile?.phone)} label={isFr ? 'Ajouter votre téléphone' : 'Add your phone'} href="/parent/profile/edit" />
-              <NextStep done={children.length > 0} label={isFr ? 'Ajouter un enfant' : 'Add a child'} href="/parent/profile/edit" />
-              <NextStep done={Boolean(parentProfile?.bio)} label={isFr ? 'Ajouter une présentation' : 'Add a presentation'} href="/parent/profile/edit" />
-              <NextStep done={Boolean(parentProfile?.profile_photo_url)} label={isFr ? 'Ajouter une photo' : 'Add a photo'} href="/parent/profile/edit" />
+              {steps.map((step, i) => (
+                <StepItem
+                  key={i}
+                  index={i + 1}
+                  done={step.done}
+                  isCurrent={i === currentStepIndex}
+                  icon={step.icon}
+                  label={step.label}
+                  hint={step.hint}
+                  href="/parent/profile/edit"
+                  isFr={isFr}
+                  accent="emerald"
+                />
+              ))}
             </ul>
           </Card>
 
@@ -801,47 +1077,36 @@ export default function ParentDashboard() {
           <Card>
             <CardHeader icon={Lightbulb} title={isFr ? 'Actions rapides' : 'Quick actions'} />
             <ul className="p-2">
-              <QuickAction icon={Home} label={isFr ? "Retour à l'accueil" : 'Back to home'} href="/" />
-              <QuickAction icon={Search} label={isFr ? 'Chercher un prof' : 'Find a teacher'} href="/teachers" />
+              <QuickAction icon={Home} label={isFr ? "Retour à l'accueil" : 'Back to home'} href="/" accent="emerald" />
+              <QuickAction icon={Search} label={isFr ? 'Chercher un prof' : 'Find a teacher'} href="/teachers" accent="emerald" />
               <QuickAction
                 icon={Inbox}
                 label={isFr ? 'Mes demandes' : 'My requests'}
                 href="/parent/requests"
                 badge={stats.pendingRequests > 0 ? String(stats.pendingRequests) : undefined}
+                accent="emerald"
               />
-              <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View my public profile'} href={`/parents/${user.id}`} />
-              <QuickAction icon={Baby} label={isFr ? 'Gérer mes enfants' : 'Manage my children'} href="/parent/profile/edit" />
-              <QuickAction icon={Heart} label={isFr ? 'Mes profs sauvegardés' : 'My saved teachers'} href="/parent/favorites" />
+              <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View my public profile'} href={`/parents/${user.id}`} accent="emerald" />
+              <QuickAction icon={Baby} label={isFr ? 'Gérer mes enfants' : 'Manage my children'} href="/parent/profile/edit" accent="emerald" />
+              <QuickAction icon={Heart} label={isFr ? 'Mes profs sauvegardés' : 'My saved teachers'} href="/parent/favorites" accent="emerald" />
               {!isTeacher && (
                 <QuickAction
                   icon={UserPlus}
                   label={isFr ? 'Devenir aussi enseignant' : 'Become also a teacher'}
                   href="/onboarding"
+                  accent="emerald"
                 />
               )}
             </ul>
           </Card>
 
-          <Card className="border-emerald-200 bg-emerald-50">
-            <CardContent>
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="w-4 h-4 text-emerald-600" />
-                <p className="text-sm font-semibold text-emerald-700">
-                  {isFr ? 'Conseil' : 'Tip'}
-                </p>
-              </div>
-              <p className="text-sm text-emerald-900/80 leading-relaxed">
-                {isFr
-                  ? "Ajoutez le profil de vos enfants pour que les profs comprennent mieux vos besoins dès le premier contact."
-                  : 'Add your children so teachers understand your needs from the very first contact.'}
-              </p>
-            </CardContent>
-          </Card>
+          {/* ✅ CONSEIL INTELLIGENT */}
+          <SmartTipCard tip={parentTip} />
 
           <Card>
             <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external />
+              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external accent="emerald" />
             </ul>
             <div className="p-2 pt-0">
               <button
@@ -856,7 +1121,6 @@ export default function ParentDashboard() {
             </div>
           </Card>
 
-          {/* Zone de danger — Supprimer le rôle parent */}
           <Card className="border-red-200">
             <CardHeader
               icon={AlertTriangle}
@@ -1071,43 +1335,44 @@ function SavedTeacherCard({ teacher }: { teacher: SavedTeacher }) {
   );
 }
 
+type Accent = 'blue' | 'emerald';
+
 function QuickAction({
-  icon: Icon, label, href, badge, external,
+  icon: Icon, label, href, badge, external, accent = 'emerald',
 }: {
   icon: React.ElementType;
   label: string;
   href: string;
   badge?: string;
   external?: boolean;
+  accent?: Accent;
 }) {
+  const hover = accent === 'blue' ? 'hover:text-blue-700' : 'hover:text-emerald-700';
+  const iconHover = accent === 'blue' ? 'group-hover:text-blue-600' : 'group-hover:text-emerald-600';
+  const chevronHover = accent === 'blue' ? 'group-hover:text-blue-600' : 'group-hover:text-emerald-600';
+  const badgeBg = accent === 'blue' ? 'bg-blue-600' : 'bg-emerald-600';
+
   const content = (
     <>
-      <Icon className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+      <Icon className={`w-4 h-4 text-slate-400 transition-colors shrink-0 ${iconHover}`} />
       <span className="flex-1 font-medium">{label}</span>
       {badge && (
-        <span className="text-[10px] font-bold bg-emerald-600 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+        <span className={`text-[10px] font-bold text-white rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 ${badgeBg}`}>
           {badge}
         </span>
       )}
-      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+      <ChevronRight className={`w-4 h-4 text-slate-300 group-hover:translate-x-0.5 transition-all ${chevronHover}`} />
     </>
   );
 
   return (
     <li>
       {external ? (
-        <a
-          href={href}
-          className="group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors"
-        >
+        <a href={href} className={`group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors ${hover}`}>
           {content}
         </a>
       ) : (
-        <Link
-          href={href}
-          prefetch
-          className="group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors"
-        >
+        <Link href={href} prefetch className={`group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors ${hover}`}>
           {content}
         </Link>
       )}
@@ -1115,36 +1380,90 @@ function QuickAction({
   );
 }
 
-function NextStep({
-  done, label, href,
+function StepItem({
+  index, done, isCurrent, icon: Icon, label, hint, href, isFr, accent = 'emerald',
 }: {
+  index: number;
   done: boolean;
+  isCurrent: boolean;
+  icon: React.ElementType;
   label: string;
+  hint: string;
   href: string;
+  isFr: boolean;
+  accent?: Accent;
 }) {
+  const c = accent === 'blue'
+    ? {
+        doneBg: 'bg-blue-600 border-blue-600',
+        currentBorder: 'border-blue-500',
+        currentRing: 'ring-blue-100',
+        currentIcon: 'text-blue-600',
+        currentHoverBg: 'hover:bg-blue-50/40',
+        currentCta: 'text-blue-600 bg-blue-50 group-hover:bg-blue-100',
+      }
+    : {
+        doneBg: 'bg-emerald-600 border-emerald-600',
+        currentBorder: 'border-emerald-500',
+        currentRing: 'ring-emerald-100',
+        currentIcon: 'text-emerald-600',
+        currentHoverBg: 'hover:bg-emerald-50/40',
+        currentCta: 'text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100',
+      };
+
   return (
     <li>
       <Link
         href={href}
         prefetch
-        className="group flex items-center gap-4 px-5 sm:px-6 py-4 hover:bg-slate-50 transition-colors"
+        className={`group flex items-center gap-4 px-5 sm:px-6 py-3.5 transition-colors ${
+          done ? 'hover:bg-slate-50/60' : isCurrent ? c.currentHoverBg : 'hover:bg-slate-50/60'
+        }`}
       >
-        <span
-          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-            done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 group-hover:border-emerald-400'
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+            done
+              ? c.doneBg
+              : isCurrent
+                ? `bg-white ring-4 ${c.currentBorder} ${c.currentRing}`
+                : 'border-slate-200 bg-white'
           }`}
         >
-          {done && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-        </span>
-        <span
-          className={`text-sm flex-1 transition-colors ${
-            done ? 'text-slate-400 line-through' : 'text-slate-800 font-medium group-hover:text-emerald-700'
-          }`}
-        >
-          {label}
-        </span>
-        {!done && (
-          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+          {done ? (
+            <Check className="w-4 h-4 text-white" strokeWidth={3} />
+          ) : (
+            <Icon className={`w-3.5 h-3.5 ${isCurrent ? c.currentIcon : 'text-slate-400'}`} />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p
+            className={`text-sm truncate transition-colors ${
+              done
+                ? 'text-slate-400 line-through'
+                : isCurrent
+                  ? 'text-slate-900 font-semibold'
+                  : 'text-slate-600 font-medium'
+            }`}
+          >
+            {label}
+          </p>
+          {!done && (
+            <p className="text-xs text-slate-500 mt-0.5 truncate">{hint}</p>
+          )}
+        </div>
+
+        {done ? (
+          <span className="text-xs text-slate-400 shrink-0 tabular-nums">
+            {String(index).padStart(2, '0')}
+          </span>
+        ) : isCurrent ? (
+          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${c.currentCta}`}>
+            {isFr ? 'Commencer' : 'Start'}
+            <ChevronRight className="w-3 h-3" />
+          </span>
+        ) : (
+          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
         )}
       </Link>
     </li>

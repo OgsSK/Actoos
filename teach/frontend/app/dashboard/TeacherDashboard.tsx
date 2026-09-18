@@ -20,6 +20,229 @@ const AUTH_FORM_TIMEOUT_MS = 800;
 const STORAGE_KEY = 'actoos-teach-active-role';
 
 // ═══════════════════════════════════════════════════════
+// SMART TIP — moteur de conseils contextuels
+// ═══════════════════════════════════════════════════════
+
+type TipTone = 'info' | 'warning' | 'success' | 'growth';
+
+interface SmartTip {
+  tone: TipTone;
+  icon: React.ElementType;
+  eyebrow: string;
+  title: string;
+  text: string;
+  cta?: { label: string; href: string };
+}
+
+const TIP_TONES: Record<TipTone, {
+  card: string; iconBg: string; iconText: string; eyebrow: string; title: string; text: string; cta: string;
+}> = {
+  info: {
+    card: 'border-blue-200 bg-blue-50',
+    iconBg: 'bg-white border-blue-100',
+    iconText: 'text-blue-600',
+    eyebrow: 'text-blue-600',
+    title: 'text-blue-900',
+    text: 'text-blue-900/80',
+    cta: 'text-blue-700 hover:text-blue-800',
+  },
+  warning: {
+    card: 'border-amber-200 bg-amber-50',
+    iconBg: 'bg-white border-amber-100',
+    iconText: 'text-amber-600',
+    eyebrow: 'text-amber-600',
+    title: 'text-amber-900',
+    text: 'text-amber-900/80',
+    cta: 'text-amber-700 hover:text-amber-800',
+  },
+  success: {
+    card: 'border-emerald-200 bg-emerald-50',
+    iconBg: 'bg-white border-emerald-100',
+    iconText: 'text-emerald-600',
+    eyebrow: 'text-emerald-600',
+    title: 'text-emerald-900',
+    text: 'text-emerald-900/80',
+    cta: 'text-emerald-700 hover:text-emerald-800',
+  },
+  growth: {
+    card: 'border-purple-200 bg-purple-50',
+    iconBg: 'bg-white border-purple-100',
+    iconText: 'text-purple-600',
+    eyebrow: 'text-purple-600',
+    title: 'text-purple-900',
+    text: 'text-purple-900/80',
+    cta: 'text-purple-700 hover:text-purple-800',
+  },
+};
+
+function SmartTipCard({ tip }: { tip: SmartTip }) {
+  const tone = TIP_TONES[tip.tone];
+  const Icon = tip.icon;
+
+  return (
+    <Card className={tone.card}>
+      <CardContent>
+        <div className="flex items-start gap-3">
+          <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${tone.iconBg}`}>
+            <Icon className={`w-5 h-5 ${tone.iconText}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${tone.eyebrow}`}>
+              {tip.eyebrow}
+            </p>
+            <p className={`text-sm font-semibold leading-snug ${tone.title}`}>
+              {tip.title}
+            </p>
+            <p className={`text-sm leading-relaxed mt-1 ${tone.text}`}>
+              {tip.text}
+            </p>
+            {tip.cta && (
+              <Link
+                href={tip.cta.href}
+                prefetch
+                className={`inline-flex items-center gap-1 text-xs font-semibold mt-3 transition-colors ${tone.cta}`}
+              >
+                {tip.cta.label}
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getTeacherTip(ctx: {
+  isFr: boolean;
+  teacherProfile: any;
+  stats: { subjectsCount: number; levelsCount: number; savedCount: number };
+  pendingRequestsCount: number;
+  completionPercent: number;
+  isVerified: boolean;
+  status: string;
+  userId: string;
+}): SmartTip {
+  const { isFr, teacherProfile, stats, pendingRequestsCount, completionPercent, isVerified, status, userId } = ctx;
+  const t = (fr: string, en: string) => (isFr ? fr : en);
+
+  if (status === 'pending' && !isVerified) {
+    return {
+      tone: 'warning',
+      icon: Clock,
+      eyebrow: t('Priorité', 'Priority'),
+      title: t('Vérification en cours', 'Verification in progress'),
+      text: t(
+        'Pendant la vérification, complétez votre profil à 100 % : les profils complets passent en tête dès la validation.',
+        'While verifying, complete your profile to 100%: complete profiles jump to the top once approved.',
+      ),
+      cta: { label: t('Compléter', 'Complete'), href: '/teacher/profile/edit' },
+    };
+  }
+
+  if (!teacherProfile?.headline) {
+    return {
+      tone: 'info',
+      icon: Sparkles,
+      eyebrow: t('Conseil', 'Tip'),
+      title: t('Ajoutez un titre accrocheur', 'Add a catchy headline'),
+      text: t(
+        'Les profils avec un titre clair reçoivent 2× plus de demandes. Résumez votre approche en une phrase.',
+        'Profiles with a clear headline get 2× more requests. Sum up your approach in one sentence.',
+      ),
+      cta: { label: t('Ajouter un titre', 'Add a headline'), href: '/teacher/profile/edit' },
+    };
+  }
+
+  if (stats.subjectsCount === 0) {
+    return {
+      tone: 'warning',
+      icon: GraduationCap,
+      eyebrow: t('Priorité', 'Priority'),
+      title: t('Aucune matière sélectionnée', 'No subject selected'),
+      text: t(
+        'Sans matière, vous n\'apparaissez dans aucune recherche. Ajoutez-en au moins une pour être visible.',
+        'Without a subject you don\'t appear in any search. Add at least one to be visible.',
+      ),
+      cta: { label: t('Choisir mes matières', 'Choose my subjects'), href: '/teacher/profile/edit' },
+    };
+  }
+
+  if (!teacherProfile?.hourly_rate) {
+    return {
+      tone: 'info',
+      icon: Heart,
+      eyebrow: t('Conseil', 'Tip'),
+      title: t('Définissez votre tarif horaire', 'Set your hourly rate'),
+      text: t(
+        'Les profils sans tarif reçoivent 60 % de demandes en moins. Indiquez un prix clair et compétitif.',
+        'Profiles without a rate get 60% fewer requests. Set a clear, competitive price.',
+      ),
+      cta: { label: t('Définir mon tarif', 'Set my rate'), href: '/teacher/profile/edit' },
+    };
+  }
+
+  if (pendingRequestsCount > 0) {
+    return {
+      tone: 'warning',
+      icon: Inbox,
+      eyebrow: t('Action requise', 'Action needed'),
+      title: t(
+        `${pendingRequestsCount} demande${pendingRequestsCount > 1 ? 's' : ''} en attente`,
+        `${pendingRequestsCount} pending request${pendingRequestsCount > 1 ? 's' : ''}`,
+      ),
+      text: t(
+        'Répondez en moins de 2 h : les profs réactifs décrochent 3× plus de cours. Chaque heure compte.',
+        'Reply within 2h: responsive teachers get 3× more lessons booked. Every hour counts.',
+      ),
+      cta: { label: t('Voir les demandes', 'See requests'), href: '/teacher/requests' },
+    };
+  }
+
+  if (stats.savedCount >= 3 && stats.subjectsCount > 0) {
+    return {
+      tone: 'growth',
+      icon: TrendingUp,
+      eyebrow: t('Croissance', 'Growth'),
+      title: t(
+        `${stats.savedCount} parent${stats.savedCount > 1 ? 's' : ''} vous ont sauvegardé`,
+        `${stats.savedCount} parent${stats.savedCount > 1 ? 's' : ''} saved you`,
+      ),
+      text: t(
+        'Bonne dynamique ! Partagez votre profil public sur vos réseaux pour convertir ces sauvegardes en cours.',
+        'Great momentum! Share your public profile on social media to convert saves into lessons.',
+      ),
+      cta: { label: t('Voir mon profil public', 'View my public profile'), href: `/teachers/${userId}` },
+    };
+  }
+
+  if (completionPercent === 100 && isVerified) {
+    return {
+      tone: 'success',
+      icon: Sparkles,
+      eyebrow: t('Bravo', 'Great job'),
+      title: t('Profil complet et vérifié', 'Profile complete and verified'),
+      text: t(
+        'Vous êtes dans le top des profils. Répondez vite aux nouvelles demandes et demandez des avis aux parents après chaque cours.',
+        'You\'re in the top tier. Reply fast to new requests and ask parents for reviews after each lesson.',
+      ),
+      cta: { label: t('Voir mes demandes', 'See my requests'), href: '/teacher/requests' },
+    };
+  }
+
+  return {
+    tone: 'info',
+    icon: Lightbulb,
+    eyebrow: t('Conseil', 'Tip'),
+    title: t('Restez réactif', 'Stay responsive'),
+    text: t(
+      'Les profs qui répondent aux demandes en moins de 2 h ont 3× plus de chances de décrocher un cours.',
+      'Teachers who respond within 2h are 3× more likely to get a lesson.',
+    ),
+  };
+}
+
+// ═══════════════════════════════════════════════════════
 // PRIMITIVES
 // ═══════════════════════════════════════════════════════
 
@@ -250,14 +473,12 @@ export default function TeacherDashboard() {
   const [subjectNames, setSubjectNames] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
 
-  // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ FIX : on n'attend plus authLoading seul
   useEffect(() => {
     if (authLoading && !authTimeoutExpired) return;
     if (!user?.id) return;
@@ -321,6 +542,60 @@ export default function TeacherDashboard() {
   const status = teacherProfile?.verification_status || 'pending';
   const isVerified = status === 'verified';
 
+  const steps = [
+    {
+      done: Boolean(teacherProfile?.headline),
+      icon: Sparkles,
+      label: isFr ? 'Ajouter un titre' : 'Add a headline',
+      hint: isFr ? 'Résumez votre approche en une phrase' : 'Sum up your approach in one sentence',
+    },
+    {
+      done: Boolean(teacherProfile?.bio),
+      icon: BookOpen,
+      label: isFr ? 'Rédiger une bio' : 'Write a bio',
+      hint: isFr ? 'Présentez votre parcours et méthode' : 'Present your background and method',
+    },
+    {
+      done: stats.subjectsCount > 0,
+      icon: GraduationCap,
+      label: isFr ? 'Choisir vos matières' : 'Choose your subjects',
+      hint: isFr ? 'Sélectionnez ce que vous enseignez' : 'Select what you teach',
+    },
+    {
+      done: stats.levelsCount > 0,
+      icon: TrendingUp,
+      label: isFr ? 'Choisir vos niveaux' : 'Choose your levels',
+      hint: isFr ? 'Définissez les niveaux couverts' : 'Define the levels you cover',
+    },
+    {
+      done: Boolean(teacherProfile?.hourly_rate),
+      icon: Heart,
+      label: isFr ? 'Définir votre tarif' : 'Set your rate',
+      hint: isFr ? 'Indiquez votre tarif horaire' : 'Set your hourly rate',
+    },
+    {
+      done: Boolean(teacherProfile?.profile_photo_url),
+      icon: User,
+      label: isFr ? 'Ajouter une photo' : 'Add a photo',
+      hint: isFr ? 'Inspirez confiance dès le premier regard' : 'Inspire trust at first glance',
+    },
+  ];
+
+  const completedSteps = steps.filter(s => s.done).length;
+  const totalSteps = steps.length;
+  const currentStepIndex = steps.findIndex(s => !s.done);
+
+  const teacherTip = getTeacherTip({
+    isFr,
+    teacherProfile,
+    stats,
+    pendingRequestsCount,
+    completionPercent,
+    isVerified,
+    status,
+    userId: user?.id ?? '',
+  });
+
   const handleSignOut = async () => {
     await signOut();
     window.location.href = '/';
@@ -344,7 +619,6 @@ export default function TeacherDashboard() {
         .eq('id', user.id);
       if (error) throw error;
 
-      // Si l'user est aussi parent → bascule sur parent. Sinon → onboarding.
       if (isParent) {
         localStorage.setItem(STORAGE_KEY, 'parent');
         window.location.href = '/dashboard';
@@ -363,7 +637,6 @@ export default function TeacherDashboard() {
     }
   }
 
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return <DashboardSkeleton />;
   }
@@ -488,15 +761,45 @@ export default function TeacherDashboard() {
             </Card>
           )}
 
+          {/* ✅ PROCHAINES ÉTAPES — checklist sobre */}
           <Card>
-            <CardHeader icon={Check} title={isFr ? 'Prochaines étapes' : 'Next steps'} subtitle={isFr ? 'Complétez votre profil enseignant' : 'Complete your teacher profile'} />
+            <CardHeader
+              icon={Check}
+              title={isFr ? 'Prochaines étapes' : 'Next steps'}
+              subtitle={
+                isFr
+                  ? `${completedSteps} sur ${totalSteps} étapes complétées`
+                  : `${completedSteps} of ${totalSteps} steps completed`
+              }
+              action={
+                <span className="text-xs font-semibold text-slate-500 tabular-nums">
+                  {Math.round((completedSteps / totalSteps) * 100)}%
+                </span>
+              }
+            />
+
+            <div className="h-0.5 w-full bg-slate-100">
+              <div
+                className="h-full bg-blue-500 transition-all duration-700"
+                style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
+              />
+            </div>
+
             <ul className="divide-y divide-slate-100">
-              <NextStep done={Boolean(teacherProfile?.headline)} label={isFr ? 'Ajouter un titre' : 'Add a headline'} href="/teacher/profile/edit" />
-              <NextStep done={Boolean(teacherProfile?.bio)} label={isFr ? 'Rédiger une bio' : 'Write a bio'} href="/teacher/profile/edit" />
-              <NextStep done={stats.subjectsCount > 0} label={isFr ? 'Choisir vos matières' : 'Choose your subjects'} href="/teacher/profile/edit" />
-              <NextStep done={stats.levelsCount > 0} label={isFr ? 'Choisir vos niveaux' : 'Choose your levels'} href="/teacher/profile/edit" />
-              <NextStep done={Boolean(teacherProfile?.hourly_rate)} label={isFr ? 'Définir votre tarif' : 'Set your rate'} href="/teacher/profile/edit" />
-              <NextStep done={Boolean(teacherProfile?.profile_photo_url)} label={isFr ? 'Ajouter une photo' : 'Add a photo'} href="/teacher/profile/edit" />
+              {steps.map((step, i) => (
+                <StepItem
+                  key={i}
+                  index={i + 1}
+                  done={step.done}
+                  isCurrent={i === currentStepIndex}
+                  icon={step.icon}
+                  label={step.label}
+                  hint={step.hint}
+                  href="/teacher/profile/edit"
+                  isFr={isFr}
+                  accent="blue"
+                />
+              ))}
             </ul>
           </Card>
 
@@ -542,31 +845,23 @@ export default function TeacherDashboard() {
           <Card>
             <CardHeader icon={Lightbulb} title={isFr ? 'Actions rapides' : 'Quick actions'} />
             <ul className="p-2">
-              <QuickAction icon={Home} label={isFr ? "Retour à l'accueil" : 'Back to home'} href="/" />
-              <QuickAction icon={Pencil} label={isFr ? 'Modifier mon profil' : 'Edit my profile'} href="/teacher/profile/edit" />
-              <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View public profile'} href={`/teachers/${user.id}`} />
-              <QuickAction icon={Inbox} label={isFr ? 'Demandes de cours' : 'Lesson requests'} href="/teacher/requests" badge={pendingRequestsCount > 0 ? String(pendingRequestsCount) : undefined} />
+              <QuickAction icon={Home} label={isFr ? "Retour à l'accueil" : 'Back to home'} href="/" accent="blue" />
+              <QuickAction icon={Pencil} label={isFr ? 'Modifier mon profil' : 'Edit my profile'} href="/teacher/profile/edit" accent="blue" />
+              <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View public profile'} href={`/teachers/${user.id}`} accent="blue" />
+              <QuickAction icon={Inbox} label={isFr ? 'Demandes de cours' : 'Lesson requests'} href="/teacher/requests" badge={pendingRequestsCount > 0 ? String(pendingRequestsCount) : undefined} accent="blue" />
               {!isParent && (
                 <QuickAction
                   icon={UserPlus}
                   label={isFr ? 'Devenir aussi parent' : 'Become also a parent'}
                   href="/onboarding"
+                  accent="blue"
                 />
               )}
             </ul>
           </Card>
 
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent>
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="w-4 h-4 text-blue-600" />
-                <p className="text-sm font-semibold text-blue-700">{isFr ? 'Conseil' : 'Tip'}</p>
-              </div>
-              <p className="text-sm text-blue-900/80 leading-relaxed">
-                {isFr ? 'Les profs qui répondent aux demandes en moins de 2 h ont 3× plus de chances de décrocher un cours.' : 'Teachers who respond within 2 h are 3× more likely to get a lesson.'}
-              </p>
-            </CardContent>
-          </Card>
+          {/* ✅ CONSEIL INTELLIGENT */}
+          <SmartTipCard tip={teacherTip} />
 
           {completionPercent < 100 && (
             <Card>
@@ -593,7 +888,7 @@ export default function TeacherDashboard() {
           <Card>
             <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external />
+              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external accent="blue" />
             </ul>
             <div className="p-2 pt-0">
               <button
@@ -606,7 +901,6 @@ export default function TeacherDashboard() {
             </div>
           </Card>
 
-          {/* Zone de danger — Supprimer le rôle enseignant */}
           <Card className="border-red-200">
             <CardHeader
               icon={AlertTriangle}
@@ -680,41 +974,48 @@ function StatCard({ icon: Icon, label, value, color = 'blue' }: {
   );
 }
 
-function QuickAction({ icon: Icon, label, href, badge, external }: {
+type Accent = 'blue' | 'emerald';
+
+function QuickAction({ icon: Icon, label, href, badge, external, accent = 'blue' }: {
   icon: React.ElementType;
   label: string;
   href: string;
   badge?: string;
   external?: boolean;
+  accent?: Accent;
 }) {
+  const hover = accent === 'blue'
+    ? 'hover:text-blue-700'
+    : 'hover:text-emerald-700';
+  const iconHover = accent === 'blue'
+    ? 'group-hover:text-blue-600'
+    : 'group-hover:text-emerald-600';
+  const chevronHover = accent === 'blue'
+    ? 'group-hover:text-blue-600'
+    : 'group-hover:text-emerald-600';
+  const badgeBg = accent === 'blue' ? 'bg-blue-600' : 'bg-emerald-600';
+
   const content = (
     <>
-      <Icon className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
+      <Icon className={`w-4 h-4 text-slate-400 transition-colors shrink-0 ${iconHover}`} />
       <span className="flex-1 font-medium">{label}</span>
       {badge && (
-        <span className="text-[10px] font-bold bg-blue-600 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+        <span className={`text-[10px] font-bold text-white rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 ${badgeBg}`}>
           {badge}
         </span>
       )}
-      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+      <ChevronRight className={`w-4 h-4 text-slate-300 group-hover:translate-x-0.5 transition-all ${chevronHover}`} />
     </>
   );
 
   return (
     <li>
       {external ? (
-        <a
-          href={href}
-          className="group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition-colors"
-        >
+        <a href={href} className={`group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors ${hover}`}>
           {content}
         </a>
       ) : (
-        <Link
-          href={href}
-          prefetch
-          className="group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition-colors"
-        >
+        <Link href={href} prefetch className={`group flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-50 transition-colors ${hover}`}>
           {content}
         </Link>
       )}
@@ -722,21 +1023,93 @@ function QuickAction({ icon: Icon, label, href, badge, external }: {
   );
 }
 
-function NextStep({ done, label, href }: { done: boolean; label: string; href: string; }) {
+function StepItem({
+  index, done, isCurrent, icon: Icon, label, hint, href, isFr, accent = 'blue',
+}: {
+  index: number;
+  done: boolean;
+  isCurrent: boolean;
+  icon: React.ElementType;
+  label: string;
+  hint: string;
+  href: string;
+  isFr: boolean;
+  accent?: Accent;
+}) {
+  const c = accent === 'blue'
+    ? {
+        doneBg: 'bg-blue-600 border-blue-600',
+        currentBorder: 'border-blue-500',
+        currentRing: 'ring-blue-100',
+        currentIcon: 'text-blue-600',
+        currentLabel: '',
+        currentHoverBg: 'hover:bg-blue-50/40',
+        currentCta: 'text-blue-600 bg-blue-50 group-hover:bg-blue-100',
+      }
+    : {
+        doneBg: 'bg-emerald-600 border-emerald-600',
+        currentBorder: 'border-emerald-500',
+        currentRing: 'ring-emerald-100',
+        currentIcon: 'text-emerald-600',
+        currentLabel: '',
+        currentHoverBg: 'hover:bg-emerald-50/40',
+        currentCta: 'text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100',
+      };
+
   return (
     <li>
       <Link
         href={href}
         prefetch
-        className="group flex items-center gap-4 px-5 sm:px-6 py-4 hover:bg-slate-50 transition-colors"
+        className={`group flex items-center gap-4 px-5 sm:px-6 py-3.5 transition-colors ${
+          done ? 'hover:bg-slate-50/60' : isCurrent ? c.currentHoverBg : 'hover:bg-slate-50/60'
+        }`}
       >
-        <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${done ? 'bg-blue-500 border-blue-500' : 'border-slate-300 group-hover:border-blue-400'}`}>
-          {done && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-        </span>
-        <span className={`text-sm flex-1 transition-colors ${done ? 'text-slate-400 line-through' : 'text-slate-800 font-medium group-hover:text-blue-700'}`}>
-          {label}
-        </span>
-        {!done && <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />}
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+            done
+              ? c.doneBg
+              : isCurrent
+                ? `bg-white ring-4 ${c.currentBorder} ${c.currentRing}`
+                : 'border-slate-200 bg-white'
+          }`}
+        >
+          {done ? (
+            <Check className="w-4 h-4 text-white" strokeWidth={3} />
+          ) : (
+            <Icon className={`w-3.5 h-3.5 ${isCurrent ? c.currentIcon : 'text-slate-400'}`} />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p
+            className={`text-sm truncate transition-colors ${
+              done
+                ? 'text-slate-400 line-through'
+                : isCurrent
+                  ? 'text-slate-900 font-semibold'
+                  : 'text-slate-600 font-medium'
+            }`}
+          >
+            {label}
+          </p>
+          {!done && (
+            <p className="text-xs text-slate-500 mt-0.5 truncate">{hint}</p>
+          )}
+        </div>
+
+        {done ? (
+          <span className="text-xs text-slate-400 shrink-0 tabular-nums">
+            {String(index).padStart(2, '0')}
+          </span>
+        ) : isCurrent ? (
+          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${c.currentCta}`}>
+            {isFr ? 'Commencer' : 'Start'}
+            <ChevronRight className="w-3 h-3" />
+          </span>
+        ) : (
+          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
+        )}
       </Link>
     </li>
   );
