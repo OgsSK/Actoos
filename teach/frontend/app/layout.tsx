@@ -92,7 +92,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className="antialiased bg-slate-50 text-slate-900">
+      <body className="antialiased bg-[#fffafa] text-slate-900">
         <Providers>
           <AuthProvider>
             <LanguageProvider>

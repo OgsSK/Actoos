@@ -13,6 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTeachRole } from '../hooks/useTeachRole';
 import { supabase } from '../../lib/supabase';
 import { ACTOOS_ID_BASE } from '../../lib/constants';
+import SupportCard from '../components/SupportCard';
 
 // ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
@@ -862,6 +863,9 @@ export default function TeacherDashboard() {
 
           {/* ✅ CONSEIL INTELLIGENT */}
           <SmartTipCard tip={teacherTip} />
+
+          {/* 💛 SOUTIEN À LA PLATEFORME */}
+          <SupportCard />
 
           {completionPercent < 100 && (
             <Card>

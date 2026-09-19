@@ -9,24 +9,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Données "fraîches" pendant 5 min → pas de refetch pendant ce délai
             staleTime: 5 * 60 * 1000,
-
-            // Garde en cache pendant 30 min après le dernier composant qui l'utilise
             gcTime: 30 * 60 * 1000,
-
-            // Ne revalide pas en arrière-plan si la page reprend le focus
             refetchOnWindowFocus: false,
-
-            // Revalide quand la connexion revient
             refetchOnReconnect: true,
-
-            // Ne refetch pas à chaque mount si les données sont fraîches
             refetchOnMount: false,
-
-            // Retry 1 fois en cas d'erreur réseau
             retry: 1,
-
             retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
           },
         },
@@ -36,6 +24,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      {/* Devtools uniquement en dev */}
+      {/* Décommentez ces lignes si vous installez @tanstack/react-query-devtools */}
+      {/* {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />} */}
     </QueryClientProvider>
   );
 }

@@ -14,7 +14,6 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import ReportButton from '@/app/components/ReportButton';
 
-// ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 // ============================================================
@@ -87,7 +86,7 @@ function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLA
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -152,14 +151,12 @@ export default function ParentPublicProfilePage() {
   const [forbidden, setForbidden] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'children'>('about');
 
-  // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ FIX : on ne bloque plus sur authLoading seul
   useEffect(() => {
     if (!parentId) return;
     if (authLoading && !authTimeoutExpired) return;
@@ -212,7 +209,6 @@ export default function ParentPublicProfilePage() {
     }
   }
 
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return <ParentProfileSkeleton />;
   }
@@ -248,8 +244,8 @@ export default function ParentPublicProfilePage() {
       <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
         <Card className="max-w-md w-full">
           <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
-              <UserIcon className="w-7 h-7 text-emerald-500" />
+            <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
+              <UserIcon className="w-7 h-7 text-red-500" />
             </div>
             <h1 className="text-xl font-bold text-slate-900 mb-3">
               {isFr ? 'Profil introuvable' : 'Profile not found'}
@@ -313,22 +309,22 @@ export default function ParentPublicProfilePage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
       <button
         onClick={() => router.back()}
-        className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 mb-5 transition-colors"
+        className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-500 mb-5 transition-colors"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
         {isFr ? 'Retour' : 'Back'}
       </button>
 
       {isOwnProfile && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3 shadow-sm mb-5">
-          <div className="w-9 h-9 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shrink-0">
-            <Eye className="w-4 h-4 text-emerald-600" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex items-start gap-3 shadow-sm mb-5">
+          <div className="w-9 h-9 rounded-xl bg-white border border-red-100 flex items-center justify-center shrink-0">
+            <Eye className="w-4 h-4 text-red-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-emerald-900">
+            <p className="text-sm font-semibold text-red-900">
               {isFr ? 'Vous consultez votre profil public' : 'You’re viewing your public profile'}
             </p>
-            <p className="text-xs text-emerald-700 mt-0.5 leading-relaxed">
+            <p className="text-xs text-red-700 mt-0.5 leading-relaxed">
               {isFr
                 ? 'Voici ce que les enseignants voient quand vous les contactez.'
                 : 'This is what teachers see when you contact them.'}
@@ -338,7 +334,7 @@ export default function ParentPublicProfilePage() {
       )}
 
       <Card>
-        <div className="relative aspect-[3/1] bg-gradient-to-br from-emerald-100 via-slate-100 to-emerald-50 overflow-hidden">
+        <div className="relative aspect-[3/1] bg-gradient-to-br from-red-100 via-slate-100 to-red-50 overflow-hidden">
           {profile.profile_photo_url && (
             <>
               <img
@@ -354,9 +350,9 @@ export default function ParentPublicProfilePage() {
 
           {isOwnProfile && (
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
-              <span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-emerald-100 px-2.5 py-1 rounded-full shadow-sm">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-[11px] text-emerald-700 font-medium">
+              <span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-red-100 px-2.5 py-1 rounded-full shadow-sm">
+                <CheckCircle2 className="w-3.5 h-3.5 text-red-500" />
+                <span className="text-[11px] text-red-600 font-medium">
                   {isFr ? 'Vous' : 'You'}
                 </span>
               </span>
@@ -376,7 +372,7 @@ export default function ParentPublicProfilePage() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-emerald-600 text-white text-2xl font-bold">
+                <div className="w-full h-full flex items-center justify-center bg-red-500 text-white text-2xl font-bold">
                   {initials}
                 </div>
               )}
@@ -391,7 +387,6 @@ export default function ParentPublicProfilePage() {
               <p className="text-sm text-slate-500 mt-1.5">{subtitle}</p>
             </div>
 
-            {/* 🎯 Actions : Modifier (owner) | Signaler (user connecté) | rien (visiteur) */}
             {isOwnProfile ? (
               <Link href="/parent/profile/edit" prefetch className="shrink-0">
                 <PrimaryButton>
@@ -400,8 +395,7 @@ export default function ParentPublicProfilePage() {
                 </PrimaryButton>
               </Link>
             ) : user ? (
-              /* ✨ Style discret : comme un lien texte, sans bordure ni gros padding */
-              <div className="shrink-0 self-start sm:self-center inline-flex [&>button]:inline-flex [&>button]:items-center [&>button]:gap-1.5 [&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-lg [&>button]:text-xs [&>button]:font-medium [&>button]:text-slate-500 [&>button]:hover:text-red-600 [&>button]:hover:bg-red-50 [&>button]:transition-colors [&>button]:bg-transparent [&>button]:border-0 [&>button]:cursor-pointer">
+              <div className="shrink-0 self-start sm:self-center inline-flex [&>button]:inline-flex [&>button]:items-center [&>button]:gap-1.5 [&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-lg [&>button]:text-xs [&>button]:font-medium [&>button]:text-slate-500 [&>button]:hover:text-red-500 [&>button]:hover:bg-red-50 [&>button]:transition-colors [&>button]:bg-transparent [&>button]:border-0 [&>button]:cursor-pointer">
                 <ReportButton
                   reportedUserId={profile.id}
                   reportedUserName={displayName}
@@ -421,7 +415,7 @@ export default function ParentPublicProfilePage() {
                 </span>
               )}
               {profile.children.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full font-medium">
+                <span className="inline-flex items-center gap-1.5 text-xs text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-full font-medium">
                   <Baby className="w-3 h-3" />
                   {profile.children.length}{' '}
                   {isFr
@@ -451,7 +445,7 @@ export default function ParentPublicProfilePage() {
                     onClick={() => setActiveTab(tab.key)}
                     className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                       active
-                        ? 'border-emerald-600 text-emerald-700'
+                        ? 'border-red-500 text-red-600'
                         : 'border-transparent text-slate-500 hover:text-slate-900'
                     }`}
                   >
@@ -539,8 +533,8 @@ function ChildPublicCard({ child, isFr }: { child: PublicChild; isFr: boolean })
   return (
     <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-          <span className="text-emerald-700 text-base font-bold">
+        <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+          <span className="text-red-600 text-base font-bold">
             {child.first_name.charAt(0).toUpperCase() || '?'}
           </span>
         </div>
@@ -567,17 +561,17 @@ function ChildPublicCard({ child, isFr }: { child: PublicChild; isFr: boolean })
       </div>
 
       {scheduleSlots.length > 0 && (
-        <div className="flex items-start gap-2 pl-3 border-l-2 border-emerald-200">
-          <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 pl-3 border-l-2 border-red-200">
+          <Clock className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-emerald-700 font-semibold mb-1.5">
+            <p className="text-[11px] uppercase tracking-wide text-red-600 font-semibold mb-1.5">
               {isFr ? 'Horaires souhaités' : 'Preferred schedule'}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {scheduleSlots.map((slot, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center text-xs text-emerald-700 bg-white border border-emerald-100 px-2.5 py-1 rounded-lg font-medium"
+                  className="inline-flex items-center text-xs text-red-600 bg-white border border-red-100 px-2.5 py-1 rounded-lg font-medium"
                 >
                   {slot}
                 </span>

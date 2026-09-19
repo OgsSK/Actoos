@@ -32,7 +32,6 @@ export default function ContactPage() {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
       setError(
         isFr
@@ -105,53 +104,32 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* ═══════════ HERO ═══════════ */}
-      <div className="relative bg-slate-900 text-white overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(255,255,255,0.7) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255,255,255,0.7) 1px, transparent 1px)
-            `,
-            backgroundSize: '56px 56px',
-            maskImage: 'radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)',
-            WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)',
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0) 70%)',
-          }}
-        />
-
+    <div className="min-h-screen bg-[#fffafa]">
+      {/* ═══════════ HERO avec dégradé rosé ═══════════ */}
+      <div className="relative bg-gradient-to-b from-white via-red-50 to-red-100 overflow-hidden">
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <Link
             href="/"
             prefetch
-            className="group inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white mb-6 transition-colors"
+            className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-500 mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             {isFr ? "Retour à l'accueil" : 'Back to home'}
           </Link>
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-emerald-400" />
+            <div className="w-12 h-12 rounded-2xl bg-red-100 border border-red-200 flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-red-500" />
             </div>
-            <p className="text-xs uppercase tracking-widest text-emerald-400 font-medium">
+            <p className="text-xs uppercase tracking-widest text-red-500 font-semibold">
               {isFr ? 'Nous sommes à votre écoute' : 'We are listening'}
             </p>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4 text-slate-900">
             {isFr ? 'Contactez-nous' : 'Contact us'}
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
             {isFr
               ? `Une question sur ${BRAND.name}, une suggestion, ou simplement envie d'échanger ? Écrivez-nous.`
               : `A question about ${BRAND.name}, a suggestion, or simply want to chat? Write to us.`}
@@ -170,8 +148,8 @@ export default function ContactPage() {
               {sendState === 'sent' ? (
                 /* ─── SUCCESS STATE ─── */
                 <div className="p-8 sm:p-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                  <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
+                    <CheckCircle2 className="w-8 h-8 text-red-500" />
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
                     {isFr ? 'Message envoyé !' : 'Message sent!'}
@@ -191,7 +169,7 @@ export default function ContactPage() {
                     <Link
                       href="/"
                       prefetch
-                      className="inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors"
+                      className="inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors"
                     >
                       {isFr ? "Retour à l'accueil" : 'Back to home'}
                     </Link>
@@ -234,7 +212,7 @@ export default function ContactPage() {
                           disabled={isSending}
                           required
                           maxLength={100}
-                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors disabled:opacity-60"
+                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-colors disabled:opacity-60"
                         />
                       </div>
 
@@ -254,7 +232,7 @@ export default function ContactPage() {
                           required
                           autoComplete="email"
                           maxLength={200}
-                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors disabled:opacity-60"
+                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-colors disabled:opacity-60"
                         />
                       </div>
                     </div>
@@ -279,7 +257,7 @@ export default function ContactPage() {
                         disabled={isSending}
                         required
                         maxLength={150}
-                        className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors disabled:opacity-60"
+                        className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-colors disabled:opacity-60"
                       />
                     </div>
 
@@ -303,7 +281,7 @@ export default function ContactPage() {
                         disabled={isSending}
                         required
                         maxLength={2000}
-                        className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors disabled:opacity-60"
+                        className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-colors disabled:opacity-60"
                       />
                       <p className="text-xs text-slate-400 mt-1 text-right">
                         {message.length} / 2000
@@ -314,7 +292,7 @@ export default function ContactPage() {
                     <button
                       type="submit"
                       disabled={isSending}
-                      className="w-full inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-60 disabled:cursor-wait"
+                      className="w-full inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-60 disabled:cursor-wait"
                     >
                       {isSending ? (
                         <>
@@ -354,22 +332,22 @@ export default function ContactPage() {
                   href="mailto:contact@actoos.com"
                   className="flex items-start gap-3 group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4 text-emerald-600" />
+                  <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+                    <Mail className="w-4 h-4 text-red-500" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-wider text-slate-500 font-medium">
                       Email
                     </p>
-                    <p className="text-sm font-medium text-slate-900 group-hover:text-emerald-600 transition-colors truncate">
+                    <p className="text-sm font-medium text-slate-900 group-hover:text-red-500 transition-colors truncate">
                       contact@actoos.com
                     </p>
                   </div>
                 </a>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-emerald-600" />
+                  <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 text-red-500" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-wider text-slate-500 font-medium">
@@ -394,7 +372,7 @@ export default function ContactPage() {
                 <Link
                   href="/privacy"
                   prefetch
-                  className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                  className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   {isFr ? 'Politique de confidentialité' : 'Privacy policy'}
@@ -402,7 +380,7 @@ export default function ContactPage() {
                 <Link
                   href="/legal"
                   prefetch
-                  className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                  className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   {isFr ? 'Mentions légales & CGU' : 'Legal & Terms'}

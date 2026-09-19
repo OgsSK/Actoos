@@ -80,8 +80,6 @@ export default function RatingSection({
   const [replyText, setReplyText] = useState('');
   const [savingReply, setSavingReply] = useState(false);
 
-  // ✅ FIX : ajoute isParent dans les deps pour que load() se relance
-  // dès que useTeachRole() a hydraté le rôle.
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,8 +101,6 @@ export default function RatingSection({
       }));
       setRatings(list);
 
-      // ✅ FIX : calcule myRating et eligible dès que user?.id existe,
-      // SANS dépendre de isParent (le rendu fera le tri après).
       if (user?.id && !isOwnProfile) {
         const mine = list.find(r => r.parent_id === user.id) || null;
         setMyRating(mine);
@@ -249,14 +245,14 @@ export default function RatingSection({
                 rows={3}
                 maxLength={500}
                 placeholder={isFr ? 'Votre expérience avec ce prof (optionnel)' : 'Your experience with this teacher (optional)'}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm resize-none focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm resize-none focus:outline-none focus:border-red-500"
               />
               {error && <p className="text-xs text-red-600">{error}</p>}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {isFr ? 'Publier' : 'Submit'}
@@ -280,7 +276,7 @@ export default function RatingSection({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {canEditMyRating && (
-                  <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white transition-colors">
+                  <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-white transition-colors">
                     <Pencil className="w-4 h-4" />
                   </button>
                 )}
@@ -313,7 +309,7 @@ export default function RatingSection({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-semibold text-slate-900">{name}{isMine ? (isFr ? ' (vous)' : ' (you)') : ''}</p>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded-full">
                       <ShieldCheck className="w-3 h-3" />
                       {isFr ? 'Avis vérifié' : 'Verified review'}
                     </span>
@@ -339,15 +335,15 @@ export default function RatingSection({
 
               {/* Réponse du prof */}
               {r.teacher_reply && replyingId !== r.id && (
-                <div className="mt-3 ml-4 pl-3 border-l-2 border-emerald-200">
+                <div className="mt-3 ml-4 pl-3 border-l-2 border-red-200">
                   <div className="flex items-center gap-2">
-                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    <p className="text-xs font-medium text-emerald-700">{isFr ? 'Réponse du prof' : "Teacher's reply"}</p>
+                    <MessageCircle className="w-3.5 h-3.5 text-red-500" />
+                    <p className="text-xs font-medium text-red-600">{isFr ? 'Réponse du prof' : "Teacher's reply"}</p>
                   </div>
                   <p className="text-sm text-slate-700 mt-1">{r.teacher_reply}</p>
                   {isOwnProfile && (
                     <div className="flex items-center gap-3 mt-1.5">
-                      <button onClick={() => { setReplyingId(r.id); setReplyText(r.teacher_reply || ''); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+                      <button onClick={() => { setReplyingId(r.id); setReplyText(r.teacher_reply || ''); }} className="text-xs text-red-500 hover:text-red-600 font-medium">
                         {isFr ? 'Modifier' : 'Edit'}
                       </button>
                       <button onClick={() => handleDeleteReply(r.id)} className="text-xs text-slate-400 hover:text-red-600 font-medium">
@@ -362,7 +358,7 @@ export default function RatingSection({
               {isOwnProfile && !r.teacher_reply && replyingId !== r.id && (
                 <button
                   onClick={() => { setReplyingId(r.id); setReplyText(''); }}
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-600"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   {isFr ? 'Répondre' : 'Reply'}
@@ -371,20 +367,20 @@ export default function RatingSection({
 
               {/* Formulaire de réponse */}
               {isOwnProfile && replyingId === r.id && (
-                <div className="mt-3 ml-4 pl-3 border-l-2 border-emerald-200 space-y-2">
+                <div className="mt-3 ml-4 pl-3 border-l-2 border-red-200 space-y-2">
                   <textarea
                     value={replyText}
                     onChange={e => setReplyText(e.target.value)}
                     rows={2}
                     maxLength={500}
                     placeholder={isFr ? 'Votre réponse…' : 'Your reply…'}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:border-red-500"
                   />
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleSaveReply(r.id)}
                       disabled={savingReply}
-                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-medium disabled:opacity-50"
                     >
                       {savingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                       {isFr ? 'Envoyer' : 'Send'}

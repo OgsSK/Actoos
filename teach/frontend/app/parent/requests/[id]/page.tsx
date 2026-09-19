@@ -14,7 +14,6 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 
-// ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -25,7 +24,7 @@ function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLA
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -83,14 +82,12 @@ export default function ParentRequestDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // ⏱ Timeout local
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ FIX : on n'attend plus authLoading seul
   useEffect(() => {
     if (!requestId) return;
     if (authLoading && !authTimeoutExpired) return;
@@ -133,7 +130,6 @@ export default function ParentRequestDetailPage() {
           .select('id, first_name, last_name, avatar_url')
           .eq('id', req.teacher_id)
           .maybeSingle(),
-        // 🎯 Élargi : récupère plus de champs pour un rendu riche inline
         supabase
           .from('teacher_profiles')
           .select('headline, bio, profile_photo_url, city_id, contact_phone, contact_whatsapp, contact_email, contact_note')
@@ -149,8 +145,7 @@ export default function ParentRequestDetailPage() {
 
       setTeacher(teacherRes.data || null);
 
-      // 🎯 Charge le nom de la ville si city_id présent
-           let teacherProfileData: any = profileRes.data || null;
+      let teacherProfileData: any = profileRes.data || null;
       if (teacherProfileData?.city_id) {
         const { data: cityData } = await supabase
           .from('cities')
@@ -226,7 +221,6 @@ export default function ParentRequestDetailPage() {
     return isFr ? `il y a ${days} j` : `${days} d ago`;
   }
 
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
@@ -278,7 +272,7 @@ export default function ParentRequestDetailPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
       <button
         onClick={() => router.push('/parent/requests')}
-        className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 mb-5 transition-colors"
+        className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-500 mb-5 transition-colors"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
         {isFr ? 'Retour à mes demandes' : 'Back to my requests'}
@@ -289,16 +283,15 @@ export default function ParentRequestDetailPage() {
         <Card>
           <div className="p-5 sm:p-6">
             <div className="flex items-start gap-4">
-              {/* Avatar plus grand + cliquable */}
               <Link
                 href={`/teachers/${teacher?.id}`}
                 prefetch
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 flex items-center justify-center hover:ring-2 hover:ring-emerald-300 transition-all"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-red-50 border border-red-100 overflow-hidden shrink-0 flex items-center justify-center hover:ring-2 hover:ring-red-200 transition-all"
               >
                 {photoUrl ? (
                   <img src={photoUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-emerald-700 text-lg sm:text-xl font-bold">{initials}</span>
+                  <span className="text-red-600 text-lg sm:text-xl font-bold">{initials}</span>
                 )}
               </Link>
 
@@ -346,7 +339,6 @@ export default function ParentRequestDetailPage() {
                   </div>
                 </div>
 
-                {/* Infos inline : ville + bio courte */}
                 {(teacherProfile?.city?.name || teacherProfile?.bio) && (
                   <div className="mt-3 space-y-2">
                     {teacherProfile?.city?.name && (
@@ -363,12 +355,11 @@ export default function ParentRequestDetailPage() {
                   </div>
                 )}
 
-                {/* 🎯 CTA compact — mobile-first, ne wrap pas */}
                 <div className="mt-3">
                   <Link
                     href={`/teachers/${teacher?.id}`}
                     prefetch
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
                   >
                     <Eye className="w-4 h-4 shrink-0" />
                     <span className="hidden sm:inline">
@@ -404,17 +395,17 @@ export default function ParentRequestDetailPage() {
 
         {/* ═══════════ CONTACTS DU PROF ═══════════ */}
         {showContacts && (teacherProfile?.contact_phone || teacherProfile?.contact_whatsapp || teacherProfile?.contact_email) && (
-          <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-50/40">
+          <Card className="border-red-200 bg-gradient-to-br from-red-50 to-red-50/40">
             <div className="p-5 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shrink-0">
-                  <Phone className="w-4 h-4 text-emerald-600" />
+                <div className="w-9 h-9 rounded-xl bg-white border border-red-100 flex items-center justify-center shrink-0">
+                  <Phone className="w-4 h-4 text-red-500" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-emerald-900">
+                  <h2 className="text-base font-semibold text-red-900">
                     {isFr ? 'Coordonnées du prof' : 'Teacher contact'}
                   </h2>
-                  <p className="text-xs text-emerald-700">
+                  <p className="text-xs text-red-700">
                     {isFr ? 'Le prof a accepté votre demande' : 'The teacher accepted your request'}
                   </p>
                 </div>
@@ -458,8 +449,8 @@ export default function ParentRequestDetailPage() {
               </div>
 
               {teacherProfile.contact_note && (
-                <div className="mt-3 rounded-xl border border-emerald-100 bg-white p-4">
-                  <p className="text-xs text-emerald-700 leading-relaxed whitespace-pre-line">
+                <div className="mt-3 rounded-xl border border-red-100 bg-white p-4">
+                  <p className="text-xs text-red-700 leading-relaxed whitespace-pre-line">
                     {teacherProfile.contact_note}
                   </p>
                 </div>
@@ -477,7 +468,7 @@ export default function ParentRequestDetailPage() {
 
             <div className="flex flex-wrap gap-2 mb-5">
               {request.subject && (
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-100">
                   {request.subject}
                 </span>
               )}
@@ -513,7 +504,7 @@ export default function ParentRequestDetailPage() {
           <Card>
             <div className="p-5 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Baby className="w-5 h-5 text-emerald-600" />
+                <Baby className="w-5 h-5 text-red-500" />
                 <h2 className="text-lg font-semibold text-slate-900">
                   {children.length > 1
                     ? (isFr ? `Enfants concernés (${children.length})` : `Concerned children (${children.length})`)
@@ -526,8 +517,8 @@ export default function ParentRequestDetailPage() {
                   const childAge = child.birth_date ? calcAge(child.birth_date) : null;
                   return (
                     <div key={child.id} className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-                        <span className="text-emerald-700 text-base font-bold">
+                      <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+                        <span className="text-red-600 text-base font-bold">
                           {child.first_name.charAt(0).toUpperCase() || '?'}
                         </span>
                       </div>
@@ -611,9 +602,9 @@ function ContactRow({
   isFr: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-emerald-100 bg-white p-3.5 flex items-center gap-3 hover:border-emerald-200 transition-colors">
-      <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-emerald-600" />
+    <div className="rounded-xl border border-red-100 bg-white p-3.5 flex items-center gap-3 hover:border-red-200 transition-colors">
+      <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-red-500" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-xs text-slate-500">{label}</p>
@@ -621,7 +612,7 @@ function ContactRow({
           href={href}
           target={target}
           rel={target === '_blank' ? 'noopener noreferrer' : undefined}
-          className="text-sm font-semibold text-slate-900 hover:text-emerald-600 transition-colors truncate block"
+          className="text-sm font-semibold text-slate-900 hover:text-red-500 transition-colors truncate block"
         >
           {value}
         </a>
@@ -631,8 +622,8 @@ function ContactRow({
         aria-label={copied ? 'Copié' : 'Copier'}
         className={`shrink-0 inline-flex items-center justify-center gap-1.5 px-3 h-8 rounded-lg text-xs font-medium border transition-all ${
           copied
-            ? 'border-emerald-600 bg-emerald-600 text-white'
-            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700'
+            ? 'border-red-500 bg-red-500 text-white'
+            : 'border-slate-200 bg-white text-slate-700 hover:border-red-400 hover:text-red-500'
         }`}
       >
         {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}

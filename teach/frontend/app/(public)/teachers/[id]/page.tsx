@@ -43,8 +43,6 @@ interface TeacherProfile {
   profile_photo_url: string | null;
   cover_url: string | null;
   free_trial: boolean | null;
-  // 🚫 Les champs contact_* ne sont plus chargés côté public
-  // (ils sont affichés uniquement après acceptation d'une demande)
   user: { first_name: string | null; last_name: string | null } | null;
   city: { id: string; name: string } | null;
   subjects: SubjectRef[];
@@ -177,7 +175,7 @@ function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLA
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -364,7 +362,7 @@ export default function TeacherDetailPage() {
       .from('teacher_ratings')
       .select('rating')
       .eq('teacher_id', id)
-      .is('hidden_at', null); // 🚫 Ignorer les avis masqués
+      .is('hidden_at', null);
 
     const list = data || [];
     const count = list.length;
@@ -387,9 +385,6 @@ export default function TeacherDetailPage() {
         return;
       }
 
-      // ✅ Contrôle d'accès :
-      // - Le propriétaire voit toujours son propre profil (même pending/suspended)
-      // - Les autres ne voient que les profils 'verified'
       const isOwner = user?.id === p.id;
       if (!isOwner && p.verification_status !== 'verified') {
         setNotFound(true);
@@ -397,7 +392,6 @@ export default function TeacherDetailPage() {
       }
 
       const [userRes, cityRes, tsubsRes, tlevelsRes, ratingsRes] = await Promise.all([
-        // 🚫 AJOUT : suspended_at pour double check
         supabase.from('users').select('id, first_name, last_name, suspended_at').eq('id', p.id).maybeSingle(),
         p.city_id
           ? supabase.from('cities').select('id, name').eq('id', p.city_id).maybeSingle()
@@ -407,7 +401,6 @@ export default function TeacherDetailPage() {
         supabase.from('teacher_ratings').select('rating').eq('teacher_id', p.id).is('hidden_at', null),
       ]);
 
-      // 🚫 Double sécurité : si le user est globalement suspendu → 404
       if (!isOwner && userRes.data?.suspended_at) {
         setNotFound(true);
         return;
@@ -461,7 +454,6 @@ export default function TeacherDetailPage() {
         profile_photo_url: p.profile_photo_url,
         cover_url: p.cover_url,
         free_trial: p.free_trial,
-        // 🚫 On ne mappe plus contact_* côté public
         user: userRes.data || null,
         city: cityRes.data || null,
         subjects: subjectsList,
@@ -540,8 +532,8 @@ export default function TeacherDetailPage() {
       <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
         <Card className="max-w-md w-full">
           <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
-              <UserIcon className="w-7 h-7 text-emerald-500" />
+            <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
+              <UserIcon className="w-7 h-7 text-red-500" />
             </div>
             <h1 className="text-xl font-bold text-slate-900 mb-3">
               {isFr ? 'Profil introuvable' : 'Profile not found'}
@@ -585,7 +577,6 @@ export default function TeacherDetailPage() {
   const hasAboutInfo =
     Boolean(profile.bio) || hasExperience || Boolean(profile.diploma) || Boolean(profile.university) || hasLanguages;
 
-  // 🚫 Onglet contact supprimé
   const tabs: Array<{ key: ActiveTab; label: string; icon: React.ElementType; }> = [];
   if (hasAboutInfo) tabs.push({ key: 'about', label: isFr ? 'À propos' : 'About', icon: UserIcon });
   if (allSubjects.length > 0 || allLevels.length > 0) tabs.push({ key: 'subjects', label: isFr ? 'Matières & niveaux' : 'Subjects & levels', icon: BookOpen });
@@ -615,15 +606,15 @@ export default function TeacherDetailPage() {
       </button>
 
       {isOwnProfile && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3 shadow-sm mb-5">
-          <div className="w-9 h-9 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shrink-0">
-            <Eye className="w-4 h-4 text-emerald-600" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex items-start gap-3 shadow-sm mb-5">
+          <div className="w-9 h-9 rounded-xl bg-white border border-red-100 flex items-center justify-center shrink-0">
+            <Eye className="w-4 h-4 text-red-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-emerald-900">
+            <p className="text-sm font-semibold text-red-900">
               {isFr ? 'Vous consultez votre profil public' : 'You’re viewing your public profile'}
             </p>
-            <p className="text-xs text-emerald-700 mt-0.5 leading-relaxed">
+            <p className="text-xs text-red-700 mt-0.5 leading-relaxed">
               {isFr
                 ? 'Voici ce que les parents voient quand ils vous trouvent.'
                 : 'This is what parents see when they find you.'}
@@ -633,7 +624,7 @@ export default function TeacherDetailPage() {
       )}
 
       <Card>
-        <div className="relative aspect-[3/1] bg-gradient-to-br from-emerald-100 via-slate-100 to-emerald-50 overflow-hidden">
+        <div className="relative aspect-[3/1] bg-gradient-to-br from-red-100 via-slate-100 to-red-50 overflow-hidden">
           {profile.cover_url ? (
             <img src={profile.cover_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
           ) : profile.profile_photo_url ? (
@@ -644,9 +635,9 @@ export default function TeacherDetailPage() {
           ) : null}
 
           {profile.is_verified && (
-            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/95 backdrop-blur-sm border border-emerald-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm z-10">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-[11px] text-emerald-700 font-medium">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/95 backdrop-blur-sm border border-red-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm z-10">
+              <CheckCircle2 className="w-3.5 h-3.5 text-red-600" />
+              <span className="text-[11px] text-red-700 font-medium">
                 {isFr ? 'Vérifié' : 'Verified'}
               </span>
             </div>
@@ -659,7 +650,7 @@ export default function TeacherDetailPage() {
               {profile.profile_photo_url ? (
                 <img src={profile.profile_photo_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-emerald-600 text-white text-2xl font-bold">
+                <div className="w-full h-full flex items-center justify-center bg-red-500 text-white text-2xl font-bold">
                   {initials}
                 </div>
               )}
@@ -695,11 +686,11 @@ export default function TeacherDetailPage() {
                       disabled={savingFavorite}
                       className={
                         isSaved
-                          ? 'border-emerald-600 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-600'
+                          ? 'border-red-500 bg-red-50 text-red-600 hover:bg-red-50 hover:border-red-500'
                           : ''
                       }
                     >
-                      <Heart className={`w-4 h-4 ${isSaved ? 'fill-emerald-600 text-emerald-600' : ''}`} />
+                      <Heart className={`w-4 h-4 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
                       {isSaved ? (isFr ? 'Sauvegardé' : 'Saved') : (isFr ? 'Sauvegarder' : 'Save')}
                     </OutlineButton>
                   )}
@@ -725,7 +716,6 @@ export default function TeacherDetailPage() {
                     </>
                   )}
 
-                  {/* 🚩 Bouton Signaler — discret, aligné avec le texte */}
                   {user && user.id !== profile.id && (
                     <div className="inline-flex self-start sm:self-center [&>button]:inline-flex [&>button]:items-center [&>button]:gap-1.5 [&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-lg [&>button]:text-xs [&>button]:font-medium [&>button]:text-slate-500 [&>button]:hover:text-red-600 [&>button]:hover:bg-red-50 [&>button]:transition-colors [&>button]:bg-transparent [&>button]:border-0 [&>button]:cursor-pointer">
                       <ReportButton
@@ -762,12 +752,12 @@ export default function TeacherDetailPage() {
                 </span>
               )}
               {rate && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full font-medium">
+                <span className="inline-flex items-center gap-1.5 text-xs text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-full font-medium">
                   {rate}
                 </span>
               )}
               {profile.free_trial && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full font-medium">
+                <span className="inline-flex items-center gap-1.5 text-xs text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-full font-medium">
                   ✓ {isFr ? 'Premier cours gratuit' : 'Free first lesson'}
                 </span>
               )}
@@ -787,7 +777,7 @@ export default function TeacherDetailPage() {
                     onClick={() => setActiveTab(tab.key)}
                     className={`flex items-center gap-2 px-4 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                       active
-                        ? 'border-emerald-600 text-emerald-700'
+                        ? 'border-red-500 text-red-600'
                         : 'border-transparent text-slate-500 hover:text-slate-900'
                     }`}
                   >
@@ -826,12 +816,12 @@ export default function TeacherDetailPage() {
                 {hasLanguages && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <BookOpen className="w-4 h-4 text-emerald-600" />
+                      <BookOpen className="w-4 h-4 text-red-500" />
                       <h3 className="text-sm font-medium text-slate-700">{isFr ? 'Langues' : 'Languages'}</h3>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.languages!.map(l => (
-                        <span key={l} className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg font-medium">
+                        <span key={l} className="text-xs text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-lg font-medium">
                           {languageLabel(l, isFr)}
                         </span>
                       ))}
@@ -849,7 +839,7 @@ export default function TeacherDetailPage() {
                   <h2 className="text-lg font-semibold text-slate-900 mb-4">{isFr ? 'Matières enseignées' : 'Subjects taught'}</h2>
                   <div className="flex flex-wrap gap-2">
                     {allSubjects.map((s, i) => (
-                      <span key={i} className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg font-medium">
+                      <span key={i} className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg font-medium">
                         {s}
                       </span>
                     ))}
@@ -881,14 +871,14 @@ export default function TeacherDetailPage() {
                   const periods = profile.availability?.[day.key] || [];
                   if (periods.length === 0) return null;
                   return (
-                    <div key={day.key} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-emerald-200 hover:bg-emerald-50/40 transition-colors">
+                    <div key={day.key} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-red-200 hover:bg-red-50/40 transition-colors">
                       <p className="text-sm font-semibold text-slate-900 mb-3">{isFr ? day.fr : day.en}</p>
                       <ul className="space-y-1.5">
                         {periods.map(p => {
                           const label = PERIODS[p];
                           return (
                             <li key={p} className="text-xs text-slate-600 flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                              <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
                               {label ? (isFr ? label.fr : label.en) : p}
                             </li>
                           );
@@ -905,8 +895,6 @@ export default function TeacherDetailPage() {
               </p>
             </div>
           )}
-
-          {/* 🚫 Onglet contact supprimé — les coordonnées apparaissent uniquement après acceptation d'une demande */}
 
           {activeTabSafe === 'reviews' && (
             <RatingSection
@@ -940,7 +928,7 @@ export default function TeacherDetailPage() {
       )}
 
       {requestSent && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-50 bg-red-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2">
           <Check className="w-4 h-4" />
           {isFr ? 'Demande envoyée avec succès !' : 'Request sent successfully!'}
         </div>
@@ -957,7 +945,7 @@ function InfoBlock({ icon: Icon, label, value }: { icon: React.ElementType; labe
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <Icon className="w-4 h-4 text-emerald-600" />
+        <Icon className="w-4 h-4 text-red-500" />
         <h3 className="text-sm font-medium text-slate-700">{label}</h3>
       </div>
       <p className="text-sm text-slate-900 font-medium">{value}</p>
@@ -1033,7 +1021,7 @@ function RatingSection({
         .from('teacher_ratings')
         .select('id, parent_id, rating, comment, created_at, updated_at, teacher_reply, teacher_reply_at, users:parent_id(first_name, last_name)')
         .eq('teacher_id', teacherId)
-        .is('hidden_at', null) // 🚫 Ne pas afficher les avis masqués par l'admin
+        .is('hidden_at', null)
         .order('created_at', { ascending: false });
 
       const list: Rating[] = (data || []).map((r: any) => ({
@@ -1228,7 +1216,7 @@ function RatingSection({
                 </span>
                 <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${starFilter === star ? 'bg-emerald-500' : 'bg-amber-400 group-hover:bg-amber-500'}`}
+                    className={`h-full rounded-full transition-all ${starFilter === star ? 'bg-red-500' : 'bg-amber-400 group-hover:bg-amber-500'}`}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
@@ -1255,14 +1243,14 @@ function RatingSection({
                 rows={3}
                 maxLength={500}
                 placeholder={isFr ? 'Votre expérience avec ce prof (optionnel)' : 'Your experience with this teacher (optional)'}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm resize-none focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm resize-none focus:outline-none focus:border-red-500"
               />
               {error && <p className="text-xs text-red-600">{error}</p>}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {isFr ? 'Publier' : 'Submit'}
@@ -1289,7 +1277,7 @@ function RatingSection({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {canEditMyRating && (
-                  <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white transition-colors">
+                  <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-white transition-colors">
                     <Pencil className="w-4 h-4" />
                   </button>
                 )}
@@ -1323,8 +1311,8 @@ function RatingSection({
                 onClick={() => setStarFilter('all')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
                   starFilter === 'all'
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-400'
+                    ? 'border-red-500 bg-red-500 text-white'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-red-400'
                 }`}
               >
                 {isFr ? 'Toutes' : 'All'}
@@ -1339,8 +1327,8 @@ function RatingSection({
                     onClick={() => setStarFilter(active ? 'all' : (star as StarFilter))}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
                       active
-                        ? 'border-emerald-600 bg-emerald-600 text-white'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-400'
+                        ? 'border-red-500 bg-red-500 text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-red-400'
                     }`}
                   >
                     {star}
@@ -1364,8 +1352,8 @@ function RatingSection({
                   onClick={() => setCommentFilter(c.key as CommentFilter)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
                     commentFilter === c.key
-                      ? 'border-emerald-600 bg-emerald-600 text-white'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-400'
+                      ? 'border-red-500 bg-red-500 text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-red-400'
                   }`}
                 >
                   {isFr ? c.fr : c.en}
@@ -1378,7 +1366,7 @@ function RatingSection({
             <select
               value={sortMode}
               onChange={e => setSortMode(e.target.value as SortMode)}
-              className="h-9 pl-3 pr-8 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-700 focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer"
+              className="h-9 pl-3 pr-8 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-700 focus:outline-none focus:border-red-500 appearance-none cursor-pointer"
               style={{
                 backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>")`,
                 backgroundRepeat: 'no-repeat',
@@ -1413,7 +1401,7 @@ function RatingSection({
               : (isFr ? 'Aucun avis pour le moment.' : 'No reviews yet.')}
           </p>
           {hasActiveFilter && (
-            <button onClick={resetFilters} className="mt-3 text-xs font-medium text-emerald-600 hover:text-emerald-700">
+            <button onClick={resetFilters} className="mt-3 text-xs font-medium text-red-500 hover:text-red-600">
               {isFr ? 'Réinitialiser les filtres' : 'Reset filters'}
             </button>
           )}
@@ -1431,7 +1419,7 @@ function RatingSection({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-slate-900">{name}{isMine ? (isFr ? ' (vous)' : ' (you)') : ''}</p>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-700 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded-full">
                           <ShieldCheck className="w-3 h-3" />
                           {isFr ? 'Avis vérifié' : 'Verified review'}
                         </span>
@@ -1443,7 +1431,6 @@ function RatingSection({
                       </div>
                     </div>
 
-                    {/* 🚩 Signaler cet avis — discret, style icône */}
                     {currentUserId && !isMine && (
                       <div className="shrink-0 [&>button]:inline-flex [&>button]:items-center [&>button]:justify-center [&>button]:w-8 [&>button]:h-8 [&>button]:rounded-lg [&>button]:text-slate-300 [&>button]:hover:text-red-500 [&>button]:hover:bg-red-50 [&>button]:transition-colors [&>button]:bg-transparent [&>button]:border-0 [&>button]:cursor-pointer">
                         <ReportButton
@@ -1460,15 +1447,15 @@ function RatingSection({
                   {r.comment && <p className="text-sm text-slate-700 mt-3 leading-relaxed">{r.comment}</p>}
 
                   {r.teacher_reply && replyingId !== r.id && (
-                    <div className="mt-3 ml-4 pl-3 border-l-2 border-emerald-200">
+                    <div className="mt-3 ml-4 pl-3 border-l-2 border-red-200">
                       <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        <p className="text-xs font-medium text-emerald-700">{isFr ? 'Réponse du prof' : "Teacher's reply"}</p>
+                        <ShieldCheck className="w-3.5 h-3.5 text-red-500" />
+                        <p className="text-xs font-medium text-red-600">{isFr ? 'Réponse du prof' : "Teacher's reply"}</p>
                       </div>
                       <p className="text-sm text-slate-700 mt-1">{r.teacher_reply}</p>
                       {isOwnProfile && (
                         <div className="flex items-center gap-3 mt-1.5">
-                          <button onClick={() => { setReplyingId(r.id); setReplyText(r.teacher_reply || ''); }} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+                          <button onClick={() => { setReplyingId(r.id); setReplyText(r.teacher_reply || ''); }} className="text-xs text-red-500 hover:text-red-600 font-medium">
                             {isFr ? 'Modifier' : 'Edit'}
                           </button>
                           <button onClick={() => handleDeleteReply(r.id)} className="text-xs text-slate-400 hover:text-red-600 font-medium">
@@ -1482,7 +1469,7 @@ function RatingSection({
                   {isOwnProfile && !r.teacher_reply && replyingId !== r.id && (
                     <button
                       onClick={() => { setReplyingId(r.id); setReplyText(''); }}
-                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-600"
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
                       {isFr ? 'Répondre' : 'Reply'}
@@ -1490,20 +1477,20 @@ function RatingSection({
                   )}
 
                   {isOwnProfile && replyingId === r.id && (
-                    <div className="mt-3 ml-4 pl-3 border-l-2 border-emerald-200 space-y-2">
+                    <div className="mt-3 ml-4 pl-3 border-l-2 border-red-200 space-y-2">
                       <textarea
                         value={replyText}
                         onChange={e => setReplyText(e.target.value)}
                         rows={2}
                         maxLength={500}
                         placeholder={isFr ? 'Votre réponse…' : 'Your reply…'}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:border-red-500"
                       />
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleSaveReply(r.id)}
                           disabled={savingReply}
-                          className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-medium disabled:opacity-50"
                         >
                           {savingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                           {isFr ? 'Envoyer' : 'Send'}
@@ -1524,7 +1511,7 @@ function RatingSection({
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:border-red-400 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 {isFr ? 'Précédent' : 'Previous'}
@@ -1555,7 +1542,7 @@ function RatingSection({
                       onClick={() => setPage(n)}
                       className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-medium transition-colors tabular-nums ${
                         currentPage === n
-                          ? 'bg-emerald-600 text-white'
+                          ? 'bg-red-500 text-white'
                           : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -1568,7 +1555,7 @@ function RatingSection({
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:border-red-400 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-colors"
               >
                 {isFr ? 'Suivant' : 'Next'}
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -1790,7 +1777,7 @@ function LessonRequestModal({
                     {isFr ? 'Enfant(s) concerné(s)' : 'Concerned child(ren)'}
                   </label>
                   {selectedChildIds.length > 0 && (
-                    <span className="text-xs text-emerald-600 font-medium">
+                    <span className="text-xs text-red-500 font-medium">
                       {selectedChildIds.length} {isFr ? 'sélectionné' : 'selected'}
                       {selectedChildIds.length > 1 ? (isFr ? 's' : '') : ''}
                     </span>
@@ -1810,26 +1797,26 @@ function LessonRequestModal({
                         onClick={() => toggleChild(child.id)}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                           isSelected
-                            ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-500/30'
-                            : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50'
+                            ? 'border-red-500 bg-red-50 ring-1 ring-red-500/30'
+                            : 'border-slate-200 bg-white hover:border-red-300 hover:bg-slate-50'
                         }`}
                       >
                         <span
                           className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                            isSelected ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'
+                            isSelected ? 'bg-red-500 border-red-500' : 'border-slate-300'
                           }`}
                         >
                           {isSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                         </span>
 
-                        <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-                          <span className="text-emerald-700 text-sm font-bold">
+                        <div className="w-9 h-9 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+                          <span className="text-red-600 text-sm font-bold">
                             {child.first_name.charAt(0).toUpperCase() || '?'}
                           </span>
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-emerald-900' : 'text-slate-900'}`}>
+                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-red-900' : 'text-slate-900'}`}>
                             {child.first_name}
                           </p>
                           {child.level_custom && (
@@ -1851,7 +1838,7 @@ function LessonRequestModal({
                         setSelectedChildIds(children.map(c => c.id));
                       }
                     }}
-                    className="mt-2 text-xs font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                    className="mt-2 text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
                   >
                     {selectedChildIds.length === children.length
                       ? (isFr ? 'Tout désélectionner' : 'Deselect all')
@@ -1875,8 +1862,8 @@ function LessonRequestModal({
                         onClick={() => setSubject(s === subject ? '' : s)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                           subject === s
-                            ? 'border-emerald-600 bg-emerald-600 text-white'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'
+                            ? 'border-red-500 bg-red-500 text-white'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-red-400'
                         }`}
                       >
                         {s}
@@ -1887,7 +1874,7 @@ function LessonRequestModal({
                   <select
                     value={subject}
                     onChange={e => setSubject(e.target.value)}
-                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   >
                     <option value="">{isFr ? 'Choisir…' : 'Choose…'}</option>
                     {teacherSubjects.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1910,8 +1897,8 @@ function LessonRequestModal({
                         onClick={() => setLevel(l === level ? '' : l)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                           level === l
-                            ? 'border-emerald-600 bg-emerald-600 text-white'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'
+                            ? 'border-red-500 bg-red-500 text-white'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-red-400'
                         }`}
                       >
                         {l}
@@ -1922,7 +1909,7 @@ function LessonRequestModal({
                   <select
                     value={level}
                     onChange={e => setLevel(e.target.value)}
-                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   >
                     <option value="">{isFr ? 'Choisir…' : 'Choose…'}</option>
                     {teacherLevels.map(l => <option key={l} value={l}>{l}</option>)}
@@ -1947,8 +1934,8 @@ function LessonRequestModal({
                     onClick={() => setTeachingMode(m.value)}
                     className={`h-11 rounded-xl text-sm font-medium border transition-colors ${
                       teachingMode === m.value
-                        ? 'border-emerald-600 bg-emerald-600 text-white'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'
+                        ? 'border-red-500 bg-red-500 text-white'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-red-400'
                     }`}
                   >
                     {isFr ? m.labelFr : m.labelEn}
@@ -1963,7 +1950,7 @@ function LessonRequestModal({
                   {isFr ? 'Créneaux souhaités' : 'Preferred schedule'}
                 </label>
                 {selectedSlots.size > 0 && (
-                  <span className="text-xs text-emerald-600 font-medium">
+                  <span className="text-xs text-red-500 font-medium">
                     {selectedSlots.size} {isFr ? 'créneau' : 'slot'}
                     {selectedSlots.size > 1 ? 'x' : ''}
                   </span>
@@ -1995,8 +1982,8 @@ function LessonRequestModal({
                                 onClick={() => toggleSlot(day.key, period)}
                                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                                   isSelected
-                                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'
+                                    ? 'border-red-500 bg-red-500 text-white shadow-sm'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:border-red-400'
                                 }`}
                               >
                                 {isSelected && <Check className="w-3 h-3" strokeWidth={3} />}
@@ -2010,11 +1997,11 @@ function LessonRequestModal({
                   </div>
 
                   {selectedSlots.size > 0 && (
-                    <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-100 p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-emerald-700 font-semibold mb-1">
+                    <div className="mt-3 rounded-lg bg-red-50 border border-red-100 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-red-600 font-semibold mb-1">
                         {isFr ? 'Votre sélection' : 'Your selection'}
                       </p>
-                      <p className="text-xs text-emerald-900 font-medium">
+                      <p className="text-xs text-red-900 font-medium">
                         {buildScheduleString()}
                       </p>
                     </div>
@@ -2032,7 +2019,7 @@ function LessonRequestModal({
                     value={customScheduleText}
                     onChange={e => setCustomScheduleText(e.target.value)}
                     placeholder={isFr ? 'Ex : Jeudi matin, Vendredi soir' : 'Ex: Thursday morning, Friday evening'}
-                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   />
                 </>
               )}
@@ -2053,7 +2040,7 @@ function LessonRequestModal({
                     ? 'Présentez brièvement vos besoins : difficultés, objectifs, fréquence souhaitée…'
                     : 'Briefly describe your needs: difficulties, goals, frequency…'
                 }
-                className="w-full px-3 py-3 rounded-xl border border-slate-200 bg-white text-sm resize-none focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full px-3 py-3 rounded-xl border border-slate-200 bg-white text-sm resize-none focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
               />
               <p className="text-xs text-slate-400 mt-1 text-right">{message.length}/500</p>
             </div>
@@ -2070,7 +2057,7 @@ function LessonRequestModal({
             <button
               type="submit"
               disabled={sending || !message.trim()}
-              className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {isFr ? 'Envoyer la demande' : 'Send request'}

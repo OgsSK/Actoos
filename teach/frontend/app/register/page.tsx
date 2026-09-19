@@ -23,7 +23,6 @@ import LanguageSwitcher from '@/app/components/LanguageSwitcher';
 
 type Role = 'teacher' | 'parent';
 
-// ⏱ Après ce délai, on affiche le formulaire même si authLoading est encore true
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 function RegisterForm() {
@@ -42,7 +41,6 @@ function RegisterForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // ⏱ Timeout local
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
@@ -84,7 +82,6 @@ function RegisterForm() {
           await supabase.from('parent_profiles').insert({ id: userId });
         }
 
-        // 🔔 Email de bienvenue (non bloquant)
         try {
           fetch(
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`,
@@ -137,48 +134,62 @@ function RegisterForm() {
 
   const isParent = role === 'parent';
 
+  // 🎨 Deux identités visuelles distinctes
+  // Parent = rouge (marque principale) / Enseignant = bleu (éducatif, professionnel)
   const accent = isParent
     ? {
-        text: 'text-emerald-600',
-        textDark: 'text-emerald-700',
-        bg: 'bg-emerald-600',
-        bgHover: 'hover:bg-emerald-500',
-        bgLight: 'bg-emerald-50',
-        border: 'border-emerald-200',
-        borderActive: 'border-emerald-500',
-        ring: 'focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10',
-        shadow: 'shadow-emerald-500/30',
-        iconBg: 'bg-emerald-100',
-        iconText: 'text-emerald-600',
-        gradientFrom: 'from-emerald-500',
-        gradientTo: 'to-emerald-600',
-        blob1: 'rgba(16,185,129,0.4)',
-        blob2: 'rgba(16,185,129,0.15)',
-        welcomeText: 'text-emerald-400',
+        // 🔴 PARENT — Rouge marque
+        ring: 'focus:border-red-500 focus:ring-4 focus:ring-red-500/10',
+        gradientFrom: 'from-red-500',
+        gradientTo: 'to-red-600',
+        shadow: 'shadow-red-500/30',
+        blob1: 'rgba(239,68,68,0.4)',
+        blob2: 'rgba(239,68,68,0.15)',
+        welcomeText: 'text-red-400',
+        accentText: 'text-red-400',
+        // Sélecteur
+        selectedBorder: 'border-red-500',
+        selectedShadow: 'shadow-red-500/10',
+        selectedIconBg: 'bg-red-100',
+        selectedIconText: 'text-red-500',
+        selectedText: 'text-red-600',
+        // Icône focus inputs
+        inputFocusIcon: 'group-focus-within:text-red-500',
+        // Lien "Se connecter"
+        linkHover: 'text-red-500 hover:text-red-600',
+        // Icône succès
+        successIcon: 'from-red-500 to-red-600',
+        successShadow: 'shadow-red-500/30',
       }
     : {
-        text: 'text-blue-600',
-        textDark: 'text-blue-700',
-        bg: 'bg-blue-600',
-        bgHover: 'hover:bg-blue-500',
-        bgLight: 'bg-blue-50',
-        border: 'border-blue-200',
-        borderActive: 'border-blue-500',
+        // 🔵 ENSEIGNANT — Bleu éducatif
         ring: 'focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10',
-        shadow: 'shadow-blue-500/30',
-        iconBg: 'bg-blue-100',
-        iconText: 'text-blue-600',
         gradientFrom: 'from-blue-500',
         gradientTo: 'to-blue-600',
-        blob1: 'rgba(37,99,235,0.4)',
-        blob2: 'rgba(37,99,235,0.15)',
+        shadow: 'shadow-blue-500/30',
+        blob1: 'rgba(59,130,246,0.4)',
+        blob2: 'rgba(59,130,246,0.15)',
         welcomeText: 'text-blue-400',
+        accentText: 'text-blue-400',
+        // Sélecteur
+        selectedBorder: 'border-blue-500',
+        selectedShadow: 'shadow-blue-500/10',
+        selectedIconBg: 'bg-blue-100',
+        selectedIconText: 'text-blue-600',
+        selectedText: 'text-blue-700',
+        // Icône focus inputs
+        inputFocusIcon: 'group-focus-within:text-blue-500',
+        // Lien "Se connecter"
+        linkHover: 'text-blue-500 hover:text-blue-600',
+        // Icône succès
+        successIcon: 'from-blue-500 to-blue-600',
+        successShadow: 'shadow-blue-500/30',
       };
 
   if (showSpinner) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 size={24} className="animate-spin text-slate-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fffafa]">
+        <Loader2 size={24} className="animate-spin text-red-500" />
       </div>
     );
   }
@@ -202,8 +213,7 @@ function RegisterForm() {
             aria-hidden="true"
             className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full"
             style={{
-              background:
-                'radial-gradient(circle, rgba(16,185,129,0.4) 0%, rgba(16,185,129,0) 70%)',
+              background: `radial-gradient(circle, ${accent.blob1} 0%, rgba(0,0,0,0) 70%)`,
             }}
           />
           <div className="relative z-10 p-10 lg:p-14">
@@ -221,13 +231,13 @@ function RegisterForm() {
                 <>
                   Bienvenue dans
                   <br />
-                  <span className="text-emerald-400">la famille.</span>
+                  <span className={accent.accentText}>la famille.</span>
                 </>
               ) : (
                 <>
                   Welcome to
                   <br />
-                  <span className="text-emerald-400">the family.</span>
+                  <span className={accent.accentText}>the family.</span>
                 </>
               )}
             </h1>
@@ -237,7 +247,7 @@ function RegisterForm() {
           </div>
         </div>
 
-        <div className="flex flex-col bg-slate-50">
+        <div className="flex flex-col bg-[#fffafa]">
           <div className="flex items-center justify-between px-6 lg:px-12 py-6">
             <Link
               href="/"
@@ -259,7 +269,7 @@ function RegisterForm() {
 
           <div className="flex-1 flex items-center justify-center px-6 lg:px-12 pb-12">
             <div className="w-full max-w-md text-center">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
+              <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${accent.successIcon} flex items-center justify-center mx-auto mb-6 shadow-xl ${accent.successShadow}`}>
                 <CheckCircle2 size={36} className="text-white" strokeWidth={2.5} />
               </div>
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">
@@ -344,7 +354,7 @@ function RegisterForm() {
                     <>
                       Trouvez le prof
                       <br />
-                      <span className="text-emerald-400">
+                      <span className={accent.accentText}>
                         qui fera la différence.
                       </span>
                     </>
@@ -353,7 +363,7 @@ function RegisterForm() {
                     <>
                       Find the teacher
                       <br />
-                      <span className="text-emerald-400">
+                      <span className={accent.accentText}>
                         who makes a difference.
                       </span>
                     </>
@@ -363,7 +373,7 @@ function RegisterForm() {
                     <>
                       Donnez des cours,
                       <br />
-                      <span className="text-blue-400">
+                      <span className={accent.accentText}>
                         recevez des demandes.
                       </span>
                     </>
@@ -372,7 +382,7 @@ function RegisterForm() {
                     <>
                       Give lessons,
                       <br />
-                      <span className="text-blue-400">
+                      <span className={accent.accentText}>
                         receive requests.
                       </span>
                     </>
@@ -420,9 +430,7 @@ function RegisterForm() {
               >
                 <CheckCircle2
                   size={16}
-                  className={`shrink-0 mt-0.5 transition-colors ${
-                    isParent ? 'text-emerald-400' : 'text-blue-400'
-                  }`}
+                  className={`shrink-0 mt-0.5 transition-colors ${accent.accentText}`}
                 />
                 <span>{isFr ? item.fr : item.en}</span>
               </li>
@@ -437,7 +445,7 @@ function RegisterForm() {
       </div>
 
       {/* ═══════════ COLONNE DROITE — FORMULAIRE ═══════════ */}
-      <div className="flex flex-col bg-slate-50">
+      <div className="flex flex-col bg-[#fffafa]">
 
         <div className="flex items-center justify-between px-6 lg:px-12 py-6">
           <Link
@@ -474,33 +482,30 @@ function RegisterForm() {
               </label>
               <div className="grid grid-cols-2 gap-3">
 
+                {/* 🔴 PARENT */}
                 <button
                   type="button"
                   onClick={() => setRole('parent')}
                   className={`group relative flex flex-col items-start gap-3 p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
                     isParent
-                      ? 'border-emerald-500 bg-white shadow-lg shadow-emerald-500/10 -translate-y-0.5'
+                      ? 'border-red-500 bg-white shadow-lg shadow-red-500/10 -translate-y-0.5'
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-md'
                   }`}
                 >
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                      isParent ? 'bg-emerald-100' : 'bg-slate-100'
+                      isParent ? 'bg-red-100' : 'bg-slate-100'
                     }`}
                   >
                     <Users
                       size={20}
-                      className={
-                        isParent
-                          ? 'text-emerald-600'
-                          : 'text-slate-500'
-                      }
+                      className={isParent ? 'text-red-500' : 'text-slate-500'}
                     />
                   </div>
                   <div>
                     <p
                       className={`text-sm font-semibold transition-colors ${
-                        isParent ? 'text-emerald-700' : 'text-slate-700'
+                        isParent ? 'text-red-600' : 'text-slate-700'
                       }`}
                     >
                       {isFr ? 'Parent' : 'Parent'}
@@ -511,6 +516,7 @@ function RegisterForm() {
                   </div>
                 </button>
 
+                {/* 🔵 ENSEIGNANT */}
                 <button
                   type="button"
                   onClick={() => setRole('teacher')}
@@ -527,9 +533,7 @@ function RegisterForm() {
                   >
                     <GraduationCap
                       size={20}
-                      className={
-                        !isParent ? 'text-blue-600' : 'text-slate-500'
-                      }
+                      className={!isParent ? 'text-blue-600' : 'text-slate-500'}
                     />
                   </div>
                   <div>
@@ -559,11 +563,7 @@ function RegisterForm() {
                   <div className="relative group">
                     <User
                       size={16}
-                      className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${
-                        isParent
-                          ? 'group-focus-within:text-emerald-500'
-                          : 'group-focus-within:text-blue-500'
-                      }`}
+                      className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${accent.inputFocusIcon}`}
                     />
                     <input
                       type="text"
@@ -584,11 +584,7 @@ function RegisterForm() {
                   <div className="relative group">
                     <User
                       size={16}
-                      className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${
-                        isParent
-                          ? 'group-focus-within:text-emerald-500'
-                          : 'group-focus-within:text-blue-500'
-                      }`}
+                      className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${accent.inputFocusIcon}`}
                     />
                     <input
                       type="text"
@@ -610,11 +606,7 @@ function RegisterForm() {
                 <div className="relative group">
                   <Mail
                     size={16}
-                    className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${
-                      isParent
-                        ? 'group-focus-within:text-emerald-500'
-                        : 'group-focus-within:text-blue-500'
-                    }`}
+                    className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${accent.inputFocusIcon}`}
                   />
                   <input
                     type="email"
@@ -635,11 +627,7 @@ function RegisterForm() {
                 <div className="relative group">
                   <Lock
                     size={16}
-                    className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${
-                      isParent
-                        ? 'group-focus-within:text-emerald-500'
-                        : 'group-focus-within:text-blue-500'
-                    }`}
+                    className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${accent.inputFocusIcon}`}
                   />
                   <input
                     type="password"
@@ -682,11 +670,7 @@ function RegisterForm() {
                 <Link
                   href="/login"
                   prefetch
-                  className={`font-semibold transition-colors ${
-                    isParent
-                      ? 'text-emerald-600 hover:text-emerald-700'
-                      : 'text-blue-600 hover:text-blue-700'
-                  }`}
+                  className={`font-semibold transition-colors ${accent.linkHover}`}
                 >
                   {isFr ? 'Se connecter' : 'Sign in'}
                 </Link>
@@ -709,8 +693,8 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-          <Loader2 size={24} className="animate-spin text-slate-400" />
+        <div className="min-h-screen flex items-center justify-center bg-[#fffafa]">
+          <Loader2 size={24} className="animate-spin text-red-500" />
         </div>
       }
     >

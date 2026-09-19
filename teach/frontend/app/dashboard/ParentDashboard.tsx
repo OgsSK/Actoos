@@ -15,15 +15,10 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useTeachRole } from '@/app/hooks/useTeachRole';
 import { supabase } from '@/lib/supabase';
 import { ACTOOS_ID_BASE } from '@/lib/constants';
+import SupportCard from '@/app/components/SupportCard';
 
-// ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
-
 const STORAGE_KEY = 'actoos-teach-active-role';
-
-// ═══════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════
 
 function calcAge(birthDate: string | null): number | null {
   if (!birthDate) return null;
@@ -266,8 +261,8 @@ function CardHeader({
     <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
         {Icon && (
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-            <Icon className="w-4 h-4 text-emerald-600" />
+          <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+            <Icon className="w-4 h-4 text-red-500" />
           </div>
         )}
         <div className="min-w-0">
@@ -288,7 +283,7 @@ function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLA
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -336,14 +331,14 @@ function NavTab({ href, icon: Icon, active = false, disabled = false, badge, chi
       prefetch
       className={`${baseClasses} ${
         active
-          ? 'border-emerald-600 text-emerald-700'
+          ? 'border-red-500 text-red-600'
           : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
       }`}
     >
       <Icon className="w-4 h-4" />
       {children}
       {badge && (
-        <span className="ml-1 text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">
+        <span className="ml-1 text-[10px] uppercase tracking-wide bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-semibold">
           {badge}
         </span>
       )}
@@ -481,6 +476,7 @@ interface LessonRequestItem {
   teacher_photo_url: string | null;
 }
 
+// Couleurs sémantiques de statut — conservées volontairement
 const REQUEST_STATUS = {
   pending:   { bg: 'bg-amber-100',   text: 'text-amber-700',   icon: Clock,        labelFr: 'En attente', labelEn: 'Pending' },
   accepted:  { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle2, labelFr: 'Acceptée',   labelEn: 'Accepted' },
@@ -818,7 +814,7 @@ export default function ParentDashboard() {
       {/* STATS — 5 cartes */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard icon={Inbox} label={isFr ? 'Demandes' : 'Requests'} value={String(stats.pendingRequests)} color="amber" />
-        <StatCard icon={Bookmark} label={isFr ? 'Profs sauvegardés' : 'Saved teachers'} value={String(stats.savedCount)} color="emerald" />
+        <StatCard icon={Bookmark} label={isFr ? 'Profs sauvegardés' : 'Saved teachers'} value={String(stats.savedCount)} color="red" />
         <StatCard icon={Baby} label={isFr ? 'Enfants' : 'Children'} value={String(stats.childrenCount)} color="purple" />
         <StatCard icon={MapPin} label={isFr ? 'Ville' : 'City'} value={parentProfile?.city || '—'} color="amber" isText />
         <StatCard icon={Phone} label={isFr ? 'Téléphone' : 'Phone'} value={parentProfile?.phone || '—'} color="blue" isText />
@@ -831,8 +827,8 @@ export default function ParentDashboard() {
             <Card>
               <CardContent>
                 <div className="flex items-start gap-4 mb-5">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5 h-5 text-emerald-600" />
+                  <div className="w-11 h-11 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-5 h-5 text-red-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-slate-500 mb-1">
@@ -843,11 +839,11 @@ export default function ParentDashboard() {
                       <span className="text-sm text-slate-500">{isFr ? 'complété' : 'completed'}</span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${completionPercent}%` }} />
+                      <div className="h-full rounded-full bg-red-500 transition-all duration-700" style={{ width: `${completionPercent}%` }} />
                     </div>
                   </div>
                 </div>
-                <Link href="/parent/profile/edit" prefetch className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
+                <Link href="/parent/profile/edit" prefetch className="inline-flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-600 transition-colors">
                   {isFr ? 'Compléter mon profil' : 'Complete my profile'}
                   <ChevronRight className="w-4 h-4" />
                 </Link>
@@ -867,7 +863,7 @@ export default function ParentDashboard() {
                   : isFr ? 'Aucune demande envoyée' : 'No request sent'
               }
               action={
-                <Link href="/parent/requests" prefetch className="text-sm font-medium text-slate-500 hover:text-emerald-600 transition-colors inline-flex items-center gap-1">
+                <Link href="/parent/requests" prefetch className="text-sm font-medium text-slate-500 hover:text-red-500 transition-colors inline-flex items-center gap-1">
                   {isFr ? 'Voir tout' : 'See all'}
                   <ChevronRight className="w-4 h-4" />
                 </Link>
@@ -876,8 +872,8 @@ export default function ParentDashboard() {
             <CardContent className="p-4 sm:p-6">
               {recentRequests.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-3">
-                    <Inbox className="w-6 h-6 text-emerald-500" />
+                  <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-3">
+                    <Inbox className="w-6 h-6 text-red-500" />
                   </div>
                   <p className="text-sm font-medium text-slate-900 mb-1">
                     {isFr ? 'Aucune demande envoyée' : 'No request sent'}
@@ -916,7 +912,7 @@ export default function ParentDashboard() {
                   : isFr ? 'Aucun enfant ajouté' : 'No children added'
               }
               action={
-                <Link href="/parent/profile/edit" prefetch className="text-sm font-medium text-slate-500 hover:text-emerald-600 transition-colors inline-flex items-center gap-1">
+                <Link href="/parent/profile/edit" prefetch className="text-sm font-medium text-slate-500 hover:text-red-500 transition-colors inline-flex items-center gap-1">
                   {isFr ? 'Gérer' : 'Manage'}
                   <ChevronRight className="w-4 h-4" />
                 </Link>
@@ -925,8 +921,8 @@ export default function ParentDashboard() {
             <CardContent className="p-4 sm:p-6">
               {children.length === 0 ? (
                 <div className="text-center py-6">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-3">
-                    <Baby className="w-6 h-6 text-emerald-500" />
+                  <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-3">
+                    <Baby className="w-6 h-6 text-red-500" />
                   </div>
                   <p className="text-sm font-medium text-slate-900 mb-1">
                     {isFr ? 'Aucun enfant ajouté' : 'No children added'}
@@ -951,7 +947,7 @@ export default function ParentDashboard() {
                   <Link
                     href="/parent/profile/edit"
                     prefetch
-                    className="group flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-medium hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50/40 transition-all min-h-[88px]"
+                    className="group flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-medium hover:border-red-400 hover:text-red-500 hover:bg-red-50/40 transition-all min-h-[88px]"
                   >
                     <Plus className="w-4 h-4" />
                     {isFr ? 'Ajouter' : 'Add'}
@@ -961,7 +957,6 @@ export default function ParentDashboard() {
             </CardContent>
           </Card>
 
-          {/* ✅ PROCHAINES ÉTAPES — checklist sobre */}
           <Card>
             <CardHeader
               icon={Check}
@@ -980,7 +975,7 @@ export default function ParentDashboard() {
 
             <div className="h-0.5 w-full bg-slate-100">
               <div
-                className="h-full bg-emerald-500 transition-all duration-700"
+                className="h-full bg-red-500 transition-all duration-700"
                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
               />
             </div>
@@ -997,7 +992,7 @@ export default function ParentDashboard() {
                   hint={step.hint}
                   href="/parent/profile/edit"
                   isFr={isFr}
-                  accent="emerald"
+                  accent="red"
                 />
               ))}
             </ul>
@@ -1013,7 +1008,7 @@ export default function ParentDashboard() {
                   : `${stats.savedCount} saved teacher${stats.savedCount > 1 ? 's' : ''}`
               }
               action={
-                <Link href="/parent/favorites" prefetch className="text-sm font-medium text-slate-500 hover:text-emerald-600 transition-colors inline-flex items-center gap-1">
+                <Link href="/parent/favorites" prefetch className="text-sm font-medium text-slate-500 hover:text-red-500 transition-colors inline-flex items-center gap-1">
                   {isFr ? 'Voir tout' : 'See all'}
                   <ChevronRight className="w-4 h-4" />
                 </Link>
@@ -1050,11 +1045,11 @@ export default function ParentDashboard() {
         </div>
 
         <div className="space-y-6">
-          <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-50/40">
+          <Card className="border-red-200 bg-gradient-to-br from-red-50 to-red-50/40">
             <CardContent>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-11 h-11 rounded-xl bg-white border border-emerald-100 flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-emerald-600" />
+                <div className="w-11 h-11 rounded-xl bg-white border border-red-100 flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-red-500" />
                 </div>
                 <p className="text-sm font-semibold text-slate-900">
                   {isFr ? 'Mon profil public' : 'My public profile'}
@@ -1077,36 +1072,38 @@ export default function ParentDashboard() {
           <Card>
             <CardHeader icon={Lightbulb} title={isFr ? 'Actions rapides' : 'Quick actions'} />
             <ul className="p-2">
-              <QuickAction icon={Home} label={isFr ? "Retour à l'accueil" : 'Back to home'} href="/" accent="emerald" />
-              <QuickAction icon={Search} label={isFr ? 'Chercher un prof' : 'Find a teacher'} href="/teachers" accent="emerald" />
+              <QuickAction icon={Home} label={isFr ? "Retour à l'accueil" : 'Back to home'} href="/" accent="red" />
+              <QuickAction icon={Search} label={isFr ? 'Chercher un prof' : 'Find a teacher'} href="/teachers" accent="red" />
               <QuickAction
                 icon={Inbox}
                 label={isFr ? 'Mes demandes' : 'My requests'}
                 href="/parent/requests"
                 badge={stats.pendingRequests > 0 ? String(stats.pendingRequests) : undefined}
-                accent="emerald"
+                accent="red"
               />
-              <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View my public profile'} href={`/parents/${user.id}`} accent="emerald" />
-              <QuickAction icon={Baby} label={isFr ? 'Gérer mes enfants' : 'Manage my children'} href="/parent/profile/edit" accent="emerald" />
-              <QuickAction icon={Heart} label={isFr ? 'Mes profs sauvegardés' : 'My saved teachers'} href="/parent/favorites" accent="emerald" />
+              <QuickAction icon={Eye} label={isFr ? 'Voir mon profil public' : 'View my public profile'} href={`/parents/${user.id}`} accent="red" />
+              <QuickAction icon={Baby} label={isFr ? 'Gérer mes enfants' : 'Manage my children'} href="/parent/profile/edit" accent="red" />
+              <QuickAction icon={Heart} label={isFr ? 'Mes profs sauvegardés' : 'My saved teachers'} href="/parent/favorites" accent="red" />
               {!isTeacher && (
                 <QuickAction
                   icon={UserPlus}
                   label={isFr ? 'Devenir aussi enseignant' : 'Become also a teacher'}
                   href="/onboarding"
-                  accent="emerald"
+                  accent="red"
                 />
               )}
             </ul>
           </Card>
 
-          {/* ✅ CONSEIL INTELLIGENT */}
           <SmartTipCard tip={parentTip} />
+
+          {/* 💛 SOUTIEN À LA PLATEFORME */}
+          <SupportCard />
 
           <Card>
             <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external accent="emerald" />
+              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external accent="red" />
             </ul>
             <div className="p-2 pt-0">
               <button
@@ -1164,16 +1161,16 @@ export default function ParentDashboard() {
 // ═══════════════════════════════════════════════════════
 
 function StatCard({
-  icon: Icon, label, value, color = 'emerald', isText,
+  icon: Icon, label, value, color = 'red', isText,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
-  color?: 'emerald' | 'blue' | 'slate' | 'amber' | 'purple';
+  color?: 'red' | 'blue' | 'slate' | 'amber' | 'purple';
   isText?: boolean;
 }) {
   const colorMap = {
-    emerald: { bg: 'bg-emerald-100', text: 'text-emerald-600' },
+    red: { bg: 'bg-red-100', text: 'text-red-500' },
     blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
     slate: { bg: 'bg-slate-100', text: 'text-slate-600' },
     amber: { bg: 'bg-amber-100', text: 'text-amber-600' },
@@ -1220,13 +1217,13 @@ function RequestCard({
         {request.teacher_photo_url ? (
           <img src={request.teacher_photo_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
         ) : (
-          <span className="text-emerald-700 text-sm font-bold">{initials}</span>
+          <span className="text-red-600 text-sm font-bold">{initials}</span>
         )}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+          <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-red-500 transition-colors">
             {request.teacher_name}
           </p>
           <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
@@ -1247,7 +1244,7 @@ function RequestCard({
         </p>
       </div>
 
-      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-red-500 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
     </Link>
   );
 }
@@ -1261,15 +1258,15 @@ function ChildCard({ child, isFr }: { child: Child; isFr: boolean }) {
       prefetch
       className="group flex items-start gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors shadow-sm"
     >
-      <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-        <span className="text-emerald-700 text-base font-bold">
+      <div className="w-11 h-11 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+        <span className="text-red-600 text-base font-bold">
           {child.first_name.charAt(0).toUpperCase() || '?'}
         </span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 mb-1">
-          <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+          <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-red-500 transition-colors">
             {child.first_name || (isFr ? 'Enfant' : 'Child')}
           </p>
           {age !== null && (
@@ -1295,7 +1292,7 @@ function ChildCard({ child, isFr }: { child: Child; isFr: boolean }) {
         </div>
       </div>
 
-      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-red-500 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
     </Link>
   );
 }
@@ -1317,7 +1314,7 @@ function SavedTeacherCard({ teacher }: { teacher: SavedTeacher }) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+        <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-red-500 transition-colors">
           {teacher.teacher_name}
         </p>
         {teacher.teacher_headline && (
@@ -1330,15 +1327,15 @@ function SavedTeacherCard({ teacher }: { teacher: SavedTeacher }) {
           </p>
         )}
       </div>
-      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-red-500 group-hover:translate-x-0.5 transition-all shrink-0" />
     </Link>
   );
 }
 
-type Accent = 'blue' | 'emerald';
+type Accent = 'blue' | 'red';
 
 function QuickAction({
-  icon: Icon, label, href, badge, external, accent = 'emerald',
+  icon: Icon, label, href, badge, external, accent = 'red',
 }: {
   icon: React.ElementType;
   label: string;
@@ -1347,10 +1344,10 @@ function QuickAction({
   external?: boolean;
   accent?: Accent;
 }) {
-  const hover = accent === 'blue' ? 'hover:text-blue-700' : 'hover:text-emerald-700';
-  const iconHover = accent === 'blue' ? 'group-hover:text-blue-600' : 'group-hover:text-emerald-600';
-  const chevronHover = accent === 'blue' ? 'group-hover:text-blue-600' : 'group-hover:text-emerald-600';
-  const badgeBg = accent === 'blue' ? 'bg-blue-600' : 'bg-emerald-600';
+  const hover = accent === 'blue' ? 'hover:text-blue-700' : 'hover:text-red-500';
+  const iconHover = accent === 'blue' ? 'group-hover:text-blue-600' : 'group-hover:text-red-500';
+  const chevronHover = accent === 'blue' ? 'group-hover:text-blue-600' : 'group-hover:text-red-500';
+  const badgeBg = accent === 'blue' ? 'bg-blue-600' : 'bg-red-500';
 
   const content = (
     <>
@@ -1381,7 +1378,7 @@ function QuickAction({
 }
 
 function StepItem({
-  index, done, isCurrent, icon: Icon, label, hint, href, isFr, accent = 'emerald',
+  index, done, isCurrent, icon: Icon, label, hint, href, isFr, accent = 'red',
 }: {
   index: number;
   done: boolean;
@@ -1403,12 +1400,12 @@ function StepItem({
         currentCta: 'text-blue-600 bg-blue-50 group-hover:bg-blue-100',
       }
     : {
-        doneBg: 'bg-emerald-600 border-emerald-600',
-        currentBorder: 'border-emerald-500',
-        currentRing: 'ring-emerald-100',
-        currentIcon: 'text-emerald-600',
-        currentHoverBg: 'hover:bg-emerald-50/40',
-        currentCta: 'text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100',
+        doneBg: 'bg-red-500 border-red-500',
+        currentBorder: 'border-red-500',
+        currentRing: 'ring-red-100',
+        currentIcon: 'text-red-500',
+        currentHoverBg: 'hover:bg-red-50/40',
+        currentCta: 'text-red-500 bg-red-50 group-hover:bg-red-100',
       };
 
   return (

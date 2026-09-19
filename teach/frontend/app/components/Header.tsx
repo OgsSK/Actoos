@@ -86,7 +86,7 @@ export default function Header() {
           {/* Logo + nav */}
           <div className="flex items-center gap-3 lg:gap-6 min-w-0">
             <Link href="/" prefetch className="flex items-center gap-2 shrink-0" aria-label={BRAND.name}>
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-sm">
                 <GraduationCap className="w-5 h-5" />
               </div>
               <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900">
@@ -104,7 +104,7 @@ export default function Header() {
                     prefetch
                     className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       active
-                        ? 'text-emerald-700 bg-emerald-50'
+                        ? 'text-red-600 bg-red-50'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                   >
@@ -144,7 +144,7 @@ export default function Header() {
                 <Link
                   href="/register"
                   prefetch
-                  className="inline-flex items-center justify-center h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-full shadow-sm transition-colors"
+                  className="inline-flex items-center justify-center h-10 px-5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-full shadow-sm transition-colors"
                 >
                   {isFr ? 'Créer un compte' : 'Create account'}
                 </Link>
@@ -161,7 +161,7 @@ export default function Header() {
             ) : user ? (
               <button
                 onClick={() => setMobileOpen(true)}
-                className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shadow-sm"
+                className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold shadow-sm"
                 aria-label="Mon compte"
               >
                 {initials}
@@ -195,7 +195,7 @@ export default function Header() {
       >
         <div className="flex items-center justify-between px-5 h-16 border-b border-slate-200 shrink-0">
           <Link href="/" prefetch onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center shadow-sm">
               <GraduationCap className="w-4 h-4" />
             </div>
             <span className="font-bold text-base tracking-tight text-slate-900">
@@ -222,7 +222,7 @@ export default function Header() {
             </div>
           ) : user ? (
             <div className="px-5 py-5 border-b border-slate-100 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold tracking-tight shrink-0 ring-2 ring-white shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold tracking-tight shrink-0 ring-2 ring-white shadow-sm">
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
@@ -288,7 +288,7 @@ export default function Header() {
                   href="/register"
                   prefetch
                   onClick={() => setMobileOpen(false)}
-                  className="block w-full text-center px-4 py-3 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors"
+                  className="block w-full text-center px-4 py-3 rounded-xl text-sm font-medium bg-red-500 hover:bg-red-600 text-white shadow-sm transition-colors"
                 >
                   {isFr ? 'Créer un compte' : 'Create account'}
                 </Link>
@@ -368,8 +368,8 @@ function UserDropdown({
       <button
         onClick={() => setOpen(!open)}
         aria-label="Menu utilisateur"
-        className={`w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold tracking-tight shadow-sm transition-all hover:bg-emerald-700 ring-2 ${
-          open ? 'ring-emerald-200' : 'ring-transparent hover:ring-emerald-100'
+        className={`w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold tracking-tight shadow-sm transition-all hover:bg-red-600 ring-2 ${
+          open ? 'ring-red-200' : 'ring-transparent hover:ring-red-100'
         }`}
       >
         {initials}
@@ -379,7 +379,7 @@ function UserDropdown({
         <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
           <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/60">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
                 {initials}
               </div>
               <div className="min-w-0 flex-1">

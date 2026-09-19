@@ -19,11 +19,9 @@ export default function OnboardingPage() {
 
   const isFr = language === 'fr';
 
-  // Combien de rôles déjà ajoutés ?
   const rolesCount = (isTeacher ? 1 : 0) + (isParent ? 1 : 0);
   const hasBothRoles = isTeacher && isParent;
 
-  // Texte adaptatif selon la situation
   const headerTitle = isFr
     ? rolesCount === 0
       ? `Bienvenue sur ${BRAND.name}`
@@ -40,7 +38,6 @@ export default function OnboardingPage() {
       ? 'To get started, tell us who you are.'
       : 'You can cumulate both roles on the same account.';
 
-  // Rediriger si l'user a déjà les 2 rôles (rien à ajouter)
   useEffect(() => {
     if (authLoading || roleLoading) return;
     if (!user) {
@@ -55,7 +52,6 @@ export default function OnboardingPage() {
   async function handleChoose(role: 'teacher' | 'parent') {
     if (!user || submitting) return;
 
-    // ⚠️ Garde-fou : on bloque si le rôle est déjà présent, SAUF si le teacher est rejeté (retry)
     if (role === 'teacher' && isTeacher && !isTeacherRejected) return;
     if (role === 'parent' && isParent) return;
 
@@ -64,7 +60,6 @@ export default function OnboardingPage() {
 
     try {
       if (role === 'teacher') {
-        // Si on retente après un refus → update au lieu d'insert
         if (isTeacherRejected) {
           const { error: updErr } = await supabase
             .from('teacher_profiles')
@@ -75,14 +70,12 @@ export default function OnboardingPage() {
             .eq('id', user.id);
           if (updErr) throw updErr;
         } else {
-          // Sinon → insert normal
           const { error: insertErr } = await supabase
             .from('teacher_profiles')
             .insert({ id: user.id, verification_status: 'pending' });
           if (insertErr && insertErr.code !== '23505') throw insertErr;
         }
 
-        // Notifier l'admin (non bloquant) — dans tous les cas (nouveau ou retry)
         fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`,
           {
@@ -104,7 +97,6 @@ export default function OnboardingPage() {
         if (insertErr && insertErr.code !== '23505') throw insertErr;
       }
 
-      // Redirection vers /dashboard (le router détecte automatiquement le rôle)
       window.location.href = '/dashboard';
     } catch (err: any) {
       console.error('[Onboarding]', err);
@@ -118,8 +110,8 @@ export default function OnboardingPage() {
 
   if (authLoading || roleLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-emerald-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fffafa]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-red-500" />
       </div>
     );
   }
@@ -127,12 +119,12 @@ export default function OnboardingPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#fffafa] flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
 
         {/* En-tête */}
         <div className="text-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto mb-4 shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-red-500 text-white flex items-center justify-center mx-auto mb-4 shadow-sm">
             <GraduationCap className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">{headerTitle}</h1>
@@ -145,14 +137,14 @@ export default function OnboardingPage() {
 
           {/* Enseignant */}
           {isTeacher && !isTeacherRejected ? (
-            <div className="bg-emerald-50 rounded-2xl border-2 border-emerald-200 p-6 text-left">
-              <div className="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center mb-4">
-                <Check className="w-7 h-7 text-emerald-600" strokeWidth={3} />
+            <div className="bg-red-50 rounded-2xl border-2 border-red-200 p-6 text-left">
+              <div className="w-14 h-14 rounded-xl bg-red-100 flex items-center justify-center mb-4">
+                <Check className="w-7 h-7 text-red-500" strokeWidth={3} />
               </div>
               <h2 className="text-lg font-semibold text-slate-900 mb-2">
                 {isFr ? 'Enseignant' : 'Teacher'}
               </h2>
-              <p className="text-sm text-emerald-700 leading-relaxed font-medium">
+              <p className="text-sm text-red-600 leading-relaxed font-medium">
                 {isFr ? 'Rôle déjà ajouté' : 'Role already added'}
               </p>
             </div>
@@ -184,13 +176,13 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => handleChoose('teacher')}
               disabled={submitting !== null}
-              className="group bg-white rounded-2xl border-2 border-slate-200 p-6 text-left hover:border-emerald-400 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="group bg-white rounded-2xl border-2 border-slate-200 p-6 text-left hover:border-red-400 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+              <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
                 {submitting === 'teacher' ? (
-                  <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+                  <Loader2 className="w-7 h-7 text-red-500 animate-spin" />
                 ) : (
-                  <GraduationCap className="w-7 h-7 text-blue-600" />
+                  <GraduationCap className="w-7 h-7 text-red-500" />
                 )}
               </div>
               <h2 className="text-lg font-semibold text-slate-900 mb-2">
@@ -201,7 +193,7 @@ export default function OnboardingPage() {
                   ? 'Proposez des cours particuliers et recevez des demandes de parents.'
                   : 'Offer private lessons and receive requests from parents.'}
               </p>
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 group-hover:text-emerald-700">
+              <span className="inline-flex items-center gap-1 text-sm font-medium text-red-500 group-hover:text-red-600">
                 {rolesCount === 0
                   ? isFr ? 'Commencer' : 'Get started'
                   : isFr ? 'Ajouter ce rôle' : 'Add this role'}
@@ -212,14 +204,14 @@ export default function OnboardingPage() {
 
           {/* Parent */}
           {isParent ? (
-            <div className="bg-emerald-50 rounded-2xl border-2 border-emerald-200 p-6 text-left">
-              <div className="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center mb-4">
-                <Check className="w-7 h-7 text-emerald-600" strokeWidth={3} />
+            <div className="bg-red-50 rounded-2xl border-2 border-red-200 p-6 text-left">
+              <div className="w-14 h-14 rounded-xl bg-red-100 flex items-center justify-center mb-4">
+                <Check className="w-7 h-7 text-red-500" strokeWidth={3} />
               </div>
               <h2 className="text-lg font-semibold text-slate-900 mb-2">
                 {isFr ? 'Parent' : 'Parent'}
               </h2>
-              <p className="text-sm text-emerald-700 leading-relaxed font-medium">
+              <p className="text-sm text-red-600 leading-relaxed font-medium">
                 {isFr ? 'Rôle déjà ajouté' : 'Role already added'}
               </p>
             </div>
@@ -228,13 +220,13 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => handleChoose('parent')}
               disabled={submitting !== null}
-              className="group bg-white rounded-2xl border-2 border-slate-200 p-6 text-left hover:border-emerald-400 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="group bg-white rounded-2xl border-2 border-slate-200 p-6 text-left hover:border-red-400 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center mb-4 group-hover:bg-emerald-100 transition-colors">
+              <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
                 {submitting === 'parent' ? (
-                  <Loader2 className="w-7 h-7 text-emerald-600 animate-spin" />
+                  <Loader2 className="w-7 h-7 text-red-500 animate-spin" />
                 ) : (
-                  <Users className="w-7 h-7 text-emerald-600" />
+                  <Users className="w-7 h-7 text-red-500" />
                 )}
               </div>
               <h2 className="text-lg font-semibold text-slate-900 mb-2">
@@ -245,7 +237,7 @@ export default function OnboardingPage() {
                   ? 'Trouvez le prof idéal pour votre enfant et échangez en confiance.'
                   : 'Find the ideal teacher for your child and chat with confidence.'}
               </p>
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 group-hover:text-emerald-700">
+              <span className="inline-flex items-center gap-1 text-sm font-medium text-red-500 group-hover:text-red-600">
                 {rolesCount === 0
                   ? isFr ? 'Commencer' : 'Get started'
                   : isFr ? 'Ajouter ce rôle' : 'Add this role'}
@@ -265,7 +257,7 @@ export default function OnboardingPage() {
           <div className="text-center mt-8">
             <a
               href="/dashboard"
-              className="text-sm font-medium text-slate-500 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium text-slate-500 hover:text-red-500 transition-colors"
             >
               {isFr ? '← Retour au tableau de bord' : '← Back to dashboard'}
             </a>

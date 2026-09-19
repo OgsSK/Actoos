@@ -21,60 +21,39 @@ export default function LegalPage() {
   const lastUpdate = isFr ? LAST_UPDATE_FR : LAST_UPDATE_EN;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* ═══════════ HERO ═══════════ */}
-      <div className="relative bg-slate-900 text-white overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(255,255,255,0.7) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255,255,255,0.7) 1px, transparent 1px)
-            `,
-            backgroundSize: '56px 56px',
-            maskImage: 'radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)',
-            WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)',
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0) 70%)',
-          }}
-        />
-
+    <div className="min-h-screen bg-[#fffafa]">
+      {/* ═══════════ HERO avec dégradé rosé ═══════════ */}
+      <div className="relative bg-gradient-to-b from-white via-red-50 to-red-100 overflow-hidden">
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <Link
             href="/"
             prefetch
-            className="group inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white mb-6 transition-colors"
+            className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-500 mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             {isFr ? "Retour à l'accueil" : 'Back to home'}
           </Link>
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-              <FileText className="w-6 h-6 text-emerald-400" />
+            <div className="w-12 h-12 rounded-2xl bg-red-100 border border-red-200 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-red-500" />
             </div>
-            <p className="text-xs uppercase tracking-widest text-emerald-400 font-medium">
+            <p className="text-xs uppercase tracking-widest text-red-500 font-semibold">
               {isFr ? 'Informations légales' : 'Legal information'}
             </p>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-4 text-slate-900">
             {isFr
               ? 'Mentions légales & CGU'
               : 'Legal notice & Terms'}
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
             {isFr
               ? `Informations légales relatives à ${BRAND.name} et conditions générales d'utilisation de la plateforme.`
               : `Legal information about ${BRAND.name} and general terms of use of the platform.`}
           </p>
-          <p className="text-xs text-slate-400 mt-4">
+          <p className="text-xs text-slate-500 mt-4">
             {isFr ? 'Dernière mise à jour :' : 'Last updated:'} {lastUpdate}
           </p>
         </div>
@@ -91,42 +70,42 @@ export default function LegalPage() {
             </p>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               <li>
-                <a href="#editeur" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#editeur" className="text-red-500 hover:text-red-600 transition-colors">
                   1. {isFr ? 'Éditeur du site' : 'Site publisher'}
                 </a>
               </li>
               <li>
-                <a href="#hebergeur" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#hebergeur" className="text-red-500 hover:text-red-600 transition-colors">
                   2. {isFr ? 'Hébergeur' : 'Hosting provider'}
                 </a>
               </li>
               <li>
-                <a href="#propriete" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#propriete" className="text-red-500 hover:text-red-600 transition-colors">
                   3. {isFr ? 'Propriété intellectuelle' : 'Intellectual property'}
                 </a>
               </li>
               <li>
-                <a href="#cgu" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#cgu" className="text-red-500 hover:text-red-600 transition-colors">
                   4. {isFr ? "Conditions d'utilisation" : 'Terms of use'}
                 </a>
               </li>
               <li>
-                <a href="#comptes" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#comptes" className="text-red-500 hover:text-red-600 transition-colors">
                   5. {isFr ? 'Comptes utilisateurs' : 'User accounts'}
                 </a>
               </li>
               <li>
-                <a href="#responsabilite" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#responsabilite" className="text-red-500 hover:text-red-600 transition-colors">
                   6. {isFr ? 'Responsabilité' : 'Liability'}
                 </a>
               </li>
               <li>
-                <a href="#resiliation" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#resiliation" className="text-red-500 hover:text-red-600 transition-colors">
                   7. {isFr ? 'Suspension & résiliation' : 'Suspension & termination'}
                 </a>
               </li>
               <li>
-                <a href="#droit" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a href="#droit" className="text-red-500 hover:text-red-600 transition-colors">
                   8. {isFr ? 'Droit applicable' : 'Applicable law'}
                 </a>
               </li>
@@ -139,7 +118,7 @@ export default function LegalPage() {
             {/* 1. Éditeur */}
             <section id="editeur" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-emerald-600" />
+                <Building2 className="w-4 h-4 text-red-500" />
                 1. {isFr ? 'Éditeur du site' : 'Site publisher'}
               </h2>
               <p className="mb-3">
@@ -151,7 +130,7 @@ export default function LegalPage() {
                 <p><strong>{isFr ? 'Nom commercial :' : 'Trade name:'}</strong> {BRAND.name}</p>
                 <p><strong>{isFr ? 'Produit de :' : 'Product of:'}</strong> Actoos</p>
                 <p><strong>Email :</strong>{' '}
-                  <a href="mailto:contact@actoos.com" className="text-emerald-600 hover:text-emerald-700 underline">
+                  <a href="mailto:contact@actoos.com" className="text-red-500 hover:text-red-600 underline">
                     contact@actoos.com
                   </a>
                 </p>
@@ -162,7 +141,7 @@ export default function LegalPage() {
             {/* 2. Hébergeur */}
             <section id="hebergeur" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-emerald-600" />
+                <MapPin className="w-4 h-4 text-red-500" />
                 2. {isFr ? 'Hébergeur' : 'Hosting provider'}
               </h2>
               <p className="mb-3">
@@ -186,7 +165,7 @@ export default function LegalPage() {
             {/* 3. Propriété intellectuelle */}
             <section id="propriete" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-red-500" />
                 3. {isFr ? 'Propriété intellectuelle' : 'Intellectual property'}
               </h2>
               <p className="mb-3">
@@ -204,7 +183,7 @@ export default function LegalPage() {
             {/* 4. CGU */}
             <section id="cgu" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-600" />
+                <FileText className="w-4 h-4 text-red-500" />
                 4. {isFr ? "Conditions générales d'utilisation" : 'Terms of use'}
               </h2>
               <p className="mb-3">
@@ -246,7 +225,7 @@ export default function LegalPage() {
             {/* 5. Comptes */}
             <section id="comptes" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-red-500" />
                 5. {isFr ? 'Comptes utilisateurs' : 'User accounts'}
               </h2>
               <p className="mb-3">
@@ -264,7 +243,7 @@ export default function LegalPage() {
             {/* 6. Responsabilité */}
             <section id="responsabilite" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-emerald-600" />
+                <AlertTriangle className="w-4 h-4 text-red-500" />
                 6. {isFr ? 'Responsabilité' : 'Liability'}
               </h2>
               <p className="mb-3">
@@ -287,7 +266,7 @@ export default function LegalPage() {
             {/* 7. Suspension */}
             <section id="resiliation" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-emerald-600" />
+                <AlertTriangle className="w-4 h-4 text-red-500" />
                 7. {isFr ? 'Suspension & résiliation' : 'Suspension & termination'}
               </h2>
               <p className="mb-3">
@@ -305,7 +284,7 @@ export default function LegalPage() {
             {/* 8. Droit applicable */}
             <section id="droit" className="scroll-mt-6">
               <h2 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-red-500" />
                 8. {isFr ? 'Droit applicable' : 'Applicable law'}
               </h2>
               <p className="mb-3">
@@ -324,8 +303,8 @@ export default function LegalPage() {
           {/* ═══ CONTACT ═══ */}
           <div className="border-t border-slate-100 bg-slate-50 p-5 sm:p-8">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
-                <Mail className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center shrink-0">
+                <Mail className="w-5 h-5 text-red-500" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900 mb-1">
@@ -338,7 +317,7 @@ export default function LegalPage() {
                 </p>
                 <a
                   href="mailto:contact@actoos.com"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   contact@actoos.com
@@ -351,7 +330,7 @@ export default function LegalPage() {
         {/* Liens vers privacy */}
         <div className="mt-6 text-center text-sm text-slate-500">
           {isFr ? 'Voir aussi :' : 'See also:'}{' '}
-          <Link href="/privacy" prefetch className="text-emerald-600 hover:text-emerald-700 font-medium">
+          <Link href="/privacy" prefetch className="text-red-500 hover:text-red-600 font-medium">
             {isFr ? 'Politique de confidentialité' : 'Privacy policy'}
           </Link>
         </div>

@@ -12,7 +12,6 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import PageHeader from '@/app/components/PageHeader';
 
-// ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 // ============================================================
@@ -84,7 +83,7 @@ function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLA
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -160,14 +159,12 @@ export default function ParentFavoritesPage() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
-  // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ FIX : on n'attend plus authLoading seul
   useEffect(() => {
     if (authLoading && !authTimeoutExpired) return;
 
@@ -288,7 +285,6 @@ export default function ParentFavoritesPage() {
     return `${parts[0]} ${parts[parts.length - 1][0]}.`;
   }
 
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return <FavoritesSkeleton />;
   }
@@ -314,8 +310,8 @@ export default function ParentFavoritesPage() {
       {teachers.length === 0 ? (
         <Card>
           <div className="p-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
-              <Heart className="w-7 h-7 text-emerald-300" />
+            <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
+              <Heart className="w-7 h-7 text-red-300" />
             </div>
             <h2 className="text-lg font-semibold text-slate-900 mb-2">
               {isFr ? 'Aucun prof sauvegardé' : 'No saved teacher'}
@@ -382,7 +378,7 @@ function TeacherFavoriteCard({
   const hasCover = !!t.cover_url;
 
   return (
-    <div className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-emerald-200 transition-all duration-200 flex flex-col relative">
+    <div className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-red-200 transition-all duration-200 flex flex-col relative">
       {/* COVER — Link prefetch */}
       <Link
         href={`/teachers/${t.teacher_id}`}
@@ -409,13 +405,13 @@ function TeacherFavoriteCard({
             <div className="absolute inset-0 bg-slate-900/30" />
           </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-emerald-100 via-slate-100 to-emerald-50" />
+          <div className="w-full h-full bg-gradient-to-br from-red-100 via-slate-100 to-red-50" />
         )}
 
         {t.is_verified && (
-          <div className="absolute top-2 left-2 z-10 bg-white/95 backdrop-blur-sm border border-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-            <span className="text-[10px] text-emerald-700 font-medium">
+          <div className="absolute top-2 left-2 z-10 bg-white/95 backdrop-blur-sm border border-red-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-red-500" />
+            <span className="text-[10px] text-red-600 font-medium">
               {isFr ? 'Vérifié' : 'Verified'}
             </span>
           </div>
@@ -460,7 +456,7 @@ function TeacherFavoriteCard({
           </div>
 
           <div className="flex-1 min-w-0 pt-1 sm:pt-2">
-            <h3 className="font-semibold text-slate-900 group-hover:text-emerald-600 line-clamp-2 leading-snug text-sm sm:text-base">
+            <h3 className="font-semibold text-slate-900 group-hover:text-red-500 line-clamp-2 leading-snug text-sm sm:text-base">
               {displayName}
             </h3>
             {t.headline && (
@@ -495,7 +491,7 @@ function TeacherFavoriteCard({
             {subjectsPreview.map((s, i) => (
               <span
                 key={i}
-                className="inline-flex items-center text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg font-medium"
+                className="inline-flex items-center text-xs text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-lg font-medium"
               >
                 {isFr ? s.name_fr : s.name_en}
               </span>

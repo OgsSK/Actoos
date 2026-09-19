@@ -13,7 +13,6 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 
-// ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -24,7 +23,7 @@ function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLA
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -79,14 +78,12 @@ export default function ParentRequestsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'declined' | 'completed'>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ FIX : on n'attend plus authLoading seul
   useEffect(() => {
     if (authLoading && !authTimeoutExpired) return;
     if (!user?.id) return;
@@ -183,7 +180,6 @@ export default function ParentRequestsPage() {
     completed: requests.filter(r => r.status === 'completed').length,
   };
 
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
@@ -200,7 +196,7 @@ export default function ParentRequestsPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
       <button
         onClick={() => router.push('/dashboard')}
-        className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 mb-5 transition-colors"
+        className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-500 mb-5 transition-colors"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
         {isFr ? 'Retour au tableau de bord' : 'Back to dashboard'}
@@ -230,8 +226,8 @@ export default function ParentRequestsPage() {
             onClick={() => setFilter(f.key)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-colors ${
               filter === f.key
-                ? 'border-emerald-600 bg-emerald-600 text-white'
-                : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-400'
+                ? 'border-red-500 bg-red-500 text-white'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-red-400 hover:text-red-500'
             }`}
           >
             {isFr ? f.labelFr : f.labelEn}
@@ -243,8 +239,8 @@ export default function ParentRequestsPage() {
       {filtered.length === 0 ? (
         <Card>
           <div className="p-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-5">
-              <Inbox className="w-7 h-7 text-emerald-500" />
+            <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
+              <Inbox className="w-7 h-7 text-red-500" />
             </div>
             <h2 className="text-lg font-semibold text-slate-900 mb-2">
               {filter === 'all'
@@ -277,26 +273,25 @@ export default function ParentRequestsPage() {
             return (
               <div
                 key={req.id}
-                className="relative group bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all"
+                className="relative group bg-white rounded-2xl border border-slate-200 hover:border-red-200 hover:shadow-md transition-all"
               >
-                {/* ✅ FIX : Link prefetch au lieu de <a> */}
                 <Link
                   href={`/parent/requests/${req.id}`}
                   prefetch
                   className="block p-4 sm:p-5"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 overflow-hidden shrink-0 flex items-center justify-center">
                       {photoUrl ? (
                         <img src={photoUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-emerald-700 text-sm font-bold">{initials}</span>
+                        <span className="text-red-600 text-sm font-bold">{initials}</span>
                       )}
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+                        <p className="font-semibold text-slate-900 truncate group-hover:text-red-500 transition-colors">
                           {teacherName}
                         </p>
                         <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
@@ -324,7 +319,7 @@ export default function ParentRequestsPage() {
                       </p>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-red-500 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
                   </div>
                 </Link>
 

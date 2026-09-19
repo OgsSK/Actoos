@@ -14,7 +14,6 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import LanguageSwitcher from '@/app/components/LanguageSwitcher';
 
-// ⏱ Au bout de ce délai, on n'attend plus authLoading
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 // ============================================================
@@ -135,7 +134,7 @@ function PrimaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-wait ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-wait ${className}`}
     >
       {children}
     </button>
@@ -164,7 +163,7 @@ function SkeletonLine({ className = '' }: { className?: string }) {
 
 function ProfileEditSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24">
+    <div className="min-h-screen bg-[#fffafa] text-slate-900 pb-24">
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <SkeletonLine className="h-4 w-20 shrink-0" />
@@ -281,7 +280,6 @@ export default function ParentProfileEditPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
@@ -311,7 +309,6 @@ export default function ParentProfileEditPage() {
   // ============================================================
   // LOAD
   // ============================================================
-  // ✅ FIX : on n'attend plus authLoading seul
   useEffect(() => {
     if (authLoading && !authTimeoutExpired) return;
 
@@ -634,7 +631,6 @@ export default function ParentProfileEditPage() {
   // ============================================================
   // LOADING
   // ============================================================
-  // ✅ FIX : on ne bloque plus sur authLoading
   if (loading && !hasLoadedOnce) {
     return <ProfileEditSkeleton />;
   }
@@ -652,12 +648,12 @@ export default function ParentProfileEditPage() {
   })();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24">
+    <div className="min-h-screen bg-[#fffafa] text-slate-900 pb-24">
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <button
             onClick={() => router.push('/dashboard')}
-            className="group flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors shrink-0"
+            className="group flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-500 transition-colors shrink-0"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             <span className="hidden sm:inline">{isFr ? 'Retour' : 'Back'}</span>
@@ -684,9 +680,9 @@ export default function ParentProfileEditPage() {
           <div
             className={`h-full transition-all duration-700 ease-out ${
               profileCompletion >= 80
-                ? 'bg-emerald-500'
+                ? 'bg-red-500'
                 : profileCompletion >= 50
-                  ? 'bg-blue-500'
+                  ? 'bg-red-400'
                   : 'bg-amber-500'
             }`}
             style={{ width: `${profileCompletion}%` }}
@@ -720,9 +716,9 @@ export default function ParentProfileEditPage() {
         )}
 
         {success && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3 shadow-sm">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <p className="flex-1 text-sm text-emerald-800 leading-relaxed">{success}</p>
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex items-start gap-3 shadow-sm">
+            <CheckCircle2 className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <p className="flex-1 text-sm text-red-800 leading-relaxed">{success}</p>
           </div>
         )}
 
@@ -738,14 +734,14 @@ export default function ParentProfileEditPage() {
                 className="relative shrink-0 cursor-pointer group"
                 onClick={() => photoInputRef.current?.click()}
               >
-                <div className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-emerald-400 group-hover:bg-emerald-50/40">
+                <div className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-red-400 group-hover:bg-red-50/40">
                   {photoUrl ? (
                     <img src={photoUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <UserIcon className="w-7 h-7 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                    <UserIcon className="w-7 h-7 text-slate-300 group-hover:text-red-500 transition-colors" />
                   )}
                 </div>
-                <div className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-600 group-hover:border-emerald-500 group-hover:text-emerald-600 transition-colors">
+                <div className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-600 group-hover:border-red-500 group-hover:text-red-500 transition-colors">
                   <Camera className="w-4 h-4" />
                 </div>
                 {uploadingPhoto && (
@@ -869,7 +865,7 @@ export default function ParentProfileEditPage() {
                   ? 'Ex : Parent de deux enfants, je cherche un prof de maths pour ma fille.'
                   : 'Ex: Parent of two, looking for a math tutor for my daughter.'
               }
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 resize-none transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 resize-none transition-all"
             />
           </CardContent>
         </Card>
@@ -922,7 +918,7 @@ export default function ParentProfileEditPage() {
                 <button
                   type="button"
                   onClick={openAddChild}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl border-2 border-dashed border-slate-300 text-slate-600 text-sm font-medium hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50/40 transition-all"
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-xl border-2 border-dashed border-slate-300 text-slate-600 text-sm font-medium hover:border-red-500 hover:text-red-500 hover:bg-red-50/40 transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   {isFr ? 'Ajouter un autre enfant' : 'Add another child'}
@@ -935,7 +931,7 @@ export default function ParentProfileEditPage() {
         <div className="flex items-center justify-between gap-4 pt-2">
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
+            className="text-sm font-medium text-slate-500 hover:text-red-500 transition-colors"
           >
             {isFr ? 'Annuler' : 'Cancel'}
           </button>
@@ -1001,7 +997,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+      className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
     />
   );
 }
@@ -1025,9 +1021,9 @@ function ChildListItem({
   const level = levelLabel(child, levels, isFr);
 
   return (
-    <div className="flex items-start gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-200 hover:shadow-sm transition-all">
-      <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-        <span className="text-emerald-700 text-base font-bold">
+    <div className="flex items-start gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:border-red-200 hover:shadow-sm transition-all">
+      <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+        <span className="text-red-600 text-base font-bold">
           {child.first_name.charAt(0).toUpperCase() || '?'}
         </span>
       </div>
@@ -1076,7 +1072,7 @@ function ChildListItem({
         <button
           type="button"
           onClick={onEdit}
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
           aria-label="Modifier"
         >
           <Pencil className="w-4 h-4" />
@@ -1120,7 +1116,7 @@ function TagsInput({
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+        className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
       />
 
       {items.length > 0 && (
@@ -1130,7 +1126,7 @@ function TagsInput({
               key={`${item}-${i}`}
               type="button"
               onClick={() => removeItem(i)}
-              className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs text-emerald-700 font-medium hover:bg-emerald-100 transition-colors"
+              className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-xs text-red-600 font-medium hover:bg-red-100 transition-colors"
             >
               <span>{item}</span>
               <X className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -1273,7 +1269,7 @@ function ChildModal({
                 className={`w-full h-11 rounded-xl border bg-white px-4 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 transition-all ${
                   ageError
                     ? 'border-red-400 focus:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20'
+                    : 'border-slate-200 focus:border-red-500 focus:ring-red-500/20'
                 }`}
               />
             </Field>
@@ -1285,7 +1281,7 @@ function ChildModal({
                 <select
                   value={selectValue}
                   onChange={e => handleSelectChange(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm text-slate-900 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 appearance-none cursor-pointer transition-all"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm text-slate-900 shadow-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 appearance-none cursor-pointer transition-all"
                 >
                   <option value="">{isFr ? 'Sélectionner…' : 'Select…'}</option>
 
@@ -1346,7 +1342,7 @@ function ChildModal({
                   placeholder={
                     isFr ? 'Saisir un niveau…' : 'Enter a level…'
                   }
-                  className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
                 />
                 <PrimaryButton
                   type="button"
@@ -1375,7 +1371,7 @@ function ChildModal({
               <button
                 type="button"
                 onClick={() => onChange({ level_id: null, level_custom: null })}
-                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs text-emerald-700 font-medium hover:bg-emerald-100 transition-colors"
+                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 text-xs text-red-600 font-medium hover:bg-red-100 transition-colors"
               >
                 <span>{draft.level_custom}</span>
                 <X className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -1422,7 +1418,7 @@ function ChildModal({
                   ? 'Ex : A des difficultés en géométrie'
                   : 'Ex: Struggles with geometry'
               }
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 resize-none transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 resize-none transition-all"
             />
           </Field>
         </div>

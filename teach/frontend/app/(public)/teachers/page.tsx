@@ -203,12 +203,8 @@ function TeachersPageContent() {
   const [fMode, setFMode] = useState<string>(searchParams.get('mode') || '');
   const [fRating, setFRating] = useState<string>(searchParams.get('rating') || '');
 
-  // 🚫 Un prof ne peut PAS sauvegarder de profs en favoris
   const canSave = !isTeacher;
 
-  // ============================================================
-  // LOAD
-  // ============================================================
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,7 +217,6 @@ function TeachersPageContent() {
   }, [user?.id, authLoading, isTeacher]);
 
   async function loadSavedTeachers() {
-    // 🚫 Un prof ne charge pas ses favoris (il n'en a pas)
     if (isTeacher || !user?.id) { setSavedIds([]); return; }
     try {
       const { data } = await supabase
@@ -235,7 +230,6 @@ function TeachersPageContent() {
   }
 
   async function toggleSave(teacherId: string) {
-    // 🚫 Sécurité : un prof ne peut PAS sauvegarder, même si le bouton est caché
     if (isTeacher) {
       console.warn('[Teachers] toggleSave blocked: user is a teacher');
       return;
@@ -268,8 +262,6 @@ function TeachersPageContent() {
   async function loadAll() {
     if (!hasLoadedOnce) setLoading(true);
     try {
-      // ⚙️ Filtre : verified + is_available + headline non-null
-      // ⚠️ On ne joint PAS users ici (RLS anon bloque la lecture de public.users)
       const [profilesRes, citiesRes, subjectsRes, levelsRes] = await Promise.all([
         supabase
           .from('teacher_profiles')
@@ -300,7 +292,6 @@ function TeachersPageContent() {
 
       const profileIds = profiles.map(p => p.id);
 
-      // ⚠️ On retire saved_teachers du Promise.all : il peut échouer en anon (RLS)
       const [usersRes, tsubsRes, tlevelsRes] = await Promise.all([
         supabase
           .from('users')
@@ -325,13 +316,11 @@ function TeachersPageContent() {
       const tsubs = (tsubsRes.data || []) as Array<{ teacher_id: string; subjects: any; }>;
       const tlevels = (tlevelsRes.data || []) as Array<{ teacher_id: string; levels: any; }>;
 
-      // 🚫 FILTRE SUSPENDUS : on retire les profs dont l'user est suspendu
       const activeProfileIds = new Set(
         users.filter(u => !u.suspended_at).map(u => u.id)
       );
       const activeProfiles = profiles.filter(p => activeProfileIds.has(p.id));
 
-      // ⚠️ saved_teachers séparé : peut échouer en anon (RLS)
       let savesData: any[] = [];
       try {
         const savesRes = await supabase
@@ -351,7 +340,6 @@ function TeachersPageContent() {
       const cityMap: Record<string, City> = {};
       (citiesRes.data || []).forEach(c => { cityMap[c.id] = c; });
 
-      // 🎯 Utilise activeProfiles (filtré) et non profiles
       const merged: TeacherCard[] = activeProfiles.map(p => {
         const subjectsList = tsubs
           .filter(t => t.teacher_id === p.id)
@@ -394,9 +382,6 @@ function TeachersPageContent() {
     }
   }
 
-  // ============================================================
-  // FILTRES DYNAMIQUES
-  // ============================================================
   const usedSubjects = useMemo(() => {
     const ids = new Set<string>();
     teachers.forEach(t => t.subjects.forEach(s => ids.add(s.id)));
@@ -442,9 +427,6 @@ function TeachersPageContent() {
     ];
   }, [isFr]);
 
-  // ============================================================
-  // FILTRAGE
-  // ============================================================
   function displayName(t: TeacherCard) {
     const first = t.user?.first_name || '';
     const last = t.user?.last_name || '';
@@ -524,37 +506,16 @@ function TeachersPageContent() {
   const isInitialLoading = loading && !hasLoadedOnce;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* ═══════════ HERO DARK ═══════════ */}
-      <div className="relative bg-slate-900 text-white overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(255,255,255,0.7) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255,255,255,0.7) 1px, transparent 1px)
-            `,
-            backgroundSize: '56px 56px',
-            maskImage: 'radial-gradient(ellipse 80% 60% at 80% 40%, black 40%, transparent 100%)',
-            WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 80% 40%, black 40%, transparent 100%)',
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0) 70%)',
-          }}
-        />
-
+    <div className="min-h-screen bg-[#fffafa]">
+      {/* ═══════════ HERO CLAIR avec dégradé rosé ═══════════ */}
+      <div className="relative bg-gradient-to-b from-white via-red-50 to-red-100 overflow-hidden">
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-16">
-          <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-[1.1] mb-3">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.1] mb-3 text-slate-900">
             {isFr
               ? 'Des enseignants vérifiés, près de chez vous.'
               : 'Verified teachers, near you.'}
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mb-6 sm:mb-8">
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl mb-6 sm:mb-8">
             {countMessage}
           </p>
 
@@ -562,7 +523,7 @@ function TeachersPageContent() {
             <div className="relative group">
               <Search
                 size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-red-400 group-focus-within:text-red-500 transition-colors"
               />
               <input
                 type="text"
@@ -573,7 +534,7 @@ function TeachersPageContent() {
                     ? 'Rechercher un prof par nom ou titre…'
                     : 'Search a teacher by name or title…'
                 }
-                className="w-full h-12 pl-11 pr-4 bg-white text-slate-900 text-sm rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-lg shadow-black/10 transition-shadow"
+                className="w-full h-12 pl-11 pr-4 bg-white text-slate-900 text-sm rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-red-500/30 shadow-lg shadow-red-500/5 transition-shadow"
               />
             </div>
 
@@ -631,7 +592,7 @@ function TeachersPageContent() {
               <div className="flex items-center gap-4 pt-2">
                 <button
                   onClick={clearAll}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-500 transition-colors"
                 >
                   <X size={14} />
                   {isFr ? 'Effacer les filtres' : 'Clear filters'}
@@ -653,8 +614,8 @@ function TeachersPageContent() {
           <TeachersListSkeleton />
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 sm:py-20 max-w-md mx-auto">
-            <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Search size={32} className="text-emerald-400" />
+            <div className="w-20 h-20 bg-red-50 border border-red-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Search size={32} className="text-red-400" />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
               {isFr ? 'Aucun prof trouvé' : 'No teacher found'}
@@ -667,7 +628,7 @@ function TeachersPageContent() {
             {hasFilters && (
               <button
                 onClick={clearAll}
-                className="inline-flex items-center gap-2 px-5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors"
+                className="inline-flex items-center gap-2 px-5 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium shadow-sm transition-colors"
               >
                 <X size={14} />
                 {isFr ? 'Effacer les filtres' : 'Clear filters'}
@@ -695,12 +656,12 @@ function TeachersPageContent() {
       {/* ═══════════ CTA FINAL ═══════════ */}
       {!isTeacher && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16">
-          <div className="bg-emerald-600 rounded-3xl p-8 sm:p-10 lg:p-14 text-white shadow-lg">
+          <div className="bg-red-500 rounded-3xl p-8 sm:p-10 lg:p-14 text-white shadow-lg">
             <div className="max-w-2xl">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mb-4">
                 {isFr ? 'Vous êtes enseignant ?' : 'Are you a teacher?'}
               </h2>
-              <p className="text-emerald-50 text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed">
+              <p className="text-red-50 text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed">
                 {isFr
                   ? `Rejoignez ${BRAND.name}, créez votre profil gratuitement et recevez des demandes de parents.`
                   : `Join ${BRAND.name}, create your profile for free and receive requests from parents.`}
@@ -708,7 +669,7 @@ function TeachersPageContent() {
               <Link
                 href="/register?role=teacher"
                 prefetch
-                className="inline-flex items-center justify-center px-6 sm:px-8 min-h-[44px] rounded-xl bg-white text-emerald-700 text-sm font-semibold hover:bg-emerald-50 transition-colors shadow-sm"
+                className="inline-flex items-center justify-center px-6 sm:px-8 min-h-[44px] rounded-xl bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors shadow-sm"
               >
                 {isFr ? 'Devenir enseignant' : 'Become a teacher'}
               </Link>
@@ -736,7 +697,7 @@ function FilterSelect({
 }) {
   return (
     <div>
-      <label className="block text-sm text-slate-400 font-medium mb-1.5">
+      <label className="block text-sm text-slate-600 font-medium mb-1.5">
         {label}
       </label>
       <div className="relative">
@@ -744,7 +705,7 @@ function FilterSelect({
           value={value}
           onChange={e => onChange(e.target.value)}
           disabled={disabled}
-          className="w-full h-12 pl-4 pr-10 bg-white text-slate-900 text-sm rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-wait shadow-lg shadow-black/10 transition-shadow"
+          className="w-full h-12 pl-4 pr-10 bg-white text-slate-900 text-sm rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-red-500/30 appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-wait shadow-lg shadow-red-500/5 transition-shadow"
         >
           <option value="">{placeholder}</option>
           {options.map(opt => (
@@ -772,7 +733,7 @@ function RatingFilterSelect({
 }) {
   return (
     <div>
-      <label className="block text-sm text-slate-400 font-medium mb-1.5">
+      <label className="block text-sm text-slate-600 font-medium mb-1.5">
         {label}
       </label>
       <div className="relative">
@@ -784,7 +745,7 @@ function RatingFilterSelect({
           value={value}
           onChange={e => onChange(e.target.value)}
           disabled={disabled}
-          className="w-full h-12 pl-9 pr-10 bg-white text-slate-900 text-sm rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-wait shadow-lg shadow-black/10 transition-shadow"
+          className="w-full h-12 pl-9 pr-10 bg-white text-slate-900 text-sm rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-red-500/30 appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-wait shadow-lg shadow-red-500/5 transition-shadow"
         >
           <option value="">{placeholder}</option>
           {options.map(opt => (
@@ -842,7 +803,7 @@ function TeacherCardItem({
     <Link
       href={`/teachers/${teacher.id}`}
       prefetch
-      className="group bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full relative"
+      className="group bg-white rounded-2xl border border-slate-200 hover:border-red-200 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full relative"
     >
       <div className="relative w-full h-36 bg-slate-100 overflow-hidden">
         {teacher.cover_url ? (
@@ -865,10 +826,9 @@ function TeacherCardItem({
             <div className="absolute inset-0 bg-slate-900/30" />
           </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-emerald-100 via-slate-100 to-emerald-50" />
+          <div className="w-full h-full bg-gradient-to-br from-red-100 via-slate-100 to-red-50" />
         )}
 
-        {/* 🚫 Bouton favori : uniquement visible si l'user n'est PAS prof */}
         {canSave && (
           <button
             onClick={handleSaveClick}
@@ -876,8 +836,8 @@ function TeacherCardItem({
             aria-label={isSaved ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             className={`absolute top-3 right-3 z-20 w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-sm border transition-all duration-200 disabled:opacity-50 ${
               isSaved
-                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                : 'bg-white/95 border-white/40 text-slate-700 shadow-sm hover:bg-white hover:border-emerald-300 hover:text-emerald-600'
+                ? 'bg-red-500 border-red-500 text-white shadow-sm'
+                : 'bg-white/95 border-white/40 text-slate-700 shadow-sm hover:bg-white hover:border-red-300 hover:text-red-500'
             }`}
           >
             <Heart
@@ -909,11 +869,11 @@ function TeacherCardItem({
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors truncate text-base">
+              <h3 className="font-semibold text-slate-900 group-hover:text-red-500 transition-colors truncate text-base">
                 {displayName}
               </h3>
               {teacher.is_verified && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full px-2 py-0.5 shrink-0">
+                <span className="inline-flex items-center gap-1 text-xs font-medium bg-red-50 text-red-600 border border-red-100 rounded-full px-2 py-0.5 shrink-0">
                   <CheckCircle2 className="w-3 h-3" />
                   {isFr ? 'Vérifié' : 'Verified'}
                 </span>
@@ -993,7 +953,7 @@ function TeacherCardItem({
             {subjectsPreview.map(s => (
               <span
                 key={s.id}
-                className="inline-flex items-center text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg font-medium"
+                className="inline-flex items-center text-xs text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-lg font-medium"
               >
                 {isFr ? s.name_fr : s.name_en}
               </span>
@@ -1008,7 +968,7 @@ function TeacherCardItem({
 
         <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
           {rate ? (
-            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 font-medium text-xs sm:text-sm rounded-full px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 font-medium text-xs sm:text-sm rounded-full px-3 py-1">
               {rate}
             </span>
           ) : (
@@ -1023,7 +983,7 @@ function TeacherCardItem({
               {(teacher.experience_years ?? 0) > 1 ? 's' : ''}
             </span>
           ) : (
-            <span className="text-xs font-medium text-emerald-600 group-hover:underline">
+            <span className="text-xs font-medium text-red-500 group-hover:underline">
               {isFr ? 'Voir profil' : 'View profile'} →
             </span>
           )}
@@ -1034,13 +994,13 @@ function TeacherCardItem({
 }
 
 // ═══════════════════════════════════════════════════════════
-// WRAPPER SUSPENSE (obligatoire pour useSearchParams)
+// WRAPPER SUSPENSE
 // ═══════════════════════════════════════════════════════════
 export default function TeachersPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-emerald-600" />
+      <div className="min-h-screen bg-[#fffafa] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-red-500" />
       </div>
     }>
       <TeachersPageContent />

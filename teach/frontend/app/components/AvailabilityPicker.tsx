@@ -85,14 +85,14 @@ export default function AvailabilityPicker({
         <button
           type="button"
           onClick={selectAllWeekdays}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-red-400 hover:text-red-600 transition-colors"
         >
           {isFr ? 'En semaine' : 'Weekdays'}
         </button>
         <button
           type="button"
           onClick={selectWeekends}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-red-400 hover:text-red-600 transition-colors"
         >
           {isFr ? 'Weekends' : 'Weekends'}
         </button>
@@ -144,12 +144,12 @@ export default function AvailabilityPicker({
                       onClick={() => toggle(day.key, period.key)}
                       className={`group relative h-12 px-2 rounded-xl border-2 transition-all duration-200 flex items-center justify-center gap-1.5 ${
                         active
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-600'
+                          ? 'border-red-500 bg-red-50 text-red-600'
+                          : 'border-slate-200 bg-white text-slate-500 hover:border-red-300 hover:bg-red-50/50 hover:text-red-600'
                       }`}
                     >
                       {active && (
-                        <span className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+                        <span className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center shrink-0">
                           <Check size={10} className="text-white" strokeWidth={3} />
                         </span>
                       )}
@@ -168,7 +168,7 @@ export default function AvailabilityPicker({
       {/* Compteur */}
       {hasAnySelection && (
         <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
           {(() => {
             const slots = Object.values(value).reduce(
               (acc, periods) => acc + periods.length,

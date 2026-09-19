@@ -38,7 +38,6 @@ export default function SuspendedPage() {
 
       if (cancelled) return;
 
-      // Si pas suspendu → retour dashboard
       if (!data?.suspended_at) {
         router.replace('/dashboard');
         return;
@@ -59,14 +58,14 @@ export default function SuspendedPage() {
 
   if (authLoading || checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-7 h-7 text-slate-400 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fffafa]">
+        <Loader2 className="w-7 h-7 text-red-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#fffafa] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
@@ -119,7 +118,7 @@ export default function SuspendedPage() {
           </a>
           <button
             onClick={handleSignOut}
-            className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors"
+            className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             {isFr ? 'Se déconnecter' : 'Sign out'}

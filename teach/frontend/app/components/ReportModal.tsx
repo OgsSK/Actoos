@@ -187,8 +187,8 @@ export default function ReportModal({
 
         {success ? (
           <div className="text-center py-6">
-            <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle size={26} className="text-emerald-600" />
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle size={26} className="text-red-600" />
             </div>
             <h3 className="text-base font-semibold text-slate-900 mb-2">
               {isFr ? 'Signalement envoyé' : 'Report sent'}
@@ -273,7 +273,7 @@ export default function ReportModal({
               <button
                 type="submit"
                 disabled={submitting || !description.trim()}
-                className="flex-1 bg-red-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-red-500 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting && <Loader2 size={14} className="animate-spin" />}
                 {isFr ? 'Envoyer le signalement' : 'Send report'}

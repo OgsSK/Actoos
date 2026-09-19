@@ -21,7 +21,7 @@ export default function LanguageSwitcher({
         onClick={() => setLanguage('fr')}
         className={`${isCompact ? 'px-1 py-0.5' : 'px-1.5 py-1'} transition-colors ${
           language === 'fr'
-            ? 'text-slate-900'
+            ? 'text-red-500'
             : 'text-slate-400 hover:text-slate-700'
         }`}
       >
@@ -33,7 +33,7 @@ export default function LanguageSwitcher({
         onClick={() => setLanguage('en')}
         className={`${isCompact ? 'px-1 py-0.5' : 'px-1.5 py-1'} transition-colors ${
           language === 'en'
-            ? 'text-slate-900'
+            ? 'text-red-500'
             : 'text-slate-400 hover:text-slate-700'
         }`}
       >

@@ -12,11 +12,10 @@ import { BRAND } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import LanguageSwitcher from '@/app/components/LanguageSwitcher';
 
-// ⏱ Après ce délai, on affiche le formulaire même si authLoading est encore true
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 function LoginForm() {
-  const { user, loading, signIn, signInWithGoogle, refreshProfile } = useAuth();
+  const { user, loading, signInWithGoogle, refreshProfile } = useAuth();
   const { language } = useLanguage();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
@@ -28,7 +27,6 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ⏱ Timeout local : on n'attend pas authLoading indéfiniment
   const [authTimeoutExpired, setAuthTimeoutExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthTimeoutExpired(true), AUTH_FORM_TIMEOUT_MS);
@@ -52,8 +50,6 @@ function LoginForm() {
     console.log('🟢 [Login] SUBMIT DÉMARRE pour', email);
 
     try {
-      // ✅ FIX : on appelle Supabase DIRECTEMENT, sans passer par authCore.signIn
-      // qui fait un appel à une API locale (localhost:8001) qui n'existe pas.
       const t0 = Date.now();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -74,7 +70,6 @@ function LoginForm() {
 
       console.log('🟢 [Login] Session OK, vérification suspension...');
 
-      // 🚫 Vérifier si le compte est suspendu AVANT de rediriger
       const userId = data.session.user?.id;
       if (userId) {
         const { data: userRow } = await supabase
@@ -92,7 +87,6 @@ function LoginForm() {
 
       console.log('🟢 [Login] Compte OK, redirection...');
 
-      // Rafraîchit le profil (optionnel, non bloquant)
       try {
         refreshProfile?.();
       } catch (e) {
@@ -124,7 +118,6 @@ function LoginForm() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // La redirection est gérée par le callback OAuth
     } catch (err: any) {
       console.error('[Login] Google error:', err);
       setError(err?.message || (isFr ? 'Erreur Google' : 'Google error'));
@@ -134,8 +127,8 @@ function LoginForm() {
 
   if (showSpinner) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 size={24} className="animate-spin text-slate-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fffafa]">
+        <Loader2 size={24} className="animate-spin text-red-500" />
       </div>
     );
   }
@@ -162,14 +155,14 @@ function LoginForm() {
           aria-hidden="true"
           className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full"
           style={{
-            background: 'radial-gradient(circle, rgba(16,185,129,0.4) 0%, rgba(16,185,129,0) 70%)',
+            background: 'radial-gradient(circle, rgba(239,68,68,0.4) 0%, rgba(239,68,68,0) 70%)',
           }}
         />
         <div
           aria-hidden="true"
           className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full"
           style={{
-            background: 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0) 70%)',
+            background: 'radial-gradient(circle, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0) 70%)',
           }}
         />
 
@@ -180,7 +173,7 @@ function LoginForm() {
         </div>
 
         <div className="relative z-10 px-10 lg:px-14 max-w-xl">
-          <p className="text-xs uppercase tracking-widest text-emerald-400/80 mb-6">
+          <p className="text-xs uppercase tracking-widest text-red-400/80 mb-6">
             {isFr ? 'Bienvenue' : 'Welcome'}
           </p>
           <h1 className="text-4xl xl:text-5xl font-bold tracking-tight leading-[1.05] mb-6">
@@ -188,13 +181,13 @@ function LoginForm() {
               <>
                 Le bon prof.
                 <br />
-                <span className="text-emerald-400">Au bon moment.</span>
+                <span className="text-red-400">Au bon moment.</span>
               </>
             ) : (
               <>
                 The right teacher.
                 <br />
-                <span className="text-emerald-400">At the right time.</span>
+                <span className="text-red-400">At the right time.</span>
               </>
             )}
           </h1>
@@ -211,7 +204,7 @@ function LoginForm() {
               { fr: 'Sans engagement, sans abonnement', en: 'No commitment, no subscription' },
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
-                <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2 size={16} className="text-red-400 shrink-0 mt-0.5" />
                 <span>{isFr ? item.fr : item.en}</span>
               </li>
             ))}
@@ -225,7 +218,7 @@ function LoginForm() {
       </div>
 
       {/* ═══════════ COLONNE DROITE — FORMULAIRE ═══════════ */}
-      <div className="flex flex-col bg-slate-50">
+      <div className="flex flex-col bg-[#fffafa]">
 
         <div className="flex items-center justify-between px-6 lg:px-12 py-6">
           <Link href="/" prefetch className="lg:hidden font-bold text-lg tracking-tight text-slate-900">
@@ -235,7 +228,7 @@ function LoginForm() {
           <Link
             href="/"
             prefetch
-            className="hidden lg:inline-flex items-center gap-2 text-xs uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors"
+            className="hidden lg:inline-flex items-center gap-2 text-xs uppercase tracking-widest text-slate-500 hover:text-red-500 transition-colors"
           >
             <ArrowLeft size={12} />
             {isFr ? 'Retour à l’accueil' : 'Back to home'}
@@ -248,7 +241,7 @@ function LoginForm() {
           <div className="w-full max-w-md">
 
             <div className="mb-10">
-              <p className="text-xs uppercase tracking-widest text-emerald-600 font-medium mb-3">
+              <p className="text-xs uppercase tracking-widest text-red-500 font-semibold mb-3">
                 {isFr ? 'Connexion' : 'Sign in'}
               </p>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight mb-3">
@@ -269,7 +262,7 @@ function LoginForm() {
                 <div className="relative group">
                   <Mail
                     size={15}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 pointer-events-none transition-colors"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 pointer-events-none transition-colors"
                   />
                   <input
                     type="email"
@@ -278,7 +271,7 @@ function LoginForm() {
                     placeholder="exemple@email.com"
                     required
                     autoComplete="email"
-                    className="w-full h-12 pl-10 pr-4 border border-slate-200 bg-white text-sm focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 transition-all"
+                    className="w-full h-12 pl-10 pr-4 border border-slate-200 bg-white rounded-xl text-sm focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
                   />
                 </div>
               </div>
@@ -291,7 +284,7 @@ function LoginForm() {
                   <Link
                     href="/forgot-password"
                     prefetch
-                    className="text-xs text-slate-500 hover:text-emerald-600 transition-colors"
+                    className="text-xs text-slate-500 hover:text-red-500 transition-colors"
                   >
                     {isFr ? 'Oublié ?' : 'Forgot?'}
                   </Link>
@@ -299,7 +292,7 @@ function LoginForm() {
                 <div className="relative group">
                   <Lock
                     size={15}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 pointer-events-none transition-colors"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 pointer-events-none transition-colors"
                   />
                   <input
                     type="password"
@@ -308,13 +301,13 @@ function LoginForm() {
                     placeholder="••••••••"
                     required
                     autoComplete="current-password"
-                    className="w-full h-12 pl-10 pr-4 border border-slate-200 bg-white text-sm focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 transition-all"
+                    className="w-full h-12 pl-10 pr-4 border border-slate-200 bg-white rounded-xl text-sm focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
                   />
                 </div>
               </div>
 
               {error && (
-                <div className="border border-red-200 bg-red-50/60 p-3.5 text-sm text-red-800">
+                <div className="border border-red-200 bg-red-50/60 rounded-xl p-3.5 text-sm text-red-800">
                   {error}
                 </div>
               )}
@@ -322,7 +315,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={submitting || googleLoading}
-                className="w-full h-12 bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                className="w-full h-12 bg-red-500 text-white font-semibold text-sm rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2 shadow-lg shadow-red-500/20"
               >
                 {submitting && <Loader2 size={14} className="animate-spin" />}
                 {isFr ? 'Se connecter' : 'Sign in'}
@@ -343,7 +336,7 @@ function LoginForm() {
               type="button"
               onClick={handleGoogle}
               disabled={googleLoading || submitting}
-              className="w-full h-12 border border-slate-200 bg-white text-slate-700 font-medium text-sm hover:bg-slate-50 hover:border-slate-300 transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-3"
+              className="w-full h-12 border border-slate-200 bg-white rounded-xl text-slate-700 font-medium text-sm hover:bg-slate-50 hover:border-slate-300 transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-3"
             >
               {googleLoading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -364,7 +357,7 @@ function LoginForm() {
                 <Link
                   href="/register"
                   prefetch
-                  className="font-semibold text-emerald-600 border-b border-emerald-600 pb-0.5 hover:text-emerald-700 hover:border-emerald-700 transition-colors"
+                  className="font-semibold text-red-500 border-b border-red-500 pb-0.5 hover:text-red-600 hover:border-red-600 transition-colors"
                 >
                   {isFr ? "S'inscrire" : 'Sign up'}
                 </Link>
@@ -387,8 +380,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-          <Loader2 size={24} className="animate-spin text-slate-400" />
+        <div className="min-h-screen flex items-center justify-center bg-[#fffafa]">
+          <Loader2 size={24} className="animate-spin text-red-500" />
         </div>
       }
     >
