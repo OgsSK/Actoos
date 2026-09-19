@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, Copy, Check, Phone } from 'lucide-react';
+import { Heart, Copy, Check, Wallet } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 
 const SUPPORT_PHONE = '93192633';
@@ -31,7 +31,7 @@ export default function SupportCard() {
               {isFr ? 'Soutenez la plateforme' : 'Support the platform'}
             </h3>
             <p className="text-xs text-red-600">
-              {isFr ? 'Contribution libre' : 'Free contribution'}
+              {isFr ? 'Dépôt libre' : 'Free deposit'}
             </p>
           </div>
         </div>
@@ -39,26 +39,23 @@ export default function SupportCard() {
         {/* Description */}
         <p className="text-sm text-slate-600 leading-relaxed mb-4">
           {isFr
-            ? 'Kalanden est 100 % gratuit. Si vous souhaitez nous donner un coup de pouce pour continuer à améliorer le service, vous pouvez nous contacter au :'
-            : 'Kalanden is 100% free. If you want to give us a hand to keep improving the service, you can contact us at:'}
+            ? 'Kalanden est 100 % gratuit. Si vous souhaitez nous faire un dépôt pour soutenir la plateforme, vous pouvez utiliser ce numéro :'
+            : 'Kalanden is 100% free. If you want to make a deposit to support the platform, you can use this number:'}
         </p>
 
         {/* Numéro + actions */}
         <div className="rounded-xl bg-white border border-red-100 p-3.5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
-              <Phone className="w-4 h-4 text-red-500" />
+              <Wallet className="w-4 h-4 text-red-500" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-slate-500 uppercase tracking-wide font-medium">
-                {isFr ? 'Numéro de contact' : 'Contact number'}
+                {isFr ? 'Numéro de dépôt' : 'Deposit number'}
               </p>
-              <a
-                href={`tel:${SUPPORT_PHONE}`}
-                className="text-base font-bold text-slate-900 hover:text-red-500 transition-colors tabular-nums block truncate"
-              >
+              <p className="text-base font-bold text-slate-900 tabular-nums block truncate">
                 {SUPPORT_PHONE_DISPLAY}
-              </a>
+              </p>
             </div>
             <button
               onClick={handleCopy}

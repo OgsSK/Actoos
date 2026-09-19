@@ -1108,7 +1108,7 @@ function StepItem({
           </span>
         ) : isCurrent ? (
           <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${c.currentCta}`}>
-            {isFr ? 'Commencer' : 'Start'}
+            {isFr ? 'Compléter' : 'Complete'}
             <ChevronRight className="w-3 h-3" />
           </span>
         ) : (
