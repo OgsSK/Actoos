@@ -642,8 +642,8 @@ function SupportModal({
           <div className="space-y-2">
             <p className="text-[13.5px] leading-relaxed text-slate-700">
               {isFr
-                ? <>{BRAND.name} est <span className="font-semibold text-slate-900">100 % gratuit</span> et le restera.</>
-                : <>{BRAND.name} is <span className="font-semibold text-slate-900">100% free</span> and will stay that way.</>}
+                ? <>{BRAND.name} est <span className="font-semibold text-slate-900">100 % gratuit</span>.</>
+                : <>{BRAND.name} is <span className="font-semibold text-slate-900">100% free</span>.</>}
             </p>
             <p className="text-[13.5px] leading-relaxed text-slate-600">
               {isFr

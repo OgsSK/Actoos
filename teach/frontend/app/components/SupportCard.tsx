@@ -40,8 +40,8 @@ export default function SupportCard() {
         {/* Description */}
         <p className="text-sm text-slate-600 leading-relaxed mb-3">
           {isFr
-            ? <>{isFr ? 'Kalanden' : 'Kalanden'} est <span className="font-semibold text-slate-800">100 % gratuit</span> et le restera.</>
-            : <>Kalanden is <span className="font-semibold text-slate-800">100% free</span> and will stay that way.</>}
+            ? <>{isFr ? 'Kalanden' : 'Kalanden'} est <span className="font-semibold text-slate-800">100 % gratuit</span>.</>
+            : <>Kalanden is <span className="font-semibold text-slate-800">100% free</span>.</>}
         </p>
         <p className="text-sm text-slate-600 leading-relaxed mb-4">
           {isFr
