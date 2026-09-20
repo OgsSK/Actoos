@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, Copy, Check, Wallet } from 'lucide-react';
+import { Heart, Copy, Check, Wallet, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 
 const SUPPORT_PHONE = '93192633';
@@ -19,35 +19,41 @@ export default function SupportCard() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-red-50 via-red-50/60 to-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+    <div className="bg-gradient-to-br from-rose-50 via-rose-50/60 to-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden">
       <div className="p-5 sm:p-6">
         {/* En-tête */}
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-white border border-red-100 flex items-center justify-center shrink-0">
-            <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/20">
+            <Heart className="w-5 h-5 text-white fill-white" />
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-900 leading-tight">
               {isFr ? 'Soutenez la plateforme' : 'Support the platform'}
             </h3>
-            <p className="text-xs text-red-600">
+            <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+              <Sparkles className="w-2.5 h-2.5" />
               {isFr ? 'Dépôt libre' : 'Free deposit'}
-            </p>
+            </span>
           </div>
         </div>
 
         {/* Description */}
+        <p className="text-sm text-slate-600 leading-relaxed mb-3">
+          {isFr
+            ? <>{isFr ? 'Kalanden' : 'Kalanden'} est <span className="font-semibold text-slate-800">100 % gratuit</span> et le restera.</>
+            : <>Kalanden is <span className="font-semibold text-slate-800">100% free</span> and will stay that way.</>}
+        </p>
         <p className="text-sm text-slate-600 leading-relaxed mb-4">
           {isFr
-            ? 'Kalanden est 100 % gratuit. Si vous souhaitez nous faire un dépôt pour soutenir la plateforme, vous pouvez utiliser ce numéro :'
-            : 'Kalanden is 100% free. If you want to make a deposit to support the platform, you can use this number:'}
+            ? 'Si vous souhaitez nous faire un dépôt pour soutenir la plateforme, utilisez ce numéro :'
+            : 'If you\'d like to make a deposit to support the platform, use this number:'}
         </p>
 
         {/* Numéro + actions */}
-        <div className="rounded-xl bg-white border border-red-100 p-3.5">
+        <div className="rounded-xl bg-white border border-rose-100 p-3.5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
-              <Wallet className="w-4 h-4 text-red-500" />
+            <div className="w-9 h-9 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+              <Wallet className="w-4 h-4 text-rose-500" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-slate-500 uppercase tracking-wide font-medium">
@@ -62,8 +68,8 @@ export default function SupportCard() {
               aria-label={copied ? 'Copié' : 'Copier'}
               className={`shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg border transition-all ${
                 copied
-                  ? 'border-red-500 bg-red-500 text-white'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-red-300 hover:text-red-500'
+                  ? 'border-rose-500 bg-rose-500 text-white'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:text-rose-500'
               }`}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -71,12 +77,15 @@ export default function SupportCard() {
           </div>
         </div>
 
-        {/* Petit message de remerciement */}
-        <p className="text-[11px] text-slate-400 text-center mt-3 leading-relaxed">
-          {isFr
-            ? 'Chaque soutien, même petit, nous aide à grandir. 🙏'
-            : 'Every contribution, even small, helps us grow. 🙏'}
-        </p>
+        {/* Message de remerciement */}
+        <div className="flex items-start gap-2.5 rounded-xl bg-slate-50/80 border border-slate-100 p-3 mt-3">
+          <span className="text-base leading-none shrink-0">🙏</span>
+          <p className="text-[11.5px] leading-relaxed text-slate-600">
+            {isFr
+              ? <>Votre dépôt finance <span className="font-medium text-slate-800">les serveurs, la modération</span> et les nouvelles fonctionnalités. Chaque soutien, même petit, nous aide à grandir.</>
+              : <>Your deposit funds <span className="font-medium text-slate-800">servers, moderation</span> and new features. Every contribution, no matter how small, helps us grow.</>}
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, LogOut, Settings, LayoutDashboard, GraduationCap,
-  Heart, ChevronRight, Search,
+  Heart, ChevronRight, Search, Copy, Check, Smartphone,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -18,6 +19,9 @@ const ACTOOS_ID_BASE =
     ? 'https://id.actoos.com'
     : 'http://localhost:3001';
 
+// 💛 Numéro de dépôt (à copier dans le presse-papiers)
+const DONATION_PHONE = '93 19 26 33';
+
 // ⏱ Après ce délai, on n'attend plus authLoading : on affiche les boutons guest
 const AUTH_SKELETON_TIMEOUT_MS = 800;
 
@@ -29,6 +33,7 @@ export default function Header() {
 
   const isFr = language === 'fr';
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [donationOpen, setDonationOpen] = useState(false);
 
   // ⏱ Timeout local : après 800 ms, on arrête d'afficher le skeleton
   const [authSkeletonExpired, setAuthSkeletonExpired] = useState(false);
@@ -37,15 +42,14 @@ export default function Header() {
     return () => clearTimeout(t);
   }, []);
 
-  // Skeleton uniquement si on charge ET que le timeout n'a pas expiré
   const showAuthSkeleton = authLoading && !authSkeletonExpired;
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    document.body.style.overflow = mobileOpen || donationOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [mobileOpen]);
+  }, [mobileOpen, donationOpen]);
 
   async function handleSignOut() {
     await signOut();
@@ -118,6 +122,18 @@ export default function Header() {
           {/* Actions desktop */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
             <LanguageSwitcher />
+
+            {/* 💛 Bouton soutien */}
+            <button
+              type="button"
+              onClick={() => setDonationOpen(true)}
+              className="group inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 text-sm font-medium transition-colors"
+              aria-label={isFr ? 'Soutenir la plateforme' : 'Support the platform'}
+            >
+              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 group-hover:scale-110 transition-transform" />
+              <span>{isFr ? 'Soutenir' : 'Support'}</span>
+            </button>
+
             <div className="w-px h-5 bg-slate-200 mx-1" />
 
             {showAuthSkeleton ? (
@@ -179,7 +195,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ═══════════ OVERLAY ═══════════ */}
+      {/* ═══════════ OVERLAY DRAWER ═══════════ */}
       <div
         className={`fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -247,6 +263,22 @@ export default function Header() {
                 <ChevronRight className="w-4 h-4 text-slate-300" />
               </Link>
             ))}
+
+            {/* 💛 Soutien dans le drawer */}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                setDonationOpen(true);
+              }}
+              className="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                {isFr ? 'Soutenir la plateforme' : 'Support the platform'}
+              </span>
+              <ChevronRight className="w-4 h-4 text-rose-300" />
+            </button>
           </nav>
 
           <div className="px-3 py-3 space-y-1 border-t border-slate-100">
@@ -311,6 +343,13 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {/* ═══════════ MODALE SOUTIEN ═══════════ */}
+      <SupportModal
+        open={donationOpen}
+        onClose={() => setDonationOpen(false)}
+        isFr={isFr}
+      />
     </>
   );
 }
@@ -493,5 +532,177 @@ function DrawerLink({
       <span className="flex-1">{children}</span>
       <ChevronRight className="w-4 h-4 text-slate-300" />
     </Link>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   💛 SUPPORT MODAL
+   ═══════════════════════════════════════════════════ */
+
+function SupportModal({
+  open, onClose, isFr,
+}: {
+  open: boolean;
+  onClose: () => void;
+  isFr: boolean;
+}) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Reset du feedback copy quand la modale se ferme
+  useEffect(() => {
+    if (!open) {
+      const t = setTimeout(() => setCopied(false), 200);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+
+  // Escape + focus initial
+  useEffect(() => {
+    if (!open) return;
+
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', esc);
+
+    const t = setTimeout(() => modalRef.current?.focus(), 60);
+
+    return () => {
+      document.removeEventListener('keydown', esc);
+      clearTimeout(t);
+    };
+  }, [open, onClose]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(DONATION_PHONE);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('[SupportModal] copy failed:', err);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="support-title"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-[fadeIn_180ms_ease-out]"
+        onClick={onClose}
+      />
+
+      {/* Card */}
+      <div
+        ref={modalRef}
+        tabIndex={-1}
+        className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden outline-none animate-[slideUp_220ms_cubic-bezier(0.16,1,0.3,1)]"
+      >
+        {/* Handle mobile */}
+        <div className="sm:hidden pt-3 flex justify-center">
+          <div className="w-10 h-1 rounded-full bg-slate-200" />
+        </div>
+
+        {/* Header */}
+        <div className="relative px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
+          <button
+            onClick={onClose}
+            aria-label={isFr ? 'Fermer' : 'Close'}
+            className="absolute top-4 right-4 p-2 -m-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/20 shrink-0">
+              <Heart className="w-6 h-6 fill-white text-white" />
+            </div>
+            <div className="min-w-0 pr-8">
+              <h2 id="support-title" className="text-lg font-bold text-slate-900 leading-tight">
+                {isFr ? `Soutenez ${BRAND.name}` : `Support ${BRAND.name}`}
+              </h2>
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                <Sparkles className="w-3 h-3" />
+                {isFr ? 'Dépôt libre' : 'Free deposit'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 sm:px-6 pb-5 space-y-4">
+          {/* Message d'introduction */}
+          <div className="space-y-2">
+            <p className="text-[13.5px] leading-relaxed text-slate-700">
+              {isFr
+                ? <>{BRAND.name} est <span className="font-semibold text-slate-900">100 % gratuit</span> et le restera.</>
+                : <>{BRAND.name} is <span className="font-semibold text-slate-900">100% free</span> and will stay that way.</>}
+            </p>
+            <p className="text-[13.5px] leading-relaxed text-slate-600">
+              {isFr
+                ? 'Si vous souhaitez nous faire un dépôt pour soutenir la plateforme, utilisez ce numéro :'
+                : 'If you\'d like to make a deposit to support the platform, use this number:'}
+            </p>
+          </div>
+
+          {/* Numéro de dépôt */}
+          <div className="rounded-2xl border-2 border-dashed border-rose-200 bg-gradient-to-br from-rose-50 to-amber-50/50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Smartphone className="w-3.5 h-3.5 text-rose-500" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600">
+                {isFr ? 'Numéro de dépôt' : 'Deposit number'}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="w-full group flex items-center justify-between gap-3 rounded-xl bg-white border border-rose-100 hover:border-rose-200 px-4 py-3 transition-colors"
+              aria-label={isFr ? 'Copier le numéro' : 'Copy the number'}
+            >
+              <span className="text-lg sm:text-xl font-bold tracking-wider text-slate-900 tabular-nums">
+                {DONATION_PHONE}
+              </span>
+              <span
+                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors shrink-0 ${
+                  copied
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-rose-50 text-rose-700 group-hover:bg-rose-100'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    {isFr ? 'Copié' : 'Copied'}
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    {isFr ? 'Copier' : 'Copy'}
+                  </>
+                )}
+              </span>
+            </button>
+          </div>
+
+          {/* Remerciement */}
+          <div className="flex items-start gap-3 rounded-2xl bg-slate-50 border border-slate-100 p-3.5">
+            <span className="text-lg leading-none shrink-0">🙏</span>
+            <p className="text-[13px] leading-relaxed text-slate-600">
+              {isFr
+                ? <>Votre dépôt finance <span className="font-medium text-slate-800">les serveurs, la modération</span> et les nouvelles fonctionnalités. Chaque soutien, même petit, nous aide à grandir.</>
+                : <>Your deposit funds <span className="font-medium text-slate-800">servers, moderation</span> and new features. Every contribution, no matter how small, helps us grow.</>}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
