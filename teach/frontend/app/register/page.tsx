@@ -14,11 +14,12 @@ import {
   GraduationCap,
   Users,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { BRAND } from '@/lib/constants';
-import { supabase } from '@/lib/supabase';
 import LanguageSwitcher from '@/app/components/LanguageSwitcher';
 
 type Role = 'teacher' | 'parent';
@@ -37,6 +38,7 @@ function RegisterForm() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -49,11 +51,12 @@ function RegisterForm() {
 
   const showSpinner = loading && !authTimeoutExpired;
 
+  // Redirection auto si déjà connecté — bloquée pendant le submit
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !submitting) {
       window.location.href = '/dashboard';
     }
-  }, [user, loading]);
+  }, [user, loading, submitting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +64,8 @@ function RegisterForm() {
     setSubmitting(true);
 
     try {
+      // Le trigger SQL `on_teach_user_created` crée automatiquement
+      // teacher_profiles ou parent_profiles selon `teach_role`.
       const result = await signUp({
         email,
         password,
@@ -72,16 +77,9 @@ function RegisterForm() {
       });
 
       const userId = result?.user?.id;
-      if (userId) {
-        if (role === 'teacher') {
-          await supabase.from('teacher_profiles').insert({
-            id: userId,
-            verification_status: 'pending',
-          });
-        } else {
-          await supabase.from('parent_profiles').insert({ id: userId });
-        }
 
+      // Email de bienvenue (non bloquant)
+      if (userId) {
         try {
           fetch(
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`,
@@ -147,17 +145,13 @@ function RegisterForm() {
         blob2: 'rgba(239,68,68,0.15)',
         welcomeText: 'text-red-400',
         accentText: 'text-red-400',
-        // Sélecteur
         selectedBorder: 'border-red-500',
         selectedShadow: 'shadow-red-500/10',
         selectedIconBg: 'bg-red-100',
         selectedIconText: 'text-red-500',
         selectedText: 'text-red-600',
-        // Icône focus inputs
         inputFocusIcon: 'group-focus-within:text-red-500',
-        // Lien "Se connecter"
         linkHover: 'text-red-500 hover:text-red-600',
-        // Icône succès
         successIcon: 'from-red-500 to-red-600',
         successShadow: 'shadow-red-500/30',
       }
@@ -171,17 +165,13 @@ function RegisterForm() {
         blob2: 'rgba(59,130,246,0.15)',
         welcomeText: 'text-blue-400',
         accentText: 'text-blue-400',
-        // Sélecteur
         selectedBorder: 'border-blue-500',
         selectedShadow: 'shadow-blue-500/10',
         selectedIconBg: 'bg-blue-100',
         selectedIconText: 'text-blue-600',
         selectedText: 'text-blue-700',
-        // Icône focus inputs
         inputFocusIcon: 'group-focus-within:text-blue-500',
-        // Lien "Se connecter"
         linkHover: 'text-blue-500 hover:text-blue-600',
-        // Icône succès
         successIcon: 'from-blue-500 to-blue-600',
         successShadow: 'shadow-blue-500/30',
       };
@@ -625,21 +615,30 @@ function RegisterForm() {
                   {isFr ? 'Mot de passe' : 'Password'}
                 </label>
                 <div className="relative group">
-                  <Lock
-                    size={16}
-                    className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${accent.inputFocusIcon}`}
-                  />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder={isFr ? 'Min. 6 caractères' : 'Min. 6 characters'}
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    className={`w-full h-12 pl-10 pr-4 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all focus:outline-none ${accent.ring} border-slate-200 hover:border-slate-300`}
-                  />
-                </div>
+  <Lock
+    size={16}
+    className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-slate-400 ${accent.inputFocusIcon}`}
+  />
+  <input
+    type={showPassword ? 'text' : 'password'}
+    value={password}
+    onChange={e => setPassword(e.target.value)}
+    placeholder={isFr ? 'Min. 6 caractères' : 'Min. 6 characters'}
+    required
+    minLength={6}
+    autoComplete="new-password"
+    className={`w-full h-12 pl-10 pr-12 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all focus:outline-none ${accent.ring} border-slate-200 hover:border-slate-300`}
+  />
+  <button
+    type="button"
+    onClick={() => setShowPassword(v => !v)}
+    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
+    tabIndex={-1}
+    aria-label={showPassword ? 'Masquer' : 'Afficher'}
+  >
+    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+  </button>
+</div>
               </div>
 
               {error && (

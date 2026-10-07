@@ -15,7 +15,7 @@ import LanguageSwitcher from '@/app/components/LanguageSwitcher';
 const AUTH_FORM_TIMEOUT_MS = 800;
 
 function LoginForm() {
-  const { user, loading, signInWithGoogle, refreshProfile } = useAuth();
+  const { user, loading, signIn, signInWithGoogle, refreshProfile } = useAuth();
   const { language } = useLanguage();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
@@ -35,70 +35,56 @@ function LoginForm() {
 
   const showSpinner = loading && !authTimeoutExpired;
 
+  // Redirection auto si déjà connecté — bloquée pendant le submit
+  // pour ne pas court-circuiter la vérification de suspension
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !submitting) {
       const target = redirect ? decodeURIComponent(redirect) : '/dashboard';
       window.location.href = target;
     }
-  }, [user, loading, redirect]);
+  }, [user, loading, redirect, submitting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
 
-    console.log('🟢 [Login] SUBMIT DÉMARRE pour', email);
-
     try {
-      const t0 = Date.now();
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+      // 1. Auth via le client unique du AuthContext
+      await signIn({ email: email.trim(), password });
 
-      console.log('🟢 [Login] signInWithPassword retour en', Date.now() - t0, 'ms');
-
-      if (signInError) {
-        console.error('🔴 [Login] Erreur:', signInError);
-        throw signInError;
+      // 2. Récupérer l'utilisateur authentifié (getUser valide côté serveur)
+      const { data: { user: authUser }, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !authUser) {
+        throw userErr ?? new Error(isFr ? 'Connexion échouée' : 'Login failed');
       }
 
-      if (!data?.session) {
-        console.error('🔴 [Login] Pas de session dans la réponse');
-        throw new Error(isFr ? 'Connexion échouée' : 'Login failed');
+      // 3. Vérifier si le compte est suspendu
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('suspended_at')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      if (userRow?.suspended_at) {
+        window.location.href = '/suspended';
+        return;
       }
 
-      console.log('🟢 [Login] Session OK, vérification suspension...');
-
-      const userId = data.session.user?.id;
-      if (userId) {
-        const { data: userRow } = await supabase
-          .from('users')
-          .select('suspended_at')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (userRow?.suspended_at) {
-          console.log('🔴 [Login] Compte suspendu → /suspended');
-          window.location.href = '/suspended';
-          return;
-        }
-      }
-
-      console.log('🟢 [Login] Compte OK, redirection...');
-
+      // 4. Rafraîchir le profil côté contexte (non bloquant)
       try {
         refreshProfile?.();
       } catch (e) {
         console.warn('[Login] refreshProfile error:', e);
       }
 
+      // 5. Redirection finale
       const target = redirect ? decodeURIComponent(redirect) : '/dashboard';
       window.location.href = target;
     } catch (err: any) {
-      console.error('🔴 [Login] Exception:', err);
+      console.error('[Login] Exception:', err);
       const msg = err?.message || '';
-      if (msg.includes('Invalid login credentials')) {
+      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
         setError(isFr ? 'Email ou mot de passe incorrect.' : 'Invalid email or password.');
       } else if (msg.includes('Email not confirmed')) {
         setError(isFr ? 'Confirmez votre email avant de vous connecter.' : 'Confirm your email first.');
@@ -109,7 +95,6 @@ function LoginForm() {
       }
     } finally {
       setSubmitting(false);
-      console.log('🟢 [Login] Submit terminé');
     }
   };
 
