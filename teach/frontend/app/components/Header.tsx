@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Menu, X, LogOut, LayoutDashboard, GraduationCap,
   Heart, ChevronRight, Search, Copy, Check, Smartphone,
-  Sparkles,
+  Sparkles, Settings,
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -294,6 +294,9 @@ export default function Header() {
                     {isFr ? 'Profil enseignant' : 'Teacher profile'}
                   </DrawerLink>
                 )}
+                <DrawerLink href="/settings" icon={Settings} onClick={() => setMobileOpen(false)}>
+                  {isFr ? 'Mon compte' : 'My account'}
+                </DrawerLink>
               </>
             ) : (
               <div className="space-y-2 pt-1">
@@ -436,6 +439,9 @@ function UserDropdown({
                 {isFr ? 'Profil enseignant' : 'Teacher profile'}
               </DropdownLink>
             )}
+            <DropdownLink href="/settings" icon={Settings}>
+              {isFr ? 'Mon compte' : 'My account'}
+            </DropdownLink>
           </div>
 
           <button

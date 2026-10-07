@@ -1100,9 +1100,10 @@ export default function ParentDashboard() {
           <SupportCard />
 
           <Card>
-            <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
+                        <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href="/parent/profile/edit" accent="red" />
+              <QuickAction icon={Settings} label={isFr ? 'Mon compte' : 'My account'} href="/settings" accent="red" />
+              <QuickAction icon={User} label={isFr ? 'Profil parent' : 'Parent profile'} href="/parent/profile/edit" accent="red" />
             </ul>
             <div className="p-2 pt-0">
               <button

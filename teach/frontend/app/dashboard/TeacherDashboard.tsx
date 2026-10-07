@@ -889,9 +889,10 @@ export default function TeacherDashboard() {
           )}
 
           <Card>
-            <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
+                        <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href="/teacher/profile/edit" accent="blue" />
+              <QuickAction icon={Settings} label={isFr ? 'Mon compte' : 'My account'} href="/settings" accent="blue" />
+              <QuickAction icon={User} label={isFr ? 'Profil enseignant' : 'Teacher profile'} href="/teacher/profile/edit" accent="blue" />
             </ul>
             <div className="p-2 pt-0">
               <button
