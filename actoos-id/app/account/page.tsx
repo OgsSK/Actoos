@@ -281,13 +281,21 @@ export default function AccountPage() {
 
   if (!user) return null;
 
-  const fullName = profile?.firstName && profile?.lastName
-    ? `${profile.firstName} ${profile.lastName}`
-    : profile?.firstName || profile?.lastName || user.email?.split('@')[0] || 'Utilisateur';
+  // 🔧 FIX — lire les champs snake_case (DB) + fallback user_metadata (Supabase Auth)
+  const fullName =
+    (profile as any)?.first_name && (profile as any)?.last_name
+      ? `${(profile as any).first_name} ${(profile as any).last_name}`
+      : (profile as any)?.first_name ||
+        (profile as any)?.last_name ||
+        user.user_metadata?.first_name ||
+        user.user_metadata?.last_name ||
+        user.email?.split('@')[0] ||
+        'Utilisateur';
 
+  // 🔧 FIX — initiales : DB snake_case → user_metadata → email
   const initials = (() => {
-    const f = profile?.firstName?.[0] || '';
-    const l = profile?.lastName?.[0] || '';
+    const f = (profile as any)?.first_name?.[0] || user.user_metadata?.first_name?.[0] || '';
+    const l = (profile as any)?.last_name?.[0] || user.user_metadata?.last_name?.[0] || '';
     return (f + l).toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
   })();
 

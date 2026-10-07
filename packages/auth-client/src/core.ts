@@ -77,13 +77,21 @@ export function createAuthCore(client: AuthClient) {
     return data;
   };
 
-  const updateProfile = async (userId: string, updates: Record<string, any>) => {
-    const { error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', userId);
-    if (error) throw error;
-  };
+ const updateProfile = async (userId: string, updates: Record<string, any>) => {
+  const { error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', userId);
+  if (error) throw error;
+
+  // Sync les metadata auth pour que buildBaseProfile soit cohérent
+  const metaUpdates: Record<string, any> = {};
+  if (updates.first_name !== undefined) metaUpdates.first_name = updates.first_name;
+  if (updates.last_name !== undefined) metaUpdates.last_name = updates.last_name;
+  if (Object.keys(metaUpdates).length > 0) {
+    await supabase.auth.updateUser({ data: metaUpdates });
+  }
+};
 
   const getSession = async () => {
     const { data, error } = await supabase.auth.getSession();

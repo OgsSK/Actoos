@@ -193,11 +193,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (updates: Record<string, any>) => {
-    if (!user) throw new Error('Not authenticated');
-    await authCore.updateProfile(user.id, updates);
-    const enriched = await enrichProfile(client, user, profile);
+  if (!user) throw new Error('Not authenticated');
+
+  // 1. Update DB (users table + auth metadata)
+  await authCore.updateProfile(user.id, updates);
+
+  // 2. Rafraîchit la session pour récupérer les metadata à jour
+  await client.supabase.auth.refreshSession();
+  const { data: { session } } = await client.supabase.auth.getSession();
+  const freshUser = session?.user as AuthUser | undefined;
+
+  if (freshUser) {
+    // 3. Reconstruit le profile from scratch
+    const baseProfile = buildBaseProfile(freshUser);
+    const enriched = await enrichProfile(client, freshUser, baseProfile);
+    setUser(freshUser);
     setProfile(enriched);
-  };
+  }
+};
 
   const refreshProfile = async () => {
     if (!user) return;
