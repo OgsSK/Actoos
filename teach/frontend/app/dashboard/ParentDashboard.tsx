@@ -14,7 +14,6 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTeachRole } from '@/app/hooks/useTeachRole';
 import { supabase } from '@/lib/supabase';
-import { ACTOOS_ID_BASE } from '@/lib/constants';
 import SupportCard from '@/app/components/SupportCard';
 
 const AUTH_FORM_TIMEOUT_MS = 800;
@@ -1103,7 +1102,7 @@ export default function ParentDashboard() {
           <Card>
             <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external accent="red" />
+              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href="/parent/profile/edit" accent="red" />
             </ul>
             <div className="p-2 pt-0">
               <button

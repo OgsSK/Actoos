@@ -12,7 +12,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTeachRole } from '../hooks/useTeachRole';
 import { supabase } from '../../lib/supabase';
-import { ACTOOS_ID_BASE } from '../../lib/constants';
 import SupportCard from '../components/SupportCard';
 
 // ⏱ Au bout de ce délai, on n'attend plus authLoading
@@ -892,7 +891,7 @@ export default function TeacherDashboard() {
           <Card>
             <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
-              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href={`${ACTOOS_ID_BASE}/account`} external accent="blue" />
+              <QuickAction icon={Settings} label={isFr ? 'Paramètres du compte' : 'Account settings'} href="/teacher/profile/edit" accent="blue" />
             </ul>
             <div className="p-2 pt-0">
               <button
