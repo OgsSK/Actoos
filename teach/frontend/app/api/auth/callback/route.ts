@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     {
       cookieOptions: isProd
         ? {
-            domain: '.actoos.com',
+            domain: '.kalanden.com',
             path: '/',
             sameSite: 'lax',
             secure: true,

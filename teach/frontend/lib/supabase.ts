@@ -10,7 +10,7 @@ if (!_client) {
     supabaseUrl: SUPABASE_URL,
     supabaseAnonKey: SUPABASE_ANON_KEY,
     appName: 'teach',
-    cookieDomain: process.env.NODE_ENV === 'production' ? '.actoos.com' : undefined,
+    cookieDomain: process.env.NODE_ENV === 'production' ? '.kalanden.com' : undefined,
   });
 }
 

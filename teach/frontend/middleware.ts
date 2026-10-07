@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
     {
       cookieOptions: isProd
   ? {
-      domain: '.actoos.com',
+      domain: '.kalanden.com',
       path: '/',
       sameSite: 'lax',
       secure: true,

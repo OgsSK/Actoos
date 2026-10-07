@@ -33,6 +33,7 @@ export const RATE_PERIODS = [
 ] as const;
 
 export type RatePeriod = typeof RATE_PERIODS[number]['value'];
+
 // ============================================================
 // BRAND — nom du produit, centralisé
 // ============================================================
@@ -70,8 +71,3 @@ export const LANGUAGE_LEVELS = [
 ];
 
 export const MAX_SUBJECTS_PER_TEACHER = 5;
-// URL de base d'Actoos ID (dev: localhost:3001, prod: id.actoos.com)
-export const ACTOOS_ID_BASE =
-  process.env.NODE_ENV === 'production'
-    ? 'https://id.actoos.com'
-    : 'http://localhost:3001';

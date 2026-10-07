@@ -3,16 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, Settings, Shield, ChevronDown, Menu, X } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Menu, X } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { BRAND } from '@/lib/constants';
-
-const ACTOOS_ID_BASE =
-  process.env.NODE_ENV === 'production'
-    ? 'https://id.actoos.com'
-    : 'http://localhost:3001';
 
 export default function AdminHeader() {
   const { user } = useAuth();
@@ -138,16 +133,9 @@ export default function AdminHeader() {
                     {isFr ? 'Administrateur' : 'Administrator'}
                   </span>
                 </div>
-                <a
-                  href={`${ACTOOS_ID_BASE}/account`}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  <Settings className="w-4 h-4 text-slate-400" />
-                  {isFr ? 'Gérer mon compte' : 'Manage my account'}
-                </a>
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 border-t border-slate-100 text-left transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 text-left transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   {isFr ? 'Se déconnecter' : 'Sign out'}
@@ -234,13 +222,6 @@ export default function AdminHeader() {
             >
               {isFr ? 'Voir le site public' : 'View public site'}
             </Link>
-            <a
-              href={`${ACTOOS_ID_BASE}/account`}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              {isFr ? 'Gérer mon compte' : 'Manage my account'}
-            </a>
           </div>
         </div>
 

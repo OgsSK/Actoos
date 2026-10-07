@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, X, LogOut, Settings, LayoutDashboard, GraduationCap,
+  Menu, X, LogOut, LayoutDashboard, GraduationCap,
   Heart, ChevronRight, Search, Copy, Check, Smartphone,
   Sparkles,
 } from 'lucide-react';
@@ -13,11 +13,6 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useTeachRole } from '@/app/hooks/useTeachRole';
 import { BRAND } from '@/lib/constants';
 import LanguageSwitcher from './LanguageSwitcher';
-
-const ACTOOS_ID_BASE =
-  process.env.NODE_ENV === 'production'
-    ? 'https://id.actoos.com'
-    : 'http://localhost:3001';
 
 // 💛 Numéro de dépôt (à copier dans le presse-papiers)
 const DONATION_PHONE = '93 19 26 33';
@@ -35,7 +30,6 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [donationOpen, setDonationOpen] = useState(false);
 
-  // ⏱ Timeout local : après 800 ms, on arrête d'afficher le skeleton
   const [authSkeletonExpired, setAuthSkeletonExpired] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAuthSkeletonExpired(true), AUTH_SKELETON_TIMEOUT_MS);
@@ -123,7 +117,6 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-2 shrink-0">
             <LanguageSwitcher />
 
-            {/* 💛 Bouton soutien */}
             <button
               type="button"
               onClick={() => setDonationOpen(true)}
@@ -264,7 +257,6 @@ export default function Header() {
               </Link>
             ))}
 
-            {/* 💛 Soutien dans le drawer */}
             <button
               type="button"
               onClick={() => {
@@ -302,9 +294,6 @@ export default function Header() {
                     {isFr ? 'Profil enseignant' : 'Teacher profile'}
                   </DrawerLink>
                 )}
-                <DrawerLink href={`${ACTOOS_ID_BASE}/account`} icon={Settings} external>
-                  {isFr ? 'Gérer mon compte' : 'Manage my account'}
-                </DrawerLink>
               </>
             ) : (
               <div className="space-y-2 pt-1">
@@ -447,10 +436,6 @@ function UserDropdown({
                 {isFr ? 'Profil enseignant' : 'Teacher profile'}
               </DropdownLink>
             )}
-            <div className="my-1 border-t border-slate-100" />
-            <DropdownLink href={`${ACTOOS_ID_BASE}/account`} icon={Settings} external>
-              {isFr ? 'Gérer mon compte' : 'Manage my account'}
-            </DropdownLink>
           </div>
 
           <button
@@ -549,7 +534,6 @@ function SupportModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
-  // Reset du feedback copy quand la modale se ferme
   useEffect(() => {
     if (!open) {
       const t = setTimeout(() => setCopied(false), 200);
@@ -557,17 +541,13 @@ function SupportModal({
     }
   }, [open]);
 
-  // Escape + focus initial
   useEffect(() => {
     if (!open) return;
-
     const esc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', esc);
-
     const t = setTimeout(() => modalRef.current?.focus(), 60);
-
     return () => {
       document.removeEventListener('keydown', esc);
       clearTimeout(t);
@@ -593,24 +573,20 @@ function SupportModal({
       aria-modal="true"
       aria-labelledby="support-title"
     >
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-[fadeIn_180ms_ease-out]"
         onClick={onClose}
       />
 
-      {/* Card */}
       <div
         ref={modalRef}
         tabIndex={-1}
         className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden outline-none animate-[slideUp_220ms_cubic-bezier(0.16,1,0.3,1)]"
       >
-        {/* Handle mobile */}
         <div className="sm:hidden pt-3 flex justify-center">
           <div className="w-10 h-1 rounded-full bg-slate-200" />
         </div>
 
-        {/* Header */}
         <div className="relative px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
           <button
             onClick={onClose}
@@ -636,9 +612,7 @@ function SupportModal({
           </div>
         </div>
 
-        {/* Body */}
         <div className="px-5 sm:px-6 pb-5 space-y-4">
-          {/* Message d'introduction */}
           <div className="space-y-2">
             <p className="text-[13.5px] leading-relaxed text-slate-700">
               {isFr
@@ -652,7 +626,6 @@ function SupportModal({
             </p>
           </div>
 
-          {/* Numéro de dépôt */}
           <div className="rounded-2xl border-2 border-dashed border-rose-200 bg-gradient-to-br from-rose-50 to-amber-50/50 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Smartphone className="w-3.5 h-3.5 text-rose-500" />
@@ -692,7 +665,6 @@ function SupportModal({
             </button>
           </div>
 
-          {/* Remerciement */}
           <div className="flex items-start gap-3 rounded-2xl bg-slate-50 border border-slate-100 p-3.5">
             <span className="text-lg leading-none shrink-0">🙏</span>
             <p className="text-[13px] leading-relaxed text-slate-600">
