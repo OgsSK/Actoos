@@ -127,16 +127,26 @@ function getTeacherTip(ctx: {
   const t = (fr: string, en: string) => (isFr ? fr : en);
 
   if (status === 'pending' && !isVerified) {
+    const isIncomplete = completionPercent < 100;
     return {
-      tone: 'warning',
-      icon: Clock,
-      eyebrow: t('Priorité', 'Priority'),
-      title: t('Vérification en cours', 'Verification in progress'),
-      text: t(
-        'Pendant la vérification, complétez votre profil à 100 % : les profils complets passent en tête dès la validation.',
-        'While verifying, complete your profile to 100%: complete profiles jump to the top once approved.',
-      ),
-      cta: { label: t('Compléter', 'Complete'), href: '/teacher/profile/edit' },
+      tone: isIncomplete ? 'warning' : 'info',
+      icon: isIncomplete ? AlertCircle : Clock,
+      eyebrow: isIncomplete
+        ? t('Action requise', 'Action needed')
+        : t('Priorité', 'Priority'),
+      title: isIncomplete
+        ? t('Profil incomplet — validation bloquée', 'Incomplete profile — approval blocked')
+        : t('Vérification en cours', 'Verification in progress'),
+      text: isIncomplete
+        ? t(
+            `Votre profil est à ${completionPercent}%. Un profil incomplet ne sera pas validé. Complétez les éléments manquants pour permettre la vérification.`,
+            `Your profile is at ${completionPercent}%. An incomplete profile will not be approved. Complete the missing items to allow verification.`,
+          )
+        : t(
+            'Pendant la vérification, complétez votre profil à 100 % : les profils complets passent en tête dès la validation.',
+            'While verifying, complete your profile to 100%: complete profiles jump to the top once approved.',
+          ),
+      cta: { label: t('Compléter mon profil', 'Complete my profile'), href: '/teacher/profile/edit' },
     };
   }
 
@@ -695,18 +705,35 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      {/* STATUT */}
+      {/* STATUT — PENDING */}
       {status === 'pending' && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3 shadow-sm mb-6">
-          <div className="w-9 h-9 rounded-xl bg-white border border-amber-100 flex items-center justify-center shrink-0">
-            <Clock className="w-4 h-4 text-amber-600" />
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm mb-6">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white border border-amber-100 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900">{isFr ? 'Vérification en cours' : 'Verification in progress'}</p>
+              <p className="text-sm text-amber-800/80 leading-relaxed mt-0.5">
+                {isFr
+                  ? 'Notre équipe vérifie votre profil. Délai habituel : 24 à 48h. Vous recevrez un email dès validation.'
+                  : 'Our team is reviewing your profile. Usual delay: 24 to 48 hours. You\'ll get an email as soon as it\'s approved.'}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900">{isFr ? 'Vérification en cours' : 'Verification in progress'}</p>
-            <p className="text-sm text-amber-800/80 leading-relaxed mt-0.5">
+
+          {/* ⚠️ Condition de validation */}
+          <div className="mt-3 pt-3 border-t border-amber-200/60 flex items-start gap-2.5">
+            <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+              <AlertCircle className="w-3 h-3 text-amber-700" />
+            </div>
+            <p className="text-xs sm:text-sm text-amber-900/90 leading-relaxed">
+              <span className="font-semibold">
+                {isFr ? 'Profil complet requis. ' : 'Complete profile required. '}
+              </span>
               {isFr
-  ? 'Notre équipe vérifie votre profil. Délai habituel : 24 à 48h. Vous recevrez un email dès validation.'
-  : 'Our team is reviewing your profile. Usual delay: 24 to 48 hours. You\'ll get an email as soon as it\'s approved.'}
+                ? 'Un profil incomplet ne sera pas validé. Assurez-vous que tous les éléments ci-dessous sont renseignés avant la fin de la vérification.'
+                : 'An incomplete profile will not be approved. Make sure every item below is filled in before the review ends.'}
             </p>
           </div>
         </div>
@@ -738,24 +765,41 @@ export default function TeacherDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
           {completionPercent < 100 && (
-            <Card>
+            <Card className={status === 'pending' ? 'border-amber-200' : ''}>
               <CardContent>
                 <div className="flex items-start gap-4 mb-5">
-                  <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${
+                    status === 'pending'
+                      ? 'bg-amber-50 border-amber-100'
+                      : 'bg-blue-50 border-blue-100'
+                  }`}>
+                    <TrendingUp className={`w-5 h-5 ${
+                      status === 'pending' ? 'text-amber-600' : 'text-blue-600'
+                    }`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-500 mb-1">{isFr ? 'Complétion du profil' : 'Profile completion'}</p>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="text-sm text-slate-500">{isFr ? 'Complétion du profil' : 'Profile completion'}</p>
+                      {status === 'pending' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
+                          {isFr ? 'Requis pour validation' : 'Required for approval'}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-baseline gap-2 mb-3">
                       <span className="text-2xl font-bold text-slate-900 leading-none">{completionPercent}%</span>
                       <span className="text-sm text-slate-500">{isFr ? 'complété' : 'completed'}</span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${completionPercent}%` }} />
+                      <div className={`h-full rounded-full transition-all duration-700 ${
+                        status === 'pending' ? 'bg-amber-500' : 'bg-blue-500'
+                      }`} style={{ width: `${completionPercent}%` }} />
                     </div>
                   </div>
                 </div>
-                <Link href="/teacher/profile/edit" prefetch className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                <Link href="/teacher/profile/edit" prefetch className={`inline-flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                  status === 'pending' ? 'text-amber-600 hover:text-amber-700' : 'text-blue-600 hover:text-blue-700'
+                }`}>
                   {isFr ? 'Compléter mon profil' : 'Complete my profile'}
                   <ChevronRight className="w-4 h-4" />
                 </Link>
