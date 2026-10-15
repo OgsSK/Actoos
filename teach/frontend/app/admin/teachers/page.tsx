@@ -171,7 +171,7 @@ function AdminTeachers() {
   }), [teachers]);
 
   // ─── Actions ───
-  async function updateStatus(id: string, status: 'verified' | 'rejected', reason?: string) {
+  async function updateStatus(id: string, status: 'verified' | 'rejected' | 'pending', reason?: string) {
     setActionId(id);
     try {
       // ⚠️ On met à jour les 2 champs pour rester cohérent avec la recherche publique
@@ -184,6 +184,10 @@ function AdminTeachers() {
         updates.verified_at = new Date().toISOString();
         updates.rejected_reason = null;
         updates.is_verified = true; // ✅ champ critique pour la recherche publique
+      } else if (status === 'pending') {
+        updates.verified_at = null;
+        updates.rejected_reason = null;
+        updates.is_verified = false; // masqué de la recherche publique
       } else {
         updates.is_verified = false; // rejected, suspended → plus visible
       }
@@ -195,8 +199,10 @@ function AdminTeachers() {
       if (error) throw error;
 
       // Récupère l'email du prof pour notif (non bloquant)
+      // ⚠️ On n'envoie un email QUE pour 'verified' et 'rejected'
+      // (le retour en 'pending' est une action admin interne, sans notif)
       const target = teachers.find(t => t.id === id);
-      if (target?.user?.email) {
+      if (target?.user?.email && (status === 'verified' || status === 'rejected')) {
         sendMail({
           action: status === 'verified' ? 'teacher-verified' : 'teacher-rejected',
           teacher_id: id,
@@ -521,14 +527,30 @@ function AdminTeachers() {
                     )}
 
                     {t.verification_status === 'verified' && !isSuspended && (
-                      <button
-                        onClick={() => setSuspendTarget(t)}
-                        disabled={busy}
-                        title={isFr ? 'Suspendre' : 'Suspend'}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
-                      >
-                        <Ban className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            if (confirm(isFr
+                              ? 'Remettre ce prof en attente de vérification ? Il sera masqué de la recherche publique.'
+                              : 'Put this teacher back to pending? They will be hidden from public search.')) {
+                              updateStatus(t.id, 'pending');
+                            }
+                          }}
+                          disabled={busy}
+                          title={isFr ? 'Remettre en attente' : 'Back to pending'}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => setSuspendTarget(t)}
+                          disabled={busy}
+                          title={isFr ? 'Suspendre' : 'Suspend'}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
 
                     {isSuspended && (

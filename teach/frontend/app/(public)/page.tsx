@@ -8,8 +8,11 @@ import { useRouter } from 'next/navigation';
 import {
   Search, MapPin, GraduationCap, ArrowRight, Shield,
   Heart, LayoutDashboard, Pencil, UserPlus, MessageSquare, CheckCircle2,
-  ChevronLeft, ChevronRight, ChevronDown, Check, BookOpen, Calculator, FlaskConical, 
-  Monitor, Languages, Palette, Music, Atom, Star
+  ChevronLeft, ChevronRight, ChevronDown, Check, BookOpen, Calculator, FlaskConical,
+  Monitor, Languages, Palette, Music, Atom, Star,
+  // Nouveaux icônes pour matières spécifiques
+  Pi, Sigma, Dna, Code, BookText, Brain, Scroll, Globe, TrendingUp,
+  Scale, Dumbbell, HelpCircle, Lightbulb, Briefcase, Leaf, Landmark,
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -68,15 +71,47 @@ function StarsInline({ value, size = 12 }: { value: number; size?: number }) {
 }
 
 function getSubjectIcon(subjectName: string) {
-  const name = subjectName.toLowerCase();
-  if (name.includes('math')) return <Calculator className="w-6 h-6" strokeWidth={1.5} />;
-  if (name.includes('physique') || name.includes('chimie')) return <FlaskConical className="w-6 h-6" strokeWidth={1.5} />;
-  if (name.includes('info')) return <Monitor className="w-6 h-6" strokeWidth={1.5} />;
-  if (name.includes('anglais') || name.includes('allemand') || name.includes('japonais') || name.includes('espagnol') || name.includes('langue')) return <Languages className="w-6 h-6" strokeWidth={1.5} />;
-  if (name.includes('dessin') || name.includes('art')) return <Palette className="w-6 h-6" strokeWidth={1.5} />;
-  if (name.includes('musique')) return <Music className="w-6 h-6" strokeWidth={1.5} />;
-  if (name.includes('science') || name.includes('bio')) return <Atom className="w-6 h-6" strokeWidth={1.5} />;
-  return <BookOpen className="w-6 h-6" strokeWidth={1.5} />;
+  const name = subjectName.toLowerCase().trim();
+  const props = { className: 'w-6 h-6', strokeWidth: 1.5 };
+
+  // ─── MATHS ────────────────────────────────────
+  if (name.includes('math')) return <Calculator {...props} />;
+  if (name.includes('algèbre') || name.includes('algebre') || name.includes('géométrie') || name.includes('geometrie')) return <Pi {...props} />;
+  if (name.includes('statistique')) return <Sigma {...props} />;
+
+  // ─── SCIENCES ─────────────────────────────────
+  if (name.includes('physique')) return <Atom {...props} />;
+  if (name.includes('chimie')) return <FlaskConical {...props} />;
+  if (name.includes('svt') || name.includes('biologie') || name.includes('bio ')) return <Dna {...props} />;
+  if (name.includes('science')) return <Leaf {...props} />;
+
+  // ─── INFORMATIQUE ─────────────────────────────
+  if (name.includes('info') || name.includes('code') || name.includes('programm') || name.includes('numérique') || name.includes('numerique')) return <Code {...props} />;
+
+  // ─── LANGUES ──────────────────────────────────
+  if (name.includes('français') || name.includes('francais') || name.includes('lettre') || name.includes('littérat') || name.includes('literat')) return <BookText {...props} />;
+  if (name.includes('anglais') || name.includes('allemand') || name.includes('espagnol') || name.includes('italien') || name.includes('arabe') || name.includes('chinois') || name.includes('japonais') || name.includes('russe') || name.includes('portugais') || name.includes('langue')) return <Languages {...props} />;
+
+  // ─── SCIENCES HUMAINES ────────────────────────
+  if (name.includes('philo')) return <Brain {...props} />;
+  if (name.includes('histoire')) return <Scroll {...props} />;
+  if (name.includes('géo') || name.includes('geo ')) return <Globe {...props} />;
+  if (name.includes('ses') || name.includes('économie') || name.includes('economie') || name.includes('éco') || name.includes('eco ')) return <TrendingUp {...props} />;
+  if (name.includes('droit') || name.includes('juridique')) return <Scale {...props} />;
+  if (name.includes('politique') || name.includes('citoyen')) return <Landmark {...props} />;
+
+  // ─── ARTS & SPORT ─────────────────────────────
+  if (name.includes('musique')) return <Music {...props} />;
+  if (name.includes('art') || name.includes('dessin') || name.includes('peinture') || name.includes('plastique')) return <Palette {...props} />;
+  if (name.includes('sport') || name.includes('eps') || name.includes('éduc') || name.includes('educ')) return <Dumbbell {...props} />;
+
+  // ─── AUTRES ───────────────────────────────────
+  if (name.includes('compta') || name.includes('gestion') || name.includes('finance')) return <Briefcase {...props} />;
+  if (name.includes('aide') || name.includes('devoir')) return <HelpCircle {...props} />;
+  if (name.includes('méthod') || name.includes('method')) return <Lightbulb {...props} />;
+
+  // ─── DÉFAUT ───────────────────────────────────
+  return <GraduationCap {...props} />;
 }
 
 function PrimaryButton({ children, className = '', ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { className?: string }) {
