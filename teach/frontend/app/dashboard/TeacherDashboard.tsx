@@ -704,7 +704,9 @@ export default function TeacherDashboard() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-amber-900">{isFr ? 'Vérification en cours' : 'Verification in progress'}</p>
             <p className="text-sm text-amber-800/80 leading-relaxed mt-0.5">
-              {isFr ? 'Notre équipe vérifie votre identité. Délai moyen : 2 à 5 jours ouvrés.' : 'Our team is verifying your identity. 2 to 5 business days.'}
+              {isFr
+  ? 'Notre équipe vérifie votre profil. Délai habituel : 24 à 48h. Vous recevrez un email dès validation.'
+  : 'Our team is reviewing your profile. Usual delay: 24 to 48 hours. You\'ll get an email as soon as it\'s approved.'}
             </p>
           </div>
         </div>
