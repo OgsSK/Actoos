@@ -1,4 +1,4 @@
-import type { Profile } from './types';
+import type { Profile } from './types.js';
 
 export function isCandidate(profile: Profile | null): boolean {
   return profile?.role === 'candidate' && !profile?.hasCompanies;

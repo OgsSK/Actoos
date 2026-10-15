@@ -15,6 +15,9 @@ import { useTeachRole } from '@/app/hooks/useTeachRole';
 import { supabase } from '@/lib/supabase';
 import { BRAND } from '@/lib/constants';
 
+const PAGE_SIZE = 24;
+const MAX_FILTERED_FETCH = 500; // plafond quand un filtre est actif (client-side filtering)
+
 // ============================================================
 // TYPES
 // ============================================================
@@ -193,6 +196,12 @@ function TeachersPageContent() {
   const [loading, setLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState<number>(() => {
+    const p = parseInt(searchParams.get('page') || '1', 10);
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  });
+  const [totalCount, setTotalCount] = useState(0);
+
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -203,12 +212,15 @@ function TeachersPageContent() {
   const [fMode, setFMode] = useState<string>(searchParams.get('mode') || '');
   const [fRating, setFRating] = useState<string>(searchParams.get('rating') || '');
 
+  // ⚠️ Déclaré AVANT le useEffect loadAll (nécessaire pour le range conditionnel)
+  const hasFilters = Boolean(fSearch || fSubject || fLevel || fCity || fMode || fRating);
+
   const canSave = !isTeacher;
 
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentPage, hasFilters]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -267,19 +279,23 @@ function TeachersPageContent() {
           .from('teacher_profiles')
           .select(`
             id, headline, bio, hourly_rate, rate_period, teaching_mode, profile_photo_url, cover_url, is_verified, experience_years, city_id, rating_avg, rating_count
-          `)
+          `, { count: 'exact' })
           .eq('is_available', true)
           .eq('verification_status', 'verified')
-          .not('headline', 'is', null)
           .order('rating_avg', { ascending: false })
           .order('rating_count', { ascending: false })
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })
+          .range(
+            hasFilters ? 0 : (currentPage - 1) * PAGE_SIZE,
+            hasFilters ? MAX_FILTERED_FETCH : currentPage * PAGE_SIZE - 1
+          ),
         supabase.from('cities').select('id, name').eq('is_active', true).order('name'),
         supabase.from('subjects').select('id, name_fr, name_en').order('order_index'),
         supabase.from('levels').select('id, name_fr, name_en').order('order_index'),
       ]);
 
       const profiles = profilesRes.data || [];
+      setTotalCount(profilesRes.count || 0);
 
       setCities(citiesRes.data || []);
       setSubjects(subjectsRes.data || []);
@@ -464,6 +480,7 @@ function TeachersPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teachers, fSearch, fSubject, fLevel, fCity, fMode, fRating]);
 
+  // Sync URL (inclut `page`)
   useEffect(() => {
     const params = new URLSearchParams();
     if (fSearch) params.set('q', fSearch);
@@ -472,13 +489,17 @@ function TeachersPageContent() {
     if (fCity) params.set('city', fCity);
     if (fMode) params.set('mode', fMode);
     if (fRating) params.set('rating', fRating);
+    if (currentPage > 1) params.set('page', String(currentPage));
     const qs = params.toString();
     const newUrl = qs ? `/teachers?${qs}` : '/teachers';
     router.replace(newUrl, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fSearch, fSubject, fLevel, fCity, fMode, fRating]);
+  }, [fSearch, fSubject, fLevel, fCity, fMode, fRating, currentPage]);
 
-  const hasFilters = fSearch || fSubject || fLevel || fCity || fMode || fRating;
+  // Reset page 1 quand un filtre change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [fSearch, fSubject, fLevel, fCity, fMode, fRating]);
 
   function clearAll() {
     setFSearch('');
@@ -650,6 +671,21 @@ function TeachersPageContent() {
               />
             ))}
           </div>
+        )}
+
+        {/* Pagination — masquée si un filtre est actif (filtrage client-side) */}
+        {!isInitialLoading && !hasFilters && filtered.length > 0 && totalCount > PAGE_SIZE && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(totalCount / PAGE_SIZE)}
+            totalItems={totalCount}
+            pageSize={PAGE_SIZE}
+            isFr={isFr}
+            onPageChange={(p) => {
+              setCurrentPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         )}
       </div>
 
@@ -879,11 +915,9 @@ function TeacherCardItem({
                 </span>
               )}
             </div>
-            {teacher.headline && (
-              <p className="text-sm text-slate-500 mt-0.5 truncate">
-                {teacher.headline}
-              </p>
-            )}
+            <p className="text-sm text-slate-500 mt-0.5 truncate">
+              {teacher.headline || (isFr ? 'Enseignant particulier' : 'Private teacher')}
+            </p>
 
             <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap">
               {hasRating ? (
@@ -990,6 +1024,97 @@ function TeacherCardItem({
         </div>
       </div>
     </Link>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAGINATION
+// ═══════════════════════════════════════════════════════════
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  pageSize,
+  isFr,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  isFr: boolean;
+  onPageChange: (page: number) => void;
+}) {
+  const pages: (number | '...')[] = [];
+  const delta = 1;
+
+  for (let i = 1; i <= totalPages; i++) {
+    if (
+      i === 1 ||
+      i === totalPages ||
+      (i >= currentPage - delta && i <= currentPage + delta)
+    ) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...');
+    }
+  }
+
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
+
+  return (
+    <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p className="text-xs text-slate-500">
+        {isFr
+          ? `Affichage de ${start}–${end} sur ${totalItems} profs`
+          : `Showing ${start}–${end} of ${totalItems} teachers`}
+      </p>
+
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 h-9 rounded-lg text-sm font-medium text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+          aria-label={isFr ? 'Page précédente' : 'Previous page'}
+        >
+          ←
+        </button>
+
+        {pages.map((p, i) =>
+          p === '...' ? (
+            <span
+              key={`dots-${i}`}
+              className="px-2 text-slate-400 select-none text-sm"
+            >
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onPageChange(p)}
+              className={`min-w-[36px] h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
+                p === currentPage
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:bg-white hover:text-slate-900'
+              }`}
+              aria-current={p === currentPage ? 'page' : undefined}
+            >
+              {p}
+            </button>
+          )
+        )}
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 h-9 rounded-lg text-sm font-medium text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+          aria-label={isFr ? 'Page suivante' : 'Next page'}
+        >
+          →
+        </button>
+      </div>
+    </div>
   );
 }
 

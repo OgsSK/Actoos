@@ -1,4 +1,4 @@
-import type { AuthClient } from './client';
+import type { AuthClient } from './client.js';
 
 async function fetchWithRetry(
   url: string,
