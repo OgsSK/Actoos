@@ -7,7 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import {
   GraduationCap, Search, ChevronLeft, ChevronRight, Loader2,
   CheckCircle2, Clock, XCircle, Ban, Trash2, Eye, Filter,
-  AlertCircle, Mail, X,
+  AlertCircle, Mail, X, MapPin, BookOpen, TrendingUp, Heart,
+  Monitor, Home, Star, User, Calendar, CheckSquare, Square,
 } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
@@ -30,6 +31,12 @@ interface TeacherRow {
   } | null;
 }
 
+interface PreviewData {
+  profile: any;
+  subjects: { id: string; name_fr: string; name_en: string }[];
+  levels: { id: string; name_fr: string; name_en: string }[];
+}
+
 type StatusFilter = 'all' | 'pending' | 'verified' | 'rejected' | 'suspended';
 
 const PER_PAGE = 20;
@@ -45,6 +52,31 @@ function formatRelative(iso: string, isFr: boolean) {
   const days = Math.floor(hrs / 24);
   if (days < 30) return isFr ? `il y a ${days} j` : `${days} d ago`;
   return d.toLocaleDateString(isFr ? 'fr-FR' : 'en-US');
+}
+
+function formatRate(amount: number | null, period: string | null, isFr: boolean) {
+  if (!amount) return null;
+  const fmt = new Intl.NumberFormat('fr-FR').format(amount);
+  const suffixMap: Record<string, { fr: string; en: string }> = {
+    hourly: { fr: 'FCFA / h', en: 'FCFA / hr' },
+    session: { fr: 'FCFA / séance', en: 'FCFA / session' },
+    weekly: { fr: 'FCFA / sem', en: 'FCFA / wk' },
+    monthly: { fr: 'FCFA / mois', en: 'FCFA / mo' },
+  };
+  const key = period || 'hourly';
+  const suffix = suffixMap[key] ? (isFr ? suffixMap[key].fr : suffixMap[key].en) : 'FCFA';
+  return `${fmt} ${suffix}`;
+}
+
+function modeLabel(mode: string | null, isFr: boolean) {
+  if (!mode) return null;
+  const map: Record<string, { fr: string; en: string }> = {
+    home: { fr: 'À domicile', en: 'At home' },
+    online: { fr: 'En ligne', en: 'Online' },
+    both: { fr: 'Domicile & en ligne', en: 'Home & online' },
+  };
+  const m = map[mode];
+  return m ? (isFr ? m.fr : m.en) : mode;
 }
 
 function StatusBadge({ status, isFr }: { status: string | null; isFr: boolean }) {
@@ -68,7 +100,7 @@ function StatusBadge({ status, isFr }: { status: string | null; isFr: boolean })
 // HELPER — appel non bloquant à la fonction email
 // ═══════════════════════════════════════════════════════
 function sendMail(payload: Record<string, any>) {
-  fetch(
+  return fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`,
     {
       method: 'POST',
@@ -100,9 +132,21 @@ function AdminTeachers() {
   const [sendSuspendEmail, setSendSuspendEmail] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<TeacherRow | null>(null);
 
-  // ✨ Nouveaux states pour la modale de refus
+  // Modale de refus (simple)
   const [rejectTarget, setRejectTarget] = useState<TeacherRow | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+
+  // Modale d'aperçu du profil
+  const [previewTarget, setPreviewTarget] = useState<TeacherRow | null>(null);
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // ✨ Bulk selection + bulk reject
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAccepting, setBulkAccepting] = useState(false);
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState('');
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0, action: '' as '' | 'accept' | 'reject' });
 
   useEffect(() => {
     load();
@@ -111,6 +155,7 @@ function AdminTeachers() {
 
   useEffect(() => {
     setPage(1);
+    setSelectedIds(new Set());
   }, [filter, search]);
 
   async function load() {
@@ -134,6 +179,54 @@ function AdminTeachers() {
       setTeachers((data || []) as unknown as TeacherRow[]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ─── Chargement de l'aperçu d'un profil ───
+  async function openPreview(t: TeacherRow) {
+    setPreviewTarget(t);
+    setPreviewLoading(true);
+    setPreviewData(null);
+    try {
+      const [profileRes, subjectsRes, levelsRes] = await Promise.all([
+        supabase
+          .from('teacher_profiles')
+          .select(`
+            id, headline, bio, hourly_rate, rate_period, teaching_mode,
+            profile_photo_url, cover_url, is_verified, experience_years,
+            city_id, rating_avg, rating_count, verification_status, created_at,
+            user:users!teacher_profiles_id_fkey(first_name, last_name, email, language),
+            city:cities(id, name)
+          `)
+          .eq('id', t.id)
+          .single(),
+        supabase
+          .from('teacher_subjects')
+          .select('subjects(id, name_fr, name_en)')
+          .eq('teacher_id', t.id),
+        supabase
+          .from('teacher_levels')
+          .select('levels(id, name_fr, name_en)')
+          .eq('teacher_id', t.id),
+      ]);
+
+      const subjects = (subjectsRes.data || [])
+        .flatMap((r: any) => Array.isArray(r.subjects) ? r.subjects : [r.subjects])
+        .filter(Boolean);
+
+      const levels = (levelsRes.data || [])
+        .flatMap((r: any) => Array.isArray(r.levels) ? r.levels : [r.levels])
+        .filter(Boolean);
+
+      setPreviewData({
+        profile: profileRes.data,
+        subjects,
+        levels,
+      });
+    } catch (err) {
+      console.error('[AdminTeachers] openPreview', err);
+    } finally {
+      setPreviewLoading(false);
     }
   }
 
@@ -162,6 +255,14 @@ function AdminTeachers() {
   const currentPage = Math.min(page, totalPages);
   const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
+  // Pending sur la page courante (pour "Tout sélectionner" + select-all header)
+  const pendingOnPage = useMemo(
+    () => paginated.filter(t => t.verification_status === 'pending').map(t => t.id),
+    [paginated]
+  );
+
+  const allPendingOnPageSelected = pendingOnPage.length > 0 && pendingOnPage.every(id => selectedIds.has(id));
+
   const counts = useMemo(() => ({
     all: teachers.length,
     pending: teachers.filter(t => t.verification_status === 'pending').length,
@@ -170,12 +271,36 @@ function AdminTeachers() {
     suspended: teachers.filter(t => t.verification_status === 'suspended').length,
   }), [teachers]);
 
+  // ─── Sélection ───
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllOnPage() {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allPendingOnPageSelected) {
+        pendingOnPage.forEach(id => next.delete(id));
+      } else {
+        pendingOnPage.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
   // ─── Actions ───
   async function updateStatus(id: string, status: 'verified' | 'rejected' | 'pending', reason?: string) {
     setActionId(id);
     try {
-      // ⚠️ On met à jour les 2 champs pour rester cohérent avec la recherche publique
-      // (les pages /teachers et /teacher/[id] filtrent sur is_verified=true)
       const updates: any = { verification_status: status };
       if (status === 'rejected' && reason) {
         updates.rejected_reason = reason;
@@ -183,13 +308,13 @@ function AdminTeachers() {
       if (status === 'verified') {
         updates.verified_at = new Date().toISOString();
         updates.rejected_reason = null;
-        updates.is_verified = true; // ✅ champ critique pour la recherche publique
+        updates.is_verified = true;
       } else if (status === 'pending') {
         updates.verified_at = null;
         updates.rejected_reason = null;
-        updates.is_verified = false; // masqué de la recherche publique
+        updates.is_verified = false;
       } else {
-        updates.is_verified = false; // rejected, suspended → plus visible
+        updates.is_verified = false;
       }
 
       const { error } = await supabase
@@ -198,9 +323,6 @@ function AdminTeachers() {
         .eq('id', id);
       if (error) throw error;
 
-      // Récupère l'email du prof pour notif (non bloquant)
-      // ⚠️ On n'envoie un email QUE pour 'verified' et 'rejected'
-      // (le retour en 'pending' est une action admin interne, sans notif)
       const target = teachers.find(t => t.id === id);
       if (target?.user?.email && (status === 'verified' || status === 'rejected')) {
         sendMail({
@@ -213,6 +335,11 @@ function AdminTeachers() {
       setTeachers(prev => prev.map(t =>
         t.id === id ? { ...t, verification_status: status } : t
       ));
+
+      if (previewTarget?.id === id) {
+        setPreviewTarget(null);
+        setPreviewData(null);
+      }
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Error');
@@ -221,6 +348,130 @@ function AdminTeachers() {
     }
   }
 
+  // ─── Bulk accept ───
+  async function handleBulkAccept() {
+    const ids = Array.from(selectedIds).filter(id => {
+      const t = teachers.find(x => x.id === id);
+      return t?.verification_status === 'pending';
+    });
+
+    if (ids.length === 0) return;
+
+    const confirmed = window.confirm(
+      isFr
+        ? `Accepter ${ids.length} prof${ids.length > 1 ? 's' : ''} en une fois ?\n\nIls seront immédiatement visibles publiquement et recevront un email.`
+        : `Approve ${ids.length} teacher${ids.length > 1 ? 's' : ''} at once?\n\nThey will be immediately visible publicly and will receive an email.`
+    );
+    if (!confirmed) return;
+
+    setBulkAccepting(true);
+    setBulkProgress({ done: 0, total: ids.length, action: 'accept' });
+
+    const now = new Date().toISOString();
+    let done = 0;
+
+    for (const id of ids) {
+      try {
+        const { error } = await supabase
+          .from('teacher_profiles')
+          .update({
+            verification_status: 'verified',
+            verified_at: now,
+            rejected_reason: null,
+            is_verified: true,
+          })
+          .eq('id', id);
+
+        if (!error) {
+          // Envoie l'email (non bloquant)
+          sendMail({ action: 'teacher-verified', teacher_id: id });
+          done++;
+          setBulkProgress({ done, total: ids.length, action: 'accept' });
+        }
+      } catch (err) {
+        console.error('[bulk accept]', id, err);
+      }
+
+      // Petite pause pour éviter de saturer
+      await new Promise(r => setTimeout(r, 120));
+    }
+
+    // Mise à jour locale
+    setTeachers(prev => prev.map(t =>
+      ids.includes(t.id) ? { ...t, verification_status: 'verified' } : t
+    ));
+
+    setBulkAccepting(false);
+    setSelectedIds(new Set());
+    setBulkProgress({ done: 0, total: 0, action: '' });
+
+    alert(
+      isFr
+        ? `✅ ${done} prof${done > 1 ? 's' : ''} validé${done > 1 ? 's' : ''}.`
+        : `✅ ${done} teacher${done > 1 ? 's' : ''} approved.`
+    );
+  }
+
+  // ─── Bulk reject ───
+  async function handleBulkReject() {
+    const ids = Array.from(selectedIds).filter(id => {
+      const t = teachers.find(x => x.id === id);
+      return t?.verification_status === 'pending';
+    });
+
+    if (ids.length === 0) return;
+    if (!bulkRejectReason.trim()) return;
+
+    setBulkRejectOpen(false);
+    setBulkAccepting(true);
+    setBulkProgress({ done: 0, total: ids.length, action: 'reject' });
+
+    let done = 0;
+
+    for (const id of ids) {
+      try {
+        const { error } = await supabase
+          .from('teacher_profiles')
+          .update({
+            verification_status: 'rejected',
+            rejected_reason: bulkRejectReason.trim(),
+            is_verified: false,
+          })
+          .eq('id', id);
+
+        if (!error) {
+          sendMail({
+            action: 'teacher-rejected',
+            teacher_id: id,
+            reason: bulkRejectReason.trim(),
+          });
+          done++;
+          setBulkProgress({ done, total: ids.length, action: 'reject' });
+        }
+      } catch (err) {
+        console.error('[bulk reject]', id, err);
+      }
+
+      await new Promise(r => setTimeout(r, 120));
+    }
+
+    setTeachers(prev => prev.map(t =>
+      ids.includes(t.id) ? { ...t, verification_status: 'rejected' } : t
+    ));
+
+    setBulkAccepting(false);
+    setSelectedIds(new Set());
+    setBulkRejectReason('');
+    setBulkProgress({ done: 0, total: 0, action: '' });
+
+    alert(
+      isFr
+        ? `✅ ${done} prof${done > 1 ? 's' : ''} refusé${done > 1 ? 's' : ''}.`
+        : `✅ ${done} teacher${done > 1 ? 's' : ''} rejected.`
+    );
+  }
+
+  // ─── Suspendre ───
   async function handleSuspend() {
     if (!suspendTarget) return;
     if (!suspendReason.trim()) {
@@ -231,7 +482,6 @@ function AdminTeachers() {
     try {
       const now = new Date().toISOString();
 
-      // 1) update users : suspension globale
       const { error: err1 } = await supabase
         .from('users')
         .update({
@@ -241,17 +491,15 @@ function AdminTeachers() {
         .eq('id', suspendTarget.id);
       if (err1) throw err1;
 
-      // 2) update teacher_profiles : statut suspended + is_verified=false
       const { error: err2 } = await supabase
         .from('teacher_profiles')
         .update({
           verification_status: 'suspended',
-          is_verified: false, // ✅ masqué de la recherche publique
+          is_verified: false,
         })
         .eq('id', suspendTarget.id);
       if (err2) throw err2;
 
-      // 3) email (non bloquant)
       if (sendSuspendEmail) {
         sendMail({
           action: 'account-suspended',
@@ -274,7 +522,6 @@ function AdminTeachers() {
           : t
       ));
 
-      // ⚙️ Effets de bord : annuler les demandes en cours, notifier les contreparties
       try {
         await handleSuspensionSideEffects(suspendTarget.id);
       } catch (e) {
@@ -301,17 +548,15 @@ function AdminTeachers() {
         .eq('id', id);
       if (err1) throw err1;
 
-      // ⚠️ On réactive en remettant verified + is_verified=true
       const { error: err2 } = await supabase
         .from('teacher_profiles')
         .update({
           verification_status: 'verified',
-          is_verified: true, // ✅ réapparaît dans la recherche publique
+          is_verified: true,
         })
         .eq('id', id);
       if (err2) throw err2;
 
-      // Email réactivation (non bloquant)
       sendMail({
         action: 'account-reactivated',
         user_id: id,
@@ -338,21 +583,13 @@ function AdminTeachers() {
     if (!deleteTarget) return;
     setActionId(deleteTarget.id);
     try {
-      // ⚠️ ATTENTION : on supprime UNIQUEMENT le profil Teach
-      // La table public.users est PARTAGÉE avec Jobs, Vitrine, Actoos ID
-      // Ne JAMAIS la supprimer d'ici !
-
-      // 1. Supprimer le profil teacher (Teach uniquement)
       const { error: err1 } = await supabase
         .from('teacher_profiles')
         .delete()
         .eq('id', deleteTarget.id);
       if (err1) throw err1;
 
-      // 2. Supprimer aussi le profil parent s'il existe (Teach uniquement)
       await supabase.from('parent_profiles').delete().eq('id', deleteTarget.id);
-
-      // 3. NE PAS toucher à auth.users ni public.users
 
       setTeachers(prev => prev.filter(t => t.id !== deleteTarget.id));
       setDeleteTarget(null);
@@ -372,8 +609,13 @@ function AdminTeachers() {
     { key: 'suspended', labelFr: 'Suspendus',  labelEn: 'Suspended', count: counts.suspended },
   ];
 
+  const pendingSelectedCount = Array.from(selectedIds).filter(id => {
+    const t = teachers.find(x => x.id === id);
+    return t?.verification_status === 'pending';
+  }).length;
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-32">
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
         <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center shadow-sm">
@@ -421,6 +663,25 @@ function AdminTeachers() {
         />
       </div>
 
+      {/* Select-all header (uniquement si des pending sur la page) */}
+      {pendingOnPage.length > 0 && (
+        <div className="flex items-center gap-3 mb-3 px-1">
+          <button
+            onClick={toggleSelectAllOnPage}
+            className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+          >
+            {allPendingOnPageSelected ? (
+              <CheckSquare className="w-4 h-4 text-slate-900" />
+            ) : (
+              <Square className="w-4 h-4 text-slate-400" />
+            )}
+            {isFr
+              ? `${allPendingOnPageSelected ? 'Désélectionner' : 'Sélectionner'} les ${pendingOnPage.length} en attente de cette page`
+              : `${allPendingOnPageSelected ? 'Deselect' : 'Select'} ${pendingOnPage.length} pending on this page`}
+          </button>
+        </div>
+      )}
+
       {/* Liste */}
       {loading ? (
         <div className="py-16 text-center">
@@ -440,10 +701,37 @@ function AdminTeachers() {
             const initials = name.split(' ').map(w => w.charAt(0)).slice(0, 2).join('').toUpperCase();
             const isSuspended = Boolean(t.user?.suspended_at);
             const busy = actionId === t.id;
+            const isPending = t.verification_status === 'pending';
+            const isSelected = selectedIds.has(t.id);
 
             return (
-              <div key={t.id} className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
+              <div
+                key={t.id}
+                className={`bg-white rounded-2xl border p-4 sm:p-5 transition-colors ${
+                  isSelected && isPending
+                    ? 'border-slate-900 bg-slate-50'
+                    : 'border-slate-200'
+                }`}
+              >
                 <div className="flex items-start gap-4">
+                  {/* Checkbox (uniquement pour les pending) */}
+                  {isPending ? (
+                    <button
+                      onClick={() => toggleSelect(t.id)}
+                      disabled={bulkAccepting}
+                      className="mt-1 shrink-0 disabled:opacity-50"
+                      aria-label={isSelected ? 'Désélectionner' : 'Sélectionner'}
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-5 h-5 text-slate-900" />
+                      ) : (
+                        <Square className="w-5 h-5 text-slate-300 hover:text-slate-500" />
+                      )}
+                    </button>
+                  ) : (
+                    <div className="w-5 shrink-0" />
+                  )}
+
                   <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
                     {t.profile_photo_url ? (
                       <img src={t.profile_photo_url} alt="" className="w-full h-full object-cover" />
@@ -454,14 +742,12 @@ function AdminTeachers() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <a
-                        href={`/teachers/${t.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-slate-900 hover:text-slate-600 truncate transition-colors"
+                      <button
+                        onClick={() => openPreview(t)}
+                        className="font-semibold text-slate-900 hover:text-slate-600 truncate transition-colors text-left"
                       >
                         {name}
-                      </a>
+                      </button>
                       <StatusBadge status={t.verification_status} isFr={isFr} />
                       {isSuspended && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
@@ -495,21 +781,19 @@ function AdminTeachers() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                    <a
-                      href={`/teachers/${t.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={isFr ? 'Voir le profil public' : 'View public profile'}
+                    <button
+                      onClick={() => openPreview(t)}
+                      title={isFr ? 'Aperçu du profil' : 'Preview profile'}
                       className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     >
                       <Eye className="w-4 h-4" />
-                    </a>
+                    </button>
 
                     {t.verification_status === 'pending' && (
                       <>
                         <button
                           onClick={() => updateStatus(t.id, 'verified')}
-                          disabled={busy}
+                          disabled={busy || bulkAccepting}
                           title={isFr ? 'Valider' : 'Approve'}
                           className="w-9 h-9 rounded-lg flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
                         >
@@ -517,11 +801,47 @@ function AdminTeachers() {
                         </button>
                         <button
                           onClick={() => { setRejectTarget(t); setRejectReason(''); }}
-                          disabled={busy}
+                          disabled={busy || bulkAccepting}
                           title={isFr ? 'Refuser' : 'Reject'}
                           className="w-9 h-9 rounded-lg flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
                         >
                           <XCircle className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+
+                    {t.verification_status === 'rejected' && (
+                      <>
+                        {/* Repêcher : accepter directement AVEC mail */}
+                        <button
+                          onClick={() => {
+                            if (confirm(isFr
+                              ? 'Repêcher ce prof ? Il sera immédiatement validé et recevra un email de confirmation.'
+                              : 'Restore this teacher? They will be immediately verified and receive a confirmation email.')) {
+                              updateStatus(t.id, 'verified');
+                            }
+                          }}
+                          disabled={busy}
+                          title={isFr ? 'Repêcher (accepter + email)' : 'Restore (approve + email)'}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                        >
+                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                        </button>
+
+                        {/* Remettre en attente SANS mail */}
+                        <button
+                          onClick={() => {
+                            if (confirm(isFr
+                              ? 'Remettre ce prof en attente de vérification ? Aucun email ne sera envoyé.'
+                              : 'Put this teacher back to pending? No email will be sent.')) {
+                              updateStatus(t.id, 'pending');
+                            }
+                          }}
+                          disabled={busy}
+                          title={isFr ? 'Remettre en attente (sans email)' : 'Back to pending (no email)'}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
                         </button>
                       </>
                     )}
@@ -607,10 +927,416 @@ function AdminTeachers() {
         </div>
       )}
 
-      {/* ═══ MODALE REFUS ═══ */}
+      {/* ═══ BARRE FLOTTANTE ACTIONS GROUPÉES ═══ */}
+      {pendingSelectedCount > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900 text-white shadow-2xl border-t border-slate-800">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            {bulkAccepting ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>
+                    {bulkProgress.action === 'accept'
+                      ? (isFr ? 'Validation en cours…' : 'Approving…')
+                      : (isFr ? 'Refus en cours…' : 'Rejecting…')}
+                  </span>
+                  <span className="tabular-nums font-semibold">
+                    {bulkProgress.done} / {bulkProgress.total}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-300"
+                    style={{
+                      width: `${bulkProgress.total > 0 ? (bulkProgress.done / bulkProgress.total) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-bold">{pendingSelectedCount}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">
+                      {isFr
+                        ? `${pendingSelectedCount} prof${pendingSelectedCount > 1 ? 's' : ''} en attente sélectionné${pendingSelectedCount > 1 ? 's' : ''}`
+                        : `${pendingSelectedCount} pending teacher${pendingSelectedCount > 1 ? 's' : ''} selected`}
+                    </p>
+                    <button
+                      onClick={clearSelection}
+                      className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                      {isFr ? 'Tout désélectionner' : 'Deselect all'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { setBulkRejectOpen(true); setBulkRejectReason(''); }}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl border border-red-500 text-red-400 hover:bg-red-500/10 text-sm font-medium transition-colors"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    {isFr ? 'Refuser' : 'Reject'}
+                  </button>
+                  <button
+                    onClick={handleBulkAccept}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-sm transition-colors"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {isFr ? 'Accepter' : 'Approve'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ MODALE APERÇU PROFIL ═══ */}
+      {previewTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4"
+          onClick={() => setPreviewTarget(null)}
+        >
+          <div
+            className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-4 border-b border-slate-200 shrink-0 bg-white">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-slate-600" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-slate-900 truncate">
+                    {isFr ? 'Aperçu du profil' : 'Profile preview'}
+                  </h3>
+                  <p className="text-xs text-slate-500 truncate">
+                    {[previewTarget.user?.first_name, previewTarget.user?.last_name].filter(Boolean).join(' ')}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewTarget(null)}
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {previewLoading ? (
+                <div className="py-20 text-center">
+                  <Loader2 className="w-6 h-6 text-slate-400 animate-spin mx-auto" />
+                </div>
+              ) : !previewData?.profile ? (
+                <div className="py-20 text-center text-sm text-slate-500">
+                  {isFr ? 'Impossible de charger le profil.' : 'Failed to load profile.'}
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <div className="relative w-full h-32 sm:h-40 bg-slate-100 overflow-hidden">
+                      {previewData.profile.cover_url ? (
+                        <img
+                          src={previewData.profile.cover_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : previewData.profile.profile_photo_url ? (
+                        <>
+                          <img
+                            src={previewData.profile.profile_photo_url}
+                            alt=""
+                            className="w-full h-full object-cover blur-sm scale-110"
+                          />
+                          <div className="absolute inset-0 bg-slate-900/30" />
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-red-100 via-slate-100 to-red-50" />
+                      )}
+                    </div>
+
+                    <div className="px-5 sm:px-6 -mt-10 sm:-mt-12 relative">
+                      <div className="flex items-end gap-4">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white border-4 border-white overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
+                          {previewData.profile.profile_photo_url ? (
+                            <img
+                              src={previewData.profile.profile_photo_url}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white text-xl font-bold">
+                              {(previewTarget.user?.first_name?.[0] || previewTarget.user?.email?.[0] || '?').toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 pb-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-lg font-bold text-slate-900 truncate">
+                              {[previewTarget.user?.first_name, previewTarget.user?.last_name].filter(Boolean).join(' ') || '—'}
+                            </h4>
+                            <StatusBadge status={previewData.profile.verification_status} isFr={isFr} />
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">
+                            {previewTarget.user?.email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5 sm:p-6 space-y-5">
+
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">
+                        {isFr ? 'Titre du profil' : 'Profile headline'}
+                      </p>
+                      {previewData.profile.headline ? (
+                        <p className="text-sm text-slate-800 font-medium">
+                          {previewData.profile.headline}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-red-500 italic flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {isFr ? 'Non renseigné' : 'Missing'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">
+                        {isFr ? 'Biographie' : 'Biography'}
+                      </p>
+                      {previewData.profile.bio ? (
+                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {previewData.profile.bio}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-red-500 italic flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {isFr ? 'Non renseignée' : 'Missing'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-slate-50 rounded-xl p-3.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1 flex items-center gap-1.5">
+                          <Heart className="w-3 h-3" />
+                          {isFr ? 'Tarif' : 'Rate'}
+                        </p>
+                        {previewData.profile.hourly_rate ? (
+                          <p className="text-sm font-semibold text-slate-900">
+                            {formatRate(previewData.profile.hourly_rate, previewData.profile.rate_period, isFr)}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-red-500 italic">
+                            {isFr ? 'Non renseigné' : 'Missing'}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-50 rounded-xl p-3.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1 flex items-center gap-1.5">
+                          <Home className="w-3 h-3" />
+                          {isFr ? 'Mode' : 'Mode'}
+                        </p>
+                        {previewData.profile.teaching_mode ? (
+                          <p className="text-sm font-semibold text-slate-900">
+                            {modeLabel(previewData.profile.teaching_mode, isFr)}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-red-500 italic">
+                            {isFr ? 'Non renseigné' : 'Missing'}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-50 rounded-xl p-3.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1 flex items-center gap-1.5">
+                          <MapPin className="w-3 h-3" />
+                          {isFr ? 'Ville' : 'City'}
+                        </p>
+                        {previewData.profile.city?.name ? (
+                          <p className="text-sm font-semibold text-slate-900">
+                            {previewData.profile.city.name}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-red-500 italic">
+                            {isFr ? 'Non renseignée' : 'Missing'}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-50 rounded-xl p-3.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1 flex items-center gap-1.5">
+                          <Star className="w-3 h-3" />
+                          {isFr ? 'Expérience' : 'Experience'}
+                        </p>
+                        {previewData.profile.experience_years ? (
+                          <p className="text-sm font-semibold text-slate-900">
+                            {previewData.profile.experience_years} {isFr ? 'an' : 'yr'}
+                            {previewData.profile.experience_years > 1 ? 's' : ''}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-slate-400">
+                            {isFr ? 'Non renseignée' : 'Not set'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-1.5">
+                        <BookOpen className="w-3 h-3" />
+                        {isFr ? 'Matières enseignées' : 'Subjects taught'}
+                      </p>
+                      {previewData.subjects.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {previewData.subjects.map(s => (
+                            <span
+                              key={s.id}
+                              className="inline-flex items-center text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg font-medium"
+                            >
+                              {isFr ? s.name_fr : s.name_en}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-red-500 italic flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {isFr ? 'Aucune matière sélectionnée' : 'No subject selected'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-1.5">
+                        <TrendingUp className="w-3 h-3" />
+                        {isFr ? 'Niveaux scolaires' : 'Grade levels'}
+                      </p>
+                      {previewData.levels.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {previewData.levels.map(l => (
+                            <span
+                              key={l.id}
+                              className="inline-flex items-center text-xs text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-lg font-medium"
+                            >
+                              {isFr ? l.name_fr : l.name_en}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-red-500 italic flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {isFr ? 'Aucun niveau sélectionné' : 'No level selected'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-500">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {isFr ? 'Inscrit' : 'Joined'} {formatRelative(previewData.profile.created_at, isFr)}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {previewData?.profile && (
+              <div className="border-t border-slate-200 p-4 flex items-center justify-end gap-2 shrink-0 bg-white flex-wrap">
+                {previewData.profile.verification_status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setRejectTarget(previewTarget);
+                        setRejectReason('');
+                      }}
+                      disabled={actionId === previewTarget.id}
+                      className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      {isFr ? 'Refuser' : 'Reject'}
+                    </button>
+                    <button
+                      onClick={() => updateStatus(previewTarget.id, 'verified')}
+                      disabled={actionId === previewTarget.id}
+                      className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
+                    >
+                      {actionId === previewTarget.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <CheckCircle2 className="w-4 h-4" />}
+                      {isFr ? 'Valider' : 'Approve'}
+                    </button>
+                  </>
+                )}
+
+                {previewData.profile.verification_status === 'rejected' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (confirm(isFr
+                          ? 'Remettre ce prof en attente de vérification ? Aucun email ne sera envoyé.'
+                          : 'Put this teacher back to pending? No email will be sent.')) {
+                          updateStatus(previewTarget.id, 'pending');
+                        }
+                      }}
+                      disabled={actionId === previewTarget.id}
+                      className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    >
+                      <Clock className="w-4 h-4" />
+                      {isFr ? 'Remettre en attente' : 'Back to pending'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(isFr
+                          ? 'Repêcher ce prof ? Il sera immédiatement validé et recevra un email.'
+                          : 'Restore this teacher? They will be immediately verified and receive an email.')) {
+                          updateStatus(previewTarget.id, 'verified');
+                        }
+                      }}
+                      disabled={actionId === previewTarget.id}
+                      className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
+                    >
+                      {actionId === previewTarget.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <CheckCircle2 className="w-4 h-4" />}
+                      {isFr ? 'Repêcher' : 'Restore'}
+                    </button>
+                  </>
+                )}
+
+                {previewData.profile.verification_status === 'verified' && (
+                  <button
+                    onClick={() => {
+                      if (confirm(isFr
+                        ? 'Remettre ce prof en attente de vérification ? Il sera masqué de la recherche publique.'
+                        : 'Put this teacher back to pending? They will be hidden from public search.')) {
+                        updateStatus(previewTarget.id, 'pending');
+                      }
+                    }}
+                    disabled={actionId === previewTarget.id}
+                    className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  >
+                    <Clock className="w-4 h-4" />
+                    {isFr ? 'Remettre en attente' : 'Back to pending'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ MODALE REFUS SIMPLE ═══ */}
       {rejectTarget && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => actionId !== rejectTarget.id && setRejectTarget(null)}
         >
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
@@ -670,6 +1396,7 @@ function AdminTeachers() {
                   await updateStatus(rejectTarget.id, 'rejected', rejectReason.trim());
                   setRejectTarget(null);
                   setRejectReason('');
+                  setPreviewTarget(null);
                 }}
                 disabled={actionId === rejectTarget.id || !rejectReason.trim()}
                 className="flex-1 h-11 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
@@ -682,9 +1409,84 @@ function AdminTeachers() {
         </div>
       )}
 
+      {/* ═══ MODALE REFUS GROUPÉ ═══ */}
+      {bulkRejectOpen && (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setBulkRejectOpen(false)}
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {isFr
+                    ? `Refuser ${pendingSelectedCount} prof${pendingSelectedCount > 1 ? 's' : ''} ?`
+                    : `Reject ${pendingSelectedCount} teacher${pendingSelectedCount > 1 ? 's' : ''}?`}
+                </h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {isFr
+                    ? 'La même raison sera envoyée à tous.'
+                    : 'The same reason will be sent to all.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setBulkRejectOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                {isFr ? 'Raison du refus (commune)' : 'Rejection reason (shared)'}
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <textarea
+                value={bulkRejectReason}
+                onChange={e => setBulkRejectReason(e.target.value)}
+                rows={4}
+                placeholder={isFr
+                  ? 'Ex : Profil incomplet — merci de compléter votre bio, vos matières et votre tarif avant de resoumettre.'
+                  : 'Ex: Incomplete profile — please complete your bio, subjects and rate before resubmitting.'}
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/10 resize-none"
+                autoFocus
+              />
+              <p className="text-xs text-slate-500 mt-1.5">
+                {isFr
+                  ? `Les ${pendingSelectedCount} profs recevront ce même message par email.`
+                  : `All ${pendingSelectedCount} teachers will receive this same message by email.`}
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setBulkRejectOpen(false)}
+                className="flex-1 h-11 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50"
+              >
+                {isFr ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleBulkReject}
+                disabled={!bulkRejectReason.trim()}
+                className="flex-1 h-11 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                {isFr
+                  ? `Refuser ${pendingSelectedCount}`
+                  : `Reject ${pendingSelectedCount}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Suspendre */}
       {suspendTarget && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
             onClick={() => actionId !== suspendTarget.id && setSuspendTarget(null)}
@@ -762,7 +1564,7 @@ function AdminTeachers() {
 
       {/* Modal Supprimer */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
             onClick={() => actionId !== deleteTarget.id && setDeleteTarget(null)}

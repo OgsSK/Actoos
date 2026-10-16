@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, GraduationCap, Users, Flag } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Users, Flag, Mail } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 
 export default function AdminNav() {
@@ -15,6 +15,7 @@ export default function AdminNav() {
     { href: '/admin/teachers',  icon: GraduationCap,   labelFr: 'Professeurs',    labelEn: 'Teachers' },
     { href: '/admin/users',     icon: Users,           labelFr: 'Utilisateurs',   labelEn: 'Users' },
     { href: '/admin/reports',   icon: Flag,            labelFr: 'Signalements',   labelEn: 'Reports' },
+    { href: '/admin/emails',    icon: Mail,            labelFr: 'Emails groupés', labelEn: 'Bulk emails' },
   ];
 
   return (
