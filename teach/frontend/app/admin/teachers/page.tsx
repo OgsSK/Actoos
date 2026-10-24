@@ -119,7 +119,7 @@ function StatusBadge({ status, isFr }: { status: string | null; isFr: boolean })
   const cfg = config[status as keyof typeof config] ?? config.pending;
   const Icon = cfg.icon;
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.bg} ${cfg.text}`}>
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 sm:px-2.5 rounded-full border ${cfg.bg} ${cfg.text}`}>
       <Icon className="w-3 h-3" />
       {isFr ? cfg.labelFr : cfg.labelEn}
     </span>
@@ -550,7 +550,7 @@ function AdminTeachers() {
 
   return (
     <div className="min-h-screen bg-[#fffafa] text-slate-900 selection:bg-red-100 selection:text-red-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-40 sm:pb-32">
         
         {/* Header */}
         <FadeInSection>
@@ -579,7 +579,7 @@ function AdminTeachers() {
                 <button
                   key={f.key}
                   onClick={() => setFilter(f.key)}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold border whitespace-nowrap transition-all duration-200 ${
+                  className={`px-3.5 sm:px-4 py-2 rounded-full text-[11px] sm:text-xs font-semibold border whitespace-nowrap transition-all duration-200 ${
                     filter === f.key
                       ? 'border-red-500 bg-red-500 text-white shadow-sm'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:text-red-500'
@@ -611,7 +611,7 @@ function AdminTeachers() {
           <div className="flex items-center gap-3 mb-4 px-1">
             <button
               onClick={toggleSelectAllOnPage}
-              className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-red-600 transition-colors"
+              className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-700 hover:text-red-600 transition-colors"
             >
               {allPendingOnPageSelected ? (
                 <CheckSquare className="w-4 h-4 text-red-500" />
@@ -652,101 +652,115 @@ function AdminTeachers() {
               return (
                 <FadeInSection key={t.id} delay={Math.min(index * 30, 300)}>
                   <div
-                    className={`bg-white rounded-[1.35rem] border p-4 sm:p-5 transition-all duration-300 ${
+                    className={`bg-white rounded-2xl sm:rounded-[1.35rem] border p-4 sm:p-5 transition-all duration-300 ${
                       isSelected && isPending
                         ? 'border-red-500 shadow-md ring-2 ring-red-100'
                         : 'border-slate-200 hover:border-red-200 hover:shadow-lg'
                     }`}
                   >
-                    <div className="flex items-start gap-4">
-                      {/* Checkbox */}
-                      {isPending ? (
-                        <button
-                          onClick={() => toggleSelect(t.id)}
-                          disabled={bulkAccepting}
-                          className="mt-1 shrink-0 disabled:opacity-50 transition-transform active:scale-95"
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="w-5 h-5 text-red-500" />
-                          ) : (
-                            <Square className="w-5 h-5 text-slate-300 hover:text-red-400" />
-                          )}
-                        </button>
-                      ) : (
-                        <div className="w-5 shrink-0" />
-                      )}
-
-                      <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
-                        {t.profile_photo_url ? (
-                          <img src={t.profile_photo_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-slate-700 text-sm font-bold">{initials}</span>
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    {/* Layout mobile-first : colonne sur mobile, ligne sur desktop */}
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                      
+                      {/* Bloc infos (checkbox + avatar + texte) */}
+                      <div className="flex items-start gap-3 w-full sm:flex-1 sm:min-w-0">
+                        {/* Checkbox */}
+                        {isPending ? (
                           <button
-                            onClick={() => openPreview(t)}
-                            className="font-bold text-slate-900 hover:text-red-500 truncate transition-colors text-left text-base sm:text-lg"
+                            onClick={() => toggleSelect(t.id)}
+                            disabled={bulkAccepting}
+                            className="mt-1 shrink-0 disabled:opacity-50 transition-transform active:scale-95"
+                            aria-label={isSelected ? 'Désélectionner' : 'Sélectionner'}
                           >
-                            {name}
+                            {isSelected ? (
+                              <CheckSquare className="w-5 h-5 text-red-500" />
+                            ) : (
+                              <Square className="w-5 h-5 text-slate-300 hover:text-red-400" />
+                            )}
                           </button>
-                          <StatusBadge status={t.verification_status} isFr={isFr} />
-                          {isSuspended && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-                              <Ban className="w-3 h-3" />
-                              {isFr ? 'Suspendu' : 'Suspended'}
-                            </span>
-                          )}
-                        </div>
-
-                        {t.headline && (
-                          <p className="text-sm text-slate-600 truncate">{t.headline}</p>
+                        ) : (
+                          <div className="w-5 shrink-0" />
                         )}
 
-                        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
-                          {t.user?.email && (
-                            <span className="inline-flex items-center gap-1.5 truncate">
-                              <Mail className="w-3.5 h-3.5 text-slate-400" />
-                              {t.user.email}
-                            </span>
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                          {t.profile_photo_url ? (
+                            <img src={t.profile_photo_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-slate-700 text-sm font-bold">{initials}</span>
                           )}
-                          <span>{formatRelative(t.created_at, isFr)}</span>
                         </div>
 
-                        {isSuspended && t.user?.suspended_reason && (
-                          <div className="mt-2.5 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-800">
-                            <span className="font-semibold">{isFr ? 'Raison : ' : 'Reason: '}</span>
-                            {t.user.suspended_reason}
+                        {/* Texte */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <button
+                              onClick={() => openPreview(t)}
+                              className="font-bold text-slate-900 hover:text-red-500 truncate transition-colors text-left text-sm sm:text-base"
+                            >
+                              {name}
+                            </button>
+                            <StatusBadge status={t.verification_status} isFr={isFr} />
+                            {isSuspended && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                                <Ban className="w-3 h-3" />
+                                {isFr ? 'Suspendu' : 'Suspended'}
+                              </span>
+                            )}
                           </div>
-                        )}
+
+                          {t.headline && (
+                            <p className="text-xs sm:text-sm text-slate-600 truncate">{t.headline}</p>
+                          )}
+
+                          <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
+                            {t.user?.email && (
+                              <span className="inline-flex items-center gap-1.5 truncate max-w-[200px]">
+                                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="truncate">{t.user.email}</span>
+                              </span>
+                            )}
+                            <span className="shrink-0">{formatRelative(t.created_at, isFr)}</span>
+                          </div>
+
+                          {isSuspended && t.user?.suspended_reason && (
+                            <div className="mt-2.5 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-800">
+                              <span className="font-semibold">{isFr ? 'Raison : ' : 'Reason: '}</span>
+                              {t.user.suspended_reason}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                      {/* Actions (grille 2 colonnes sur mobile, flex sur desktop) */}
+                      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 w-full sm:w-auto shrink-0 mt-1 sm:mt-0">
+                        
+                        {/* Bouton Voir */}
                         <button
                           onClick={() => openPreview(t)}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                          className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 sm:bg-transparent sm:hover:bg-slate-100 border border-slate-200 sm:border-transparent transition-colors"
                         >
                           <Eye className="w-4 h-4" />
+                          <span className="sm:hidden">{isFr ? 'Voir' : 'View'}</span>
                         </button>
 
+                        {/* Actions conditionnelles */}
                         {t.verification_status === 'pending' && (
                           <>
                             <button
                               onClick={() => updateStatus(t.id, 'verified')}
                               disabled={busy || bulkAccepting}
-                              className="w-9 h-9 rounded-xl flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                              className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 sm:border-transparent disabled:opacity-50 transition-colors"
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                              <span className="sm:hidden">{isFr ? 'Valider' : 'Approve'}</span>
                             </button>
                             <button
                               onClick={() => { setRejectTarget(t); setRejectReason(''); }}
                               disabled={busy || bulkAccepting}
-                              className="w-9 h-9 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                              className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 sm:border-transparent disabled:opacity-50 transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
+                              <span className="sm:hidden">{isFr ? 'Refuser' : 'Reject'}</span>
                             </button>
                           </>
                         )}
@@ -762,9 +776,10 @@ function AdminTeachers() {
                                 }
                               }}
                               disabled={busy}
-                              className="w-9 h-9 rounded-xl flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                              className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 sm:border-transparent disabled:opacity-50 transition-colors"
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                              <span className="sm:hidden">{isFr ? 'Valider' : 'Approve'}</span>
                             </button>
                             <button
                               onClick={() => {
@@ -775,9 +790,10 @@ function AdminTeachers() {
                                 }
                               }}
                               disabled={busy}
-                              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                              className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 sm:border-transparent disabled:opacity-50 transition-colors"
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                              <span className="sm:hidden">{isFr ? 'En attente' : 'Pending'}</span>
                             </button>
                           </>
                         )}
@@ -793,16 +809,18 @@ function AdminTeachers() {
                                 }
                               }}
                               disabled={busy}
-                              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                              className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 sm:border-transparent disabled:opacity-50 transition-colors"
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                              <span className="sm:hidden">{isFr ? 'En attente' : 'Pending'}</span>
                             </button>
                             <button
                               onClick={() => setSuspendTarget(t)}
                               disabled={busy}
-                              className="w-9 h-9 rounded-xl flex items-center justify-center text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                              className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 sm:border-transparent disabled:opacity-50 transition-colors"
                             >
                               <Ban className="w-4 h-4" />
+                              <span className="sm:hidden">{isFr ? 'Suspendre' : 'Suspend'}</span>
                             </button>
                           </>
                         )}
@@ -811,18 +829,21 @@ function AdminTeachers() {
                           <button
                             onClick={() => handleReactivate(t.id)}
                             disabled={busy}
-                            className="w-9 h-9 rounded-xl flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                            className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 sm:border-transparent disabled:opacity-50 transition-colors"
                           >
                             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                            <span className="sm:hidden">{isFr ? 'Réactiver' : 'Reactivate'}</span>
                           </button>
                         )}
 
+                        {/* Bouton Supprimer */}
                         <button
                           onClick={() => setDeleteTarget(t)}
                           disabled={busy}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                          className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 sm:border-transparent sm:hover:bg-red-50 disabled:opacity-50 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
+                          <span className="sm:hidden">{isFr ? 'Supprimer' : 'Delete'}</span>
                         </button>
                       </div>
                     </div>
@@ -839,10 +860,10 @@ function AdminTeachers() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              {isFr ? 'Précédent' : 'Previous'}
+              <span className="hidden sm:inline">{isFr ? 'Précédent' : 'Previous'}</span>
             </button>
 
             <span className="text-xs font-semibold text-slate-500 tabular-nums">
@@ -852,9 +873,9 @@ function AdminTeachers() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {isFr ? 'Suivant' : 'Next'}
+              <span className="hidden sm:inline">{isFr ? 'Suivant' : 'Next'}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -884,16 +905,16 @@ function AdminTeachers() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
                       <span className="text-sm font-bold text-red-600">{pendingSelectedCount}</span>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-slate-900 truncate">
                         {isFr
-                          ? `${pendingSelectedCount} prof${pendingSelectedCount > 1 ? 's' : ''} en attente sélectionné${pendingSelectedCount > 1 ? 's' : ''}`
-                          : `${pendingSelectedCount} pending teacher${pendingSelectedCount > 1 ? 's' : ''} selected`}
+                          ? `${pendingSelectedCount} prof${pendingSelectedCount > 1 ? 's' : ''} sélectionné${pendingSelectedCount > 1 ? 's' : ''}`
+                          : `${pendingSelectedCount} teacher${pendingSelectedCount > 1 ? 's' : ''} selected`}
                       </p>
                       <button
                         onClick={clearSelection}
@@ -907,14 +928,14 @@ function AdminTeachers() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => { setBulkRejectOpen(true); setBulkRejectReason(''); }}
-                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 h-10 rounded-full border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold transition-colors"
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-11 sm:h-10 rounded-full border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold transition-colors"
                     >
                       <XCircle className="w-4 h-4" />
                       {isFr ? 'Refuser' : 'Reject'}
                     </button>
                     <button
                       onClick={handleBulkAccept}
-                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors active:scale-95"
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-11 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors active:scale-95"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       {isFr ? 'Accepter' : 'Approve'}
@@ -1038,7 +1059,7 @@ function AdminTeachers() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 flex items-center gap-1.5">
                             <Heart className="w-3 h-3" />
@@ -1142,13 +1163,13 @@ function AdminTeachers() {
               </div>
 
               {previewData?.profile && (
-                <div className="border-t border-slate-100 p-4 flex items-center justify-end gap-2 shrink-0 bg-white flex-wrap">
+                <div className="border-t border-slate-100 p-4 flex flex-wrap items-center justify-end gap-2 shrink-0 bg-white">
                   {previewData.profile.verification_status === 'pending' && (
                     <>
                       <button
                         onClick={() => { setRejectTarget(previewTarget); setRejectReason(''); }}
                         disabled={actionId === previewTarget.id}
-                        className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-full border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 h-11 sm:h-10 rounded-full border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
                       >
                         <XCircle className="w-4 h-4" />
                         {isFr ? 'Refuser' : 'Reject'}
@@ -1156,7 +1177,7 @@ function AdminTeachers() {
                       <button
                         onClick={() => updateStatus(previewTarget.id, 'verified')}
                         disabled={actionId === previewTarget.id}
-                        className="inline-flex items-center justify-center gap-2 px-6 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 h-11 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
                       >
                         {actionId === previewTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         {isFr ? 'Valider' : 'Approve'}
@@ -1173,10 +1194,10 @@ function AdminTeachers() {
                           }
                         }}
                         disabled={actionId === previewTarget.id}
-                        className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-full border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 h-11 sm:h-10 rounded-full border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
                       >
                         <Clock className="w-4 h-4" />
-                        {isFr ? 'Remettre en attente' : 'Back to pending'}
+                        {isFr ? 'En attente' : 'Pending'}
                       </button>
                       <button
                         onClick={() => {
@@ -1185,7 +1206,7 @@ function AdminTeachers() {
                           }
                         }}
                         disabled={actionId === previewTarget.id}
-                        className="inline-flex items-center justify-center gap-2 px-6 h-10 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 h-11 sm:h-10 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
                       >
                         {actionId === previewTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         {isFr ? 'Repêcher' : 'Restore'}
@@ -1201,7 +1222,7 @@ function AdminTeachers() {
                         }
                       }}
                       disabled={actionId === previewTarget.id}
-                      className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-full border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 h-11 sm:h-10 rounded-full border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
                     >
                       <Clock className="w-4 h-4" />
                       {isFr ? 'Remettre en attente' : 'Back to pending'}
@@ -1219,23 +1240,23 @@ function AdminTeachers() {
             className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => actionId !== rejectTarget.id && setRejectTarget(null)}
           >
-            <div className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
                   <XCircle className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? 'Refuser ce profil ?' : 'Reject this profile?'}
                   </h3>
-                  <p className="text-sm text-slate-500 truncate mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 truncate mt-0.5">
                     {rejectTarget.user?.email}
                   </p>
                 </div>
                 <button
                   onClick={() => setRejectTarget(null)}
                   disabled={actionId === rejectTarget.id}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1253,7 +1274,7 @@ function AdminTeachers() {
                   className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 resize-none transition-all"
                   autoFocus
                 />
-                <p className="text-xs text-slate-500 mt-1.5">
+                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                   {isFr ? 'Le prof recevra cette raison par email et pourra retenter sa candidature.' : 'The teacher will receive this reason by email and can retry their application.'}
                 </p>
               </div>
@@ -1290,20 +1311,20 @@ function AdminTeachers() {
             className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setBulkRejectOpen(false)}
           >
-            <div className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
                   <XCircle className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? `Refuser ${pendingSelectedCount} prof${pendingSelectedCount > 1 ? 's' : ''} ?` : `Reject ${pendingSelectedCount} teacher${pendingSelectedCount > 1 ? 's' : ''}?`}
                   </h3>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                     {isFr ? 'La même raison sera envoyée à tous.' : 'The same reason will be sent to all.'}
                   </p>
                 </div>
-                <button onClick={() => setBulkRejectOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                <button onClick={() => setBulkRejectOpen(false)} className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1320,7 +1341,7 @@ function AdminTeachers() {
                   className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 resize-none transition-all"
                   autoFocus
                 />
-                <p className="text-xs text-slate-500 mt-1.5">
+                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                   {isFr ? `Les ${pendingSelectedCount} profs recevront ce même message par email.` : `All ${pendingSelectedCount} teachers will receive this same message by email.`}
                 </p>
               </div>
@@ -1394,7 +1415,7 @@ function AdminTeachers() {
                     onChange={e => setSendSuspendEmail(e.target.checked)}
                     className="mt-0.5 w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
                   />
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-slate-700 leading-snug">
                     {isFr ? 'Envoyer un email d\'information au prof' : 'Send a notification email to the teacher'}
                   </span>
                 </label>
@@ -1404,14 +1425,14 @@ function AdminTeachers() {
                 <button
                   onClick={() => setSuspendTarget(null)}
                   disabled={actionId === suspendTarget.id}
-                  className="px-5 h-10 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="flex-1 sm:flex-none px-5 h-11 sm:h-10 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                 >
                   {isFr ? 'Annuler' : 'Cancel'}
                 </button>
                 <button
                   onClick={handleSuspend}
                   disabled={actionId === suspendTarget.id || !suspendReason.trim()}
-                  className="inline-flex items-center justify-center gap-2 px-6 h-10 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 h-11 sm:h-10 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
                 >
                   {actionId === suspendTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
                   {isFr ? 'Suspendre' : 'Suspend'}
@@ -1449,14 +1470,14 @@ function AdminTeachers() {
                 <button
                   onClick={() => setDeleteTarget(null)}
                   disabled={actionId === deleteTarget.id}
-                  className="px-5 h-10 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="flex-1 sm:flex-none px-5 h-11 sm:h-10 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                 >
                   {isFr ? 'Annuler' : 'Cancel'}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={actionId === deleteTarget.id}
-                  className="inline-flex items-center justify-center gap-2 px-6 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 h-11 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 active:scale-95"
                 >
                   {actionId === deleteTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   {isFr ? 'Supprimer' : 'Delete'}

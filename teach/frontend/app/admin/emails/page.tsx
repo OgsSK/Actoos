@@ -320,11 +320,11 @@ export default function AdminEmailsPage() {
 
   return (
     <div className="min-h-screen bg-[#fffafa] text-slate-900 selection:bg-red-100 selection:text-red-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32">
-        
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-12 sm:pb-16">
+
         {/* En-tête */}
         <FadeInSection>
-          <div className="mb-8 sm:mb-10">
+          <div className="mb-6 sm:mb-10">
             <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.16em] text-red-500 mb-1.5 sm:mb-2">
               {isFr ? 'Communication' : 'Communication'}
             </p>
@@ -340,14 +340,14 @@ export default function AdminEmailsPage() {
         </FadeInSection>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          
+
           {/* Colonne gauche - Sélection */}
           <div className="lg:col-span-3 space-y-4">
             <FadeInSection delay={50}>
               <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl mb-4">
                 <button
                   onClick={() => setMode('segment')}
-                  className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  className={`flex-1 h-11 sm:h-10 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     mode === 'segment'
                       ? 'bg-white text-slate-900 shadow-sm'
                       : 'text-slate-500 hover:text-slate-800'
@@ -357,7 +357,7 @@ export default function AdminEmailsPage() {
                 </button>
                 <button
                   onClick={() => setMode('selection')}
-                  className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  className={`flex-1 h-11 sm:h-10 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     mode === 'selection'
                       ? 'bg-white text-slate-900 shadow-sm'
                       : 'text-slate-500 hover:text-slate-800'
@@ -380,7 +380,7 @@ export default function AdminEmailsPage() {
                     <FadeInSection key={seg} delay={Math.min(100, 50)}>
                       <button
                         onClick={() => setSelectedSegment(active ? null : seg)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-[1.35rem] border transition-all duration-300 text-left ${
+                        className={`w-full flex items-center gap-3 sm:gap-4 p-4 rounded-[1.35rem] border transition-all duration-300 text-left min-h-[72px] ${
                           active
                             ? 'border-red-500 bg-red-50/20 shadow-md ring-2 ring-red-100'
                             : 'border-slate-200 bg-white hover:border-red-200 hover:shadow-lg'
@@ -412,8 +412,8 @@ export default function AdminEmailsPage() {
             {mode === 'selection' && (
               <FadeInSection delay={100}>
                 <div className="space-y-4">
-                  <div className="flex flex-wrap gap-3">
-                    <div className="relative flex-1 min-w-[200px]">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
                       <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
@@ -423,7 +423,7 @@ export default function AdminEmailsPage() {
                         className="w-full h-12 pl-11 pr-4 rounded-[1.35rem] border border-slate-200 bg-white text-sm focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all shadow-sm"
                       />
                     </div>
-                    <div className="relative flex-1 sm:flex-none">
+                    <div className="relative w-full sm:w-auto">
                       <select
                         value={roleFilter}
                         onChange={e => setRoleFilter(e.target.value as any)}
@@ -443,31 +443,31 @@ export default function AdminEmailsPage() {
                     <button
                       onClick={selectAllFiltered}
                       disabled={filteredForSelection.length === 0}
-                      className="text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 h-9 rounded-full border border-slate-200 bg-white hover:border-red-200 hover:text-red-500 disabled:opacity-40 transition-colors"
+                      className="text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 h-10 sm:h-9 rounded-full border border-slate-200 bg-white hover:border-red-200 hover:text-red-500 disabled:opacity-40 transition-colors"
                     >
                       {isFr ? 'Tout sélectionner' : 'Select all'}
                     </button>
                     <button
                       onClick={deselectAllFiltered}
                       disabled={filteredForSelection.length === 0}
-                      className="text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 h-9 rounded-full border border-slate-200 bg-white hover:border-red-200 hover:text-red-500 disabled:opacity-40 transition-colors"
+                      className="text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 h-10 sm:h-9 rounded-full border border-slate-200 bg-white hover:border-red-200 hover:text-red-500 disabled:opacity-40 transition-colors"
                     >
                       {isFr ? 'Tout désélectionner' : 'Deselect all'}
                     </button>
                     {selectedIds.size > 0 && (
                       <button
                         onClick={() => setSelectedIds(new Set())}
-                        className="text-xs font-semibold text-red-600 hover:text-red-700 px-3 h-9 rounded-full hover:bg-red-50 transition-colors"
+                        className="text-xs font-semibold text-red-600 hover:text-red-700 px-3 h-10 sm:h-9 rounded-full hover:bg-red-50 transition-colors"
                       >
                         {isFr ? 'Vider' : 'Clear'}
                       </button>
                     )}
-                    <span className="text-xs font-bold text-slate-500 ml-auto bg-slate-100 px-3 py-1 rounded-full">
+                    <span className="text-xs font-bold text-slate-500 ml-auto bg-slate-100 px-3 py-1.5 rounded-full">
                       {isFr ? `${selectedIds.size} sélectionné${selectedIds.size > 1 ? 's' : ''}` : `${selectedIds.size} selected`}
                     </span>
                   </div>
 
-                  <div className="border border-slate-200 rounded-[1.35rem] bg-white max-h-[500px] overflow-y-auto shadow-sm">
+                  <div className="border border-slate-200 rounded-[1.35rem] bg-white max-h-[400px] sm:max-h-[500px] overflow-y-auto shadow-sm">
                     {loading ? (
                       <div className="py-16 text-center">
                         <Loader2 className="w-6 h-6 text-red-500 animate-spin mx-auto" />
@@ -487,12 +487,12 @@ export default function AdminEmailsPage() {
 
                           return (
                             <li key={u.id}>
-                              <label className="flex items-center gap-3 px-4 py-3 hover:bg-red-50/30 cursor-pointer transition-colors">
+                              <label className="flex items-start sm:items-center gap-3 px-4 py-3.5 hover:bg-red-50/30 cursor-pointer transition-colors">
                                 <input
                                   type="checkbox"
                                   checked={selected}
                                   onChange={() => toggleOne(u.id)}
-                                  className="w-4 h-4 rounded border-slate-300 text-red-500 focus:ring-red-500"
+                                  className="mt-1 sm:mt-0 shrink-0 w-5 h-5 sm:w-4 sm:h-4 rounded border-slate-300 text-red-500 focus:ring-red-500 cursor-pointer"
                                 />
                                 <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shrink-0 shadow-sm">
                                   <span className="text-[11px] font-bold text-white">{initials}</span>
@@ -500,8 +500,29 @@ export default function AdminEmailsPage() {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
                                   <p className="text-xs font-medium text-slate-500 truncate">{u.email}</p>
+
+                                  {/* Badges mobile : sous le nom */}
+                                  <div className="flex flex-wrap gap-1.5 mt-1.5 sm:hidden">
+                                    {u.roles.is_verified_teacher && (
+                                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">
+                                        PROF ✓
+                                      </span>
+                                    )}
+                                    {u.roles.is_teacher && !u.roles.is_verified_teacher && (
+                                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                                        PROF
+                                      </span>
+                                    )}
+                                    {u.roles.is_parent && (
+                                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700">
+                                        PARENT
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex gap-1.5 shrink-0">
+
+                                {/* Badges desktop : à droite */}
+                                <div className="hidden sm:flex gap-1.5 shrink-0">
                                   {u.roles.is_verified_teacher && (
                                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">
                                       PROF ✓
@@ -557,7 +578,7 @@ export default function AdminEmailsPage() {
                     <textarea
                       value={message}
                       onChange={e => setMessage(e.target.value)}
-                      rows={8}
+                      rows={6}
                       placeholder={isFr
                         ? 'Écrivez votre message ici…\n\nLaissez une ligne vide pour séparer les paragraphes.'
                         : 'Write your message here…\n\nLeave a blank line to separate paragraphs.'}
@@ -594,7 +615,7 @@ export default function AdminEmailsPage() {
                   </div>
 
                   <details className="text-sm group">
-                    <summary className="cursor-pointer font-semibold text-slate-600 hover:text-slate-900 py-1 flex items-center justify-between select-none">
+                    <summary className="cursor-pointer font-semibold text-slate-600 hover:text-slate-900 py-2 flex items-center justify-between select-none">
                       {isFr ? 'Bouton d\'action (optionnel)' : 'Action button (optional)'}
                       <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
                     </summary>
@@ -696,8 +717,8 @@ export default function AdminEmailsPage() {
           className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => !sending && setConfirmOpen(false)}
         >
-          <div 
-            className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200" 
+          <div
+            className="bg-white rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
             <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mb-5 border border-amber-100">
@@ -712,11 +733,9 @@ export default function AdminEmailsPage() {
                 : `You're about to send this email to ${recipientCount} recipient${recipientCount > 1 ? 's' : ''}.`}
             </p>
             <p className="text-xs text-slate-500 mb-6 font-medium">
-              {isFr
-                ? 'Cette action est irréversible.'
-                : 'This action is irreversible.'}
+              {isFr ? 'Cette action est irréversible.' : 'This action is irreversible.'}
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-col-reverse sm:flex-row gap-2">
               <button
                 onClick={() => setConfirmOpen(false)}
                 className="flex-1 h-11 rounded-full border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"

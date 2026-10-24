@@ -247,7 +247,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-[#fffafa] text-slate-900 selection:bg-red-100 selection:text-red-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-20 sm:pb-32">
 
         {/* En-tête */}
         <FadeInSection>
@@ -277,7 +277,7 @@ export default function AdminUsersPage() {
                   <button
                     key={tab.key}
                     onClick={() => setFilter(tab.key)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold border whitespace-nowrap transition-all duration-200 ${
+                    className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full text-[11px] sm:text-xs font-semibold border whitespace-nowrap transition-all duration-200 ${
                       active
                         ? 'border-red-500 bg-red-500 text-white shadow-sm'
                         : 'border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:text-red-500'
@@ -295,7 +295,7 @@ export default function AdminUsersPage() {
               })}
             </div>
 
-            <div className="relative max-w-md">
+            <div className="relative w-full max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
@@ -315,7 +315,7 @@ export default function AdminUsersPage() {
           </div>
         ) : paginated.length === 0 ? (
           <FadeInSection>
-            <div className="bg-white rounded-[1.35rem] border border-slate-200 p-16 text-center">
+            <div className="bg-white rounded-[1.35rem] border border-slate-200 p-16 text-center shadow-sm">
               <Users className="w-10 h-10 text-red-200 mx-auto mb-3" />
               <p className="text-sm font-semibold text-slate-900 mb-1">
                 {isFr ? 'Aucun utilisateur trouvé' : 'No users found'}
@@ -347,7 +347,7 @@ export default function AdminUsersPage() {
                   return (
                     <div
                       key={user.id}
-                      className="grid grid-cols-1 md:grid-cols-[1.5fr_1.5fr_1fr_1fr_auto] gap-4 px-6 py-4 hover:bg-red-50/30 transition-colors items-center"
+                      className="flex flex-col md:grid md:grid-cols-[1.5fr_1.5fr_1fr_1fr_auto] gap-3 md:gap-4 px-4 sm:px-6 py-4 hover:bg-red-50/30 transition-colors md:items-center"
                     >
                       {/* User */}
                       <div className="flex items-center gap-3 min-w-0">
@@ -358,14 +358,21 @@ export default function AdminUsersPage() {
                         }`}>
                           {initials}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-bold text-slate-900 truncate">{fullName}</p>
-                          {suspended && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 mt-0.5">
-                              <Ban className="w-3 h-3" />
-                              {isFr ? 'Suspendu' : 'Suspended'}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {suspended && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-600">
+                                <Ban className="w-3 h-3" />
+                                {isFr ? 'Suspendu' : 'Suspended'}
+                              </span>
+                            )}
+                            {/* Date visible sur mobile ici */}
+                            <span className="md:hidden text-[11px] text-slate-500 flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(user.created_at).toLocaleDateString(isFr ? 'fr-FR' : 'en-US')}
                             </span>
-                          )}
+                          </div>
                         </div>
                       </div>
 
@@ -390,30 +397,30 @@ export default function AdminUsersPage() {
                         )}
                       </div>
 
-                      {/* Date */}
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                      {/* Date (desktop) */}
+                      <div className="hidden md:flex items-center gap-1.5 text-xs font-medium text-slate-500">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         {new Date(user.created_at).toLocaleDateString(isFr ? 'fr-FR' : 'en-US')}
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2 justify-end">
+                      <div className="flex items-center gap-2 mt-3 md:mt-0 md:justify-end">
                         {suspended ? (
                           <button
                             onClick={() => setReactivateTarget(user)}
                             disabled={isWorking}
-                            className="inline-flex items-center justify-center gap-1.5 px-4 h-9 rounded-full text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors disabled:opacity-50 active:scale-95"
+                            className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 h-11 md:h-9 rounded-full text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors disabled:opacity-50 active:scale-95"
                           >
-                            {isWorking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                            {isWorking ? <Loader2 className="w-4 h-4 md:w-3.5 md:h-3.5 animate-spin" /> : <RotateCcw className="w-4 h-4 md:w-3.5 md:h-3.5" />}
                             {isFr ? 'Réactiver' : 'Reactivate'}
                           </button>
                         ) : (
                           <button
                             onClick={() => setSuspendTarget(user)}
                             disabled={isWorking}
-                            className="inline-flex items-center justify-center gap-1.5 px-4 h-9 rounded-full text-xs font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50 active:scale-95"
+                            className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 h-11 md:h-9 rounded-full text-xs font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50 active:scale-95"
                           >
-                            {isWorking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                            {isWorking ? <Loader2 className="w-4 h-4 md:w-3.5 md:h-3.5 animate-spin" /> : <Ban className="w-4 h-4 md:w-3.5 md:h-3.5" />}
                             {isFr ? 'Suspendre' : 'Suspend'}
                           </button>
                         )}
@@ -438,7 +445,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 h-11 sm:h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{isFr ? 'Précédent' : 'Previous'}</span>
@@ -451,7 +458,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 h-11 sm:h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <span className="hidden sm:inline">{isFr ? 'Suivant' : 'Next'}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -467,18 +474,18 @@ export default function AdminUsersPage() {
             onClick={() => actionId !== suspendTarget.id && setSuspendTarget(null)}
           >
             <div
-              className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
                   <AlertTriangle className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? 'Suspendre ce compte ?' : 'Suspend this account?'}
                   </h3>
-                  <p className="text-sm text-slate-500 truncate mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 truncate mt-0.5">
                     {suspendTarget.email}
                   </p>
                 </div>
@@ -522,7 +529,7 @@ export default function AdminUsersPage() {
                 </label>
               </div>
 
-              <div className="flex gap-2 mt-6">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 mt-6">
                 <button
                   onClick={() => setSuspendTarget(null)}
                   disabled={actionId === suspendTarget.id}
@@ -550,18 +557,18 @@ export default function AdminUsersPage() {
             onClick={() => actionId !== reactivateTarget.id && setReactivateTarget(null)}
           >
             <div
-              className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
                   <ShieldCheck className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? 'Réactiver ce compte ?' : 'Reactivate this account?'}
                   </h3>
-                  <p className="text-sm text-slate-500 truncate mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 truncate mt-0.5">
                     {reactivateTarget.email}
                   </p>
                 </div>
@@ -580,7 +587,7 @@ export default function AdminUsersPage() {
                   : 'The user will immediately regain access to the platform. A notification email will be sent.'}
               </p>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col-reverse sm:flex-row gap-2">
                 <button
                   onClick={() => setReactivateTarget(null)}
                   disabled={actionId === reactivateTarget.id}

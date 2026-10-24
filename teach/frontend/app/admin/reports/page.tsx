@@ -456,7 +456,7 @@ export default function AdminReportsPage() {
                 <button
                   key={tab.key}
                   onClick={() => setStatusFilter(tab.key)}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold border whitespace-nowrap transition-all duration-200 ${
+                  className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full text-[11px] sm:text-xs font-semibold border whitespace-nowrap transition-all duration-200 ${
                     active
                       ? 'border-red-500 bg-red-500 text-white shadow-sm'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:text-red-500'
@@ -476,8 +476,8 @@ export default function AdminReportsPage() {
 
         {/* Filtres avancés */}
         <FadeInSection delay={100}>
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-3 mb-6">
+            <div className="relative w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
@@ -487,12 +487,12 @@ export default function AdminReportsPage() {
                 className="w-full pl-11 pr-4 h-12 rounded-[1.35rem] border border-slate-200 bg-white text-sm focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all shadow-sm"
               />
             </div>
-            <div className="flex gap-3">
-              <div className="relative flex-1 sm:flex-none">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="relative w-full">
                 <select
                   value={contextFilter}
                   onChange={e => setContextFilter(e.target.value as ContextFilter)}
-                  className="w-full sm:w-auto appearance-none bg-white rounded-[1.35rem] pl-4 pr-10 h-12 text-sm font-medium border border-slate-200 text-slate-700 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all cursor-pointer shadow-sm"
+                  className="w-full appearance-none bg-white rounded-[1.35rem] pl-4 pr-10 h-12 text-sm font-medium border border-slate-200 text-slate-700 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all cursor-pointer shadow-sm"
                 >
                   <option value="all">{isFr ? 'Tous types' : 'All types'}</option>
                   <option value="profile">{isFr ? 'Profils' : 'Profiles'}</option>
@@ -500,11 +500,11 @@ export default function AdminReportsPage() {
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
-              <div className="relative flex-1 sm:flex-none">
+              <div className="relative w-full">
                 <select
                   value={categoryFilter}
                   onChange={e => setCategoryFilter(e.target.value as CategoryFilter)}
-                  className="w-full sm:w-auto appearance-none bg-white rounded-[1.35rem] pl-4 pr-10 h-12 text-sm font-medium border border-slate-200 text-slate-700 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all cursor-pointer shadow-sm"
+                  className="w-full appearance-none bg-white rounded-[1.35rem] pl-4 pr-10 h-12 text-sm font-medium border border-slate-200 text-slate-700 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all cursor-pointer shadow-sm"
                 >
                   <option value="all">{isFr ? 'Toutes catégories' : 'All categories'}</option>
                   {Object.entries(CATEGORY_LABELS).map(([key, lbl]) => (
@@ -561,77 +561,84 @@ export default function AdminReportsPage() {
                   return (
                     <div
                       key={report.id}
-                      className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-6 py-4 hover:bg-red-50/30 transition-colors items-center"
+                      className="flex flex-col md:grid md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-3 md:gap-4 px-4 sm:px-6 py-4 hover:bg-red-50/30 transition-colors md:items-center"
                     >
                       {/* Signalement */}
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-slate-900 truncate">
-                          {reporterName} <span className="text-slate-400 font-normal">→</span> {reportedName}
+                          {reporterName} <span className="text-slate-400 font-normal px-0.5">→</span> {reportedName}
                         </p>
-                        <p className="text-xs text-slate-500 truncate mt-0.5">
+                        <p className="text-xs text-slate-500 truncate mt-1">
                           {report.context === 'review' && report.review?.comment
                             ? `« ${report.review.comment.slice(0, 60)}${report.review.comment.length > 60 ? '…' : ''} »`
                             : report.description.slice(0, 80) + (report.description.length > 80 ? '…' : '')}
                         </p>
                       </div>
 
-                      {/* Type + catégorie */}
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      {/* Type + catégorie + date (mobiles) */}
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className={`inline-flex text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${ctx.color}`}>
                           {isFr ? ctx.fr : ctx.en}
                         </span>
                         <span className={`inline-flex text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${cat.color}`}>
                           {isFr ? cat.fr : cat.en}
                         </span>
+                        <span className="flex md:hidden items-center gap-1.5 text-[11px] font-medium text-slate-500 ml-auto">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(report.created_at).toLocaleDateString(isFr ? 'fr-FR' : 'en-US')}
+                        </span>
                       </div>
 
                       {/* Statut */}
-                      <div>
+                      <div className="flex items-center md:block">
                         <StatusBadge status={report.status} isFr={isFr} />
                       </div>
 
-                      {/* Date */}
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                      {/* Date (desktop) */}
+                      <div className="hidden md:flex items-center gap-1.5 text-xs font-medium text-slate-500">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         {new Date(report.created_at).toLocaleDateString(isFr ? 'fr-FR' : 'en-US')}
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1.5 justify-end">
+                      <div className="grid grid-cols-4 gap-2 md:flex md:items-center md:justify-end mt-2 md:mt-0">
                         <button
                           onClick={() => { setDetailsTarget(report); setAdminNotes(report.admin_notes || ''); }}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                          title={isFr ? 'Voir détails' : 'View details'}
+                          className="h-10 md:h-8 md:w-8 rounded-xl md:rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 md:bg-transparent md:hover:bg-slate-100 md:text-slate-400 md:hover:text-slate-900 transition-colors"
                         >
                           <EyeIcon className="w-4 h-4" />
+                          <span className="md:hidden">{isFr ? 'Voir' : 'View'}</span>
                         </button>
+                        
                         {report.status === 'new' && (
                           <button
                             onClick={() => markAsSeen(report.id)}
                             disabled={isWorking}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
-                            title={isFr ? 'Marquer comme vu' : 'Mark as seen'}
+                            className="h-10 md:h-8 md:w-8 rounded-xl md:rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 md:bg-transparent md:text-slate-400 md:hover:text-amber-600 md:hover:bg-amber-50 transition-colors disabled:opacity-50"
                           >
                             {isWorking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                            <span className="md:hidden">{isFr ? 'Vu' : 'Seen'}</span>
                           </button>
                         )}
+
                         {report.status !== 'resolved' && (
                           <button
                             onClick={() => markAsResolved(report.id)}
                             disabled={isWorking}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
-                            title={isFr ? 'Marquer comme résolu' : 'Mark as resolved'}
+                            className="h-10 md:h-8 md:w-8 rounded-xl md:rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 md:bg-transparent md:text-slate-400 md:hover:text-emerald-600 md:hover:bg-emerald-50 transition-colors disabled:opacity-50"
                           >
                             <CheckCircle2 className="w-4 h-4" />
+                            <span className="md:hidden">{isFr ? 'Résolu' : 'Resolve'}</span>
                           </button>
                         )}
+
                         <button
                           onClick={() => setDeleteTarget(report)}
                           disabled={isWorking}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                          title={isFr ? 'Supprimer' : 'Delete'}
+                          className="h-10 md:h-8 md:w-8 rounded-xl md:rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 md:bg-transparent md:text-slate-400 md:hover:text-red-600 md:hover:bg-red-50 transition-colors disabled:opacity-50"
                         >
                           <Trash2 className="w-4 h-4" />
+                          <span className="md:hidden">{isFr ? 'Suppr.' : 'Delete'}</span>
                         </button>
                       </div>
                     </div>
@@ -645,34 +652,27 @@ export default function AdminReportsPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between gap-3 pt-8 mt-4 border-t border-slate-200">
-            <p className="text-xs font-semibold text-slate-500">
-              {isFr
-                ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} sur ${filtered.length}`
-                : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} of ${filtered.length}`}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{isFr ? 'Précédent' : 'Previous'}</span>
-              </button>
-              
-              <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full tabular-nums">
-                {page} / {totalPages}
-              </span>
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isFr ? 'Précédent' : 'Previous'}</span>
+            </button>
 
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="hidden sm:inline">{isFr ? 'Suivant' : 'Next'}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full tabular-nums">
+              {page} / {totalPages}
+            </span>
+
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 h-10 rounded-full text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="hidden sm:inline">{isFr ? 'Suivant' : 'Next'}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 
@@ -732,7 +732,7 @@ export default function AdminReportsPage() {
                 </div>
 
                 {/* Reporter → Reported */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <UserCard
                     label={isFr ? 'Signalé par' : 'Reported by'}
                     user={detailsTarget.reporter}
@@ -869,13 +869,13 @@ export default function AdminReportsPage() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 p-4 flex flex-wrap gap-2 shrink-0">
+              {/* Actions (mobile: grille 1 colonne, desktop: wrap) */}
+              <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 p-4 flex flex-col sm:flex-row sm:flex-wrap gap-2 shrink-0">
                 {detailsTarget.status === 'new' && (
                   <button
                     onClick={() => markAsSeen(detailsTarget.id)}
                     disabled={!!actionId}
-                    className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-amber-100 text-amber-800 text-sm font-semibold hover:bg-amber-200 disabled:opacity-50 transition-colors active:scale-95"
+                    className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 h-11 sm:h-10 rounded-full bg-amber-100 text-amber-800 text-sm font-semibold hover:bg-amber-200 disabled:opacity-50 transition-colors active:scale-95"
                   >
                     <Clock className="w-4 h-4" />
                     {isFr ? 'Marquer comme vu' : 'Mark as seen'}
@@ -886,7 +886,7 @@ export default function AdminReportsPage() {
                   <button
                     onClick={() => markAsResolved(detailsTarget.id)}
                     disabled={!!actionId}
-                    className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200 disabled:opacity-50 transition-colors active:scale-95"
+                    className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 h-11 sm:h-10 rounded-full bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200 disabled:opacity-50 transition-colors active:scale-95"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     {isFr ? 'Marquer comme résolu' : 'Mark as resolved'}
@@ -899,7 +899,7 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => { setHideReviewTarget(detailsTarget); setHideReason(''); }}
                         disabled={!!actionId}
-                        className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-slate-200 text-slate-800 text-sm font-semibold hover:bg-slate-300 disabled:opacity-50 transition-colors active:scale-95"
+                        className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 h-11 sm:h-10 rounded-full bg-slate-200 text-slate-800 text-sm font-semibold hover:bg-slate-300 disabled:opacity-50 transition-colors active:scale-95"
                       >
                         <EyeOff className="w-4 h-4" />
                         {isFr ? 'Masquer l\'avis' : 'Hide review'}
@@ -908,7 +908,7 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => handleUnhideReview(detailsTarget.review!.id)}
                         disabled={!!actionId}
-                        className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-blue-100 text-blue-800 text-sm font-semibold hover:bg-blue-200 disabled:opacity-50 transition-colors active:scale-95"
+                        className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 h-11 sm:h-10 rounded-full bg-blue-100 text-blue-800 text-sm font-semibold hover:bg-blue-200 disabled:opacity-50 transition-colors active:scale-95"
                       >
                         <Eye className="w-4 h-4" />
                         {isFr ? 'Restaurer l\'avis' : 'Unhide review'}
@@ -917,7 +917,7 @@ export default function AdminReportsPage() {
                     <button
                       onClick={() => setDeleteReviewTarget(detailsTarget)}
                       disabled={!!actionId}
-                      className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-red-100 text-red-800 text-sm font-semibold hover:bg-red-200 disabled:opacity-50 transition-colors active:scale-95"
+                      className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 h-11 sm:h-10 rounded-full bg-red-100 text-red-800 text-sm font-semibold hover:bg-red-200 disabled:opacity-50 transition-colors active:scale-95"
                     >
                       <Trash2 className="w-4 h-4" />
                       {isFr ? 'Supprimer l\'avis' : 'Delete review'}
@@ -929,7 +929,7 @@ export default function AdminReportsPage() {
                   <button
                     onClick={() => { setSuspendTarget(detailsTarget); setSuspendReason(''); }}
                     disabled={!!actionId}
-                    className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors active:scale-95 shadow-sm"
+                    className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 h-11 sm:h-10 rounded-full bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors active:scale-95 shadow-sm"
                   >
                     <Ban className="w-4 h-4" />
                     {isFr ? 'Suspendre l\'utilisateur' : 'Suspend user'}
@@ -939,7 +939,7 @@ export default function AdminReportsPage() {
                 <button
                   onClick={() => setDeleteTarget(detailsTarget)}
                   disabled={!!actionId}
-                  className="inline-flex items-center gap-2 px-4 h-10 rounded-full border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors ml-auto active:scale-95"
+                  className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 h-11 sm:h-10 rounded-full border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors sm:ml-auto active:scale-95"
                 >
                   <Trash2 className="w-4 h-4" />
                   {isFr ? 'Supprimer signalement' : 'Delete report'}
@@ -956,18 +956,18 @@ export default function AdminReportsPage() {
             onClick={() => !actionId && setSuspendTarget(null)}
           >
             <div
-              className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
                   <AlertTriangle className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? 'Suspendre cet utilisateur ?' : 'Suspend this user?'}
                   </h3>
-                  <p className="text-sm text-slate-500 truncate mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 truncate mt-0.5">
                     {suspendTarget.reported?.email}
                   </p>
                 </div>
@@ -1005,13 +1005,13 @@ export default function AdminReportsPage() {
                     onChange={e => setSendSuspendEmail(e.target.checked)}
                     className="mt-0.5 w-4 h-4 rounded border-slate-300 text-red-500 focus:ring-red-500"
                   />
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-slate-700 leading-snug">
                     {isFr ? 'Envoyer un email de notification' : 'Send notification email'}
                   </span>
                 </label>
               </div>
 
-              <div className="flex gap-2 mt-6">
+              <div className="flex flex-col sm:flex-row gap-2 mt-6">
                 <button
                   onClick={() => setSuspendTarget(null)}
                   disabled={!!actionId}
@@ -1039,18 +1039,18 @@ export default function AdminReportsPage() {
             onClick={() => !actionId && setDeleteTarget(null)}
           >
             <div
-              className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
                   <Trash2 className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? 'Supprimer ce signalement ?' : 'Delete this report?'}
                   </h3>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                     {isFr ? 'Cette action est irréversible.' : 'This action is irreversible.'}
                   </p>
                 </div>
@@ -1063,7 +1063,7 @@ export default function AdminReportsPage() {
                 </button>
               </div>
 
-              <div className="flex gap-2 mt-6">
+              <div className="flex flex-col sm:flex-row gap-2 mt-6">
                 <button
                   onClick={() => setDeleteTarget(null)}
                   disabled={!!actionId}
@@ -1091,18 +1091,18 @@ export default function AdminReportsPage() {
             onClick={() => !actionId && setDeleteReviewTarget(null)}
           >
             <div
-              className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100">
                   <Trash2 className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? 'Supprimer cet avis ?' : 'Delete this review?'}
                   </h3>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                     {isFr
                       ? 'L\'avis sera définitivement supprimé de la base. Cette action est irréversible.'
                       : 'The review will be permanently deleted from the database. This action is irreversible.'}
@@ -1125,7 +1125,7 @@ export default function AdminReportsPage() {
                 </p>
               </div>
 
-              <div className="flex gap-2 mt-6">
+              <div className="flex flex-col sm:flex-row gap-2 mt-6">
                 <button
                   onClick={() => setDeleteReviewTarget(null)}
                   disabled={!!actionId}
@@ -1153,18 +1153,18 @@ export default function AdminReportsPage() {
             onClick={() => !actionId && setHideReviewTarget(null)}
           >
             <div
-              className="bg-white rounded-[1.35rem] max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="bg-white rounded-2xl sm:rounded-[1.35rem] max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-slate-200 flex items-center justify-center shrink-0 border border-slate-300">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-slate-200 flex items-center justify-center shrink-0 border border-slate-300">
                   <EyeOff className="w-5 h-5 text-slate-700" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {isFr ? 'Masquer cet avis ?' : 'Hide this review?'}
                   </h3>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                     {isFr
                       ? 'L\'avis ne sera plus visible publiquement, mais reste stocké en base pour audit.'
                       : 'The review will no longer be publicly visible, but stays stored for audit.'}
@@ -1196,7 +1196,7 @@ export default function AdminReportsPage() {
                 </p>
               </div>
 
-              <div className="flex gap-2 mt-6">
+              <div className="flex flex-col sm:flex-row gap-2 mt-6">
                 <button
                   onClick={() => setHideReviewTarget(null)}
                   disabled={!!actionId}
