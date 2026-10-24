@@ -71,104 +71,108 @@ export default function AdminHeader() {
   }, [mobileOpen]);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <>
+      {/* ─── HEADER ─── */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
-        {/* Logo + titre admin */}
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/admin" className="flex items-center gap-2.5 group active:scale-95 transition-transform">
-            <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center transition-transform group-hover:scale-105">
-              <Shield className="w-4 h-4" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="font-bold text-sm text-slate-900">{BRAND.name}</span>
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
-                {isFr ? 'Administration' : 'Admin'}
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-
-          {/* Sélecteur langue (desktop) */}
-          <div className="hidden md:flex items-center gap-1 mr-2 bg-slate-100/80 p-1 rounded-lg">
-            <button
-              onClick={() => setLanguage('fr')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                language === 'fr' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              FR
-            </button>
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                language === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              EN
-            </button>
-          </div>
-
-          {/* Lien vitrine publique */}
-          <Link
-            href="/"
-            className="hidden md:inline-flex items-center px-3 h-9 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-          >
-            {isFr ? 'Voir le site' : 'View site'}
-          </Link>
-
-          {/* Dropdown user (desktop) */}
-          <div className="hidden md:block relative ml-2" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-2 p-1 pl-2.5 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
-              aria-label="Menu utilisateur"
-            >
-              <span className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
-                {initials}
-              </span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform mr-1 ${menuOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/50">
-                  <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
-                  <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
-                  <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-100">
-                    <Shield className="w-2.5 h-2.5" />
-                    {isFr ? 'Administrateur' : 'Administrator'}
-                  </span>
-                </div>
-                <div className="p-1.5">
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 text-left transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    {isFr ? 'Se déconnecter' : 'Sign out'}
-                  </button>
-                </div>
+          {/* Logo + titre admin */}
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/admin" className="flex items-center gap-2.5 group active:scale-95 transition-transform">
+              <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center transition-transform group-hover:scale-105">
+                <Shield className="w-4 h-4" />
               </div>
-            )}
+              <div className="flex flex-col leading-tight">
+                <span className="font-bold text-sm text-slate-900">{BRAND.name}</span>
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                  {isFr ? 'Administration' : 'Admin'}
+                </span>
+              </div>
+            </Link>
           </div>
 
-          {/* Menu mobile (bouton hamburger) - Hit area 44x44px */}
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="md:hidden w-11 h-11 flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95"
-            aria-label="Menu"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
 
-      {/* ─── DRAWER MOBILE ─── */}
-      {/* Overlay sombre et flouté (opacité augmentée pour un vrai focus sur le menu) */}
+            {/* Sélecteur langue (desktop) */}
+            <div className="hidden md:flex items-center gap-1 mr-2 bg-slate-100/80 p-1 rounded-lg">
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  language === 'fr' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                FR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  language === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                EN
+              </button>
+            </div>
+
+            {/* Lien vitrine publique */}
+            <Link
+              href="/"
+              className="hidden md:inline-flex items-center px-3 h-9 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            >
+              {isFr ? 'Voir le site' : 'View site'}
+            </Link>
+
+            {/* Dropdown user (desktop) */}
+            <div className="hidden md:block relative ml-2" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-2 p-1 pl-2.5 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
+                aria-label="Menu utilisateur"
+              >
+                <span className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
+                  {initials}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform mr-1 ${menuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/50">
+                    <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
+                    <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
+                    <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-100">
+                      <Shield className="w-2.5 h-2.5" />
+                      {isFr ? 'Administrateur' : 'Administrator'}
+                    </span>
+                  </div>
+                  <div className="p-1.5">
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 text-left transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      {isFr ? 'Se déconnecter' : 'Sign out'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Menu mobile (bouton hamburger) */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="md:hidden w-11 h-11 flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95"
+              aria-label="Menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ─── DRAWER MOBILE (Hors du header pour éviter le bug du backdrop-blur) ─── */}
+      
+      {/* Overlay */}
       <div
         className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -186,7 +190,6 @@ export default function AdminHeader() {
         <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100 bg-white shrink-0">
           <span className="font-bold text-slate-900">{isFr ? 'Administration' : 'Admin'}</span>
           
-          {/* Bouton fermer - Hit area 44x44px */}
           <button
             onClick={() => setMobileOpen(false)}
             className="w-10 h-10 flex items-center justify-center -mr-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95"
@@ -259,6 +262,6 @@ export default function AdminHeader() {
           </button>
         </div>
       </div>
-    </header>
+    </>
   );
 }
