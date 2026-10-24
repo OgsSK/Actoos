@@ -61,18 +61,18 @@ export default function AdminHeader() {
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800">
+    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
         {/* Logo + titre admin */}
         <div className="flex items-center gap-3 shrink-0">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
-              <Shield className="w-5 h-5" />
+          <Link href="/admin" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center transition-transform group-hover:scale-105">
+              <Shield className="w-4 h-4" />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="font-bold text-sm text-white">{BRAND.name}</span>
-              <span className="text-[10px] uppercase tracking-wider text-slate-400">
+              <span className="font-bold text-sm text-slate-900">{BRAND.name}</span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
                 {isFr ? 'Administration' : 'Admin'}
               </span>
             </div>
@@ -83,19 +83,19 @@ export default function AdminHeader() {
         <div className="flex items-center gap-2">
 
           {/* Sélecteur langue (desktop) */}
-          <div className="hidden md:flex items-center gap-0.5 mr-1">
+          <div className="hidden md:flex items-center gap-1 mr-2 bg-slate-100/80 p-1 rounded-lg">
             <button
               onClick={() => setLanguage('fr')}
-              className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
-                language === 'fr' ? 'text-white bg-slate-700' : 'text-slate-400 hover:text-white'
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                language === 'fr' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               FR
             </button>
             <button
               onClick={() => setLanguage('en')}
-              className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
-                language === 'en' ? 'text-white bg-slate-700' : 'text-slate-400 hover:text-white'
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                language === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               EN
@@ -105,41 +105,43 @@ export default function AdminHeader() {
           {/* Lien vitrine publique */}
           <Link
             href="/"
-            className="hidden md:inline-flex items-center px-3 h-9 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            className="hidden md:inline-flex items-center px-3 h-9 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           >
             {isFr ? 'Voir le site' : 'View site'}
           </Link>
 
           {/* Dropdown user (desktop) */}
-          <div className="hidden md:block relative" ref={menuRef}>
+          <div className="hidden md:block relative ml-2" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-2 p-1 pl-2 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
               aria-label="Menu utilisateur"
             >
-              <span className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
+              <span className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
                 {initials}
               </span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform mr-1 ${menuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{displayName}</p>
+              <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50/50">
+                  <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
                   <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
-                  <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700">
+                  <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-100">
                     <Shield className="w-2.5 h-2.5" />
                     {isFr ? 'Administrateur' : 'Administrator'}
                   </span>
                 </div>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 text-left transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  {isFr ? 'Se déconnecter' : 'Sign out'}
-                </button>
+                <div className="p-1.5">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 text-left transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {isFr ? 'Se déconnecter' : 'Sign out'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -147,7 +149,7 @@ export default function AdminHeader() {
           {/* Menu mobile */}
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            className="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
             aria-label="Menu"
           >
             <Menu className="w-5 h-5" />
@@ -157,56 +159,56 @@ export default function AdminHeader() {
 
       {/* Drawer mobile */}
       <div
-        className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity md:hidden ${
+        className={`fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm transition-opacity md:hidden ${
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setMobileOpen(false)}
       />
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-slate-900 transform transition-transform duration-300 md:hidden flex flex-col ${
+        className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 md:hidden flex flex-col ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-800">
-          <span className="font-bold text-white">{isFr ? 'Administration' : 'Admin'}</span>
+        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100 bg-white">
+          <span className="font-bold text-slate-900">{isFr ? 'Administration' : 'Admin'}</span>
           <button
             onClick={() => setMobileOpen(false)}
-            className="p-2 -mr-2 rounded-lg text-slate-400 hover:text-white"
+            className="p-2 -mr-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#fffafa]">
           {/* Profil */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-800">
-            <span className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-200 shadow-sm">
+            <span className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold shadow-sm">
               {initials}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-              <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+              <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
+              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
 
           {/* Langue */}
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
               {isFr ? 'Langue' : 'Language'}
             </p>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
               <button
                 onClick={() => setLanguage('fr')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  language === 'fr' ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-400'
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  language === 'fr' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
                 }`}
               >
                 Français
               </button>
               <button
                 onClick={() => setLanguage('en')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  language === 'en' ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-400'
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  language === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
                 }`}
               >
                 English
@@ -218,17 +220,17 @@ export default function AdminHeader() {
           <div className="space-y-1">
             <Link
               href="/"
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all"
             >
               {isFr ? 'Voir le site public' : 'View public site'}
             </Link>
           </div>
         </div>
 
-        <div className="border-t border-slate-800 p-4">
+        <div className="border-t border-slate-100 p-4 bg-white">
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-950/50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             {isFr ? 'Se déconnecter' : 'Sign out'}
