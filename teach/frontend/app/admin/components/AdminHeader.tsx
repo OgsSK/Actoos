@@ -60,6 +60,16 @@ export default function AdminHeader() {
   // Fermer mobile au change de route
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
+  // Bloquer le scroll du body quand le menu mobile est ouvert
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   return (
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -157,22 +167,26 @@ export default function AdminHeader() {
         </div>
       </div>
 
-      {/* Drawer mobile */}
+      {/* ─── DRAWER MOBILE ─── */}
+      {/* Overlay sombre et flouté (opacité augmentée pour un vrai focus sur le menu) */}
       <div
-        className={`fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm transition-opacity md:hidden ${
+        className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
       />
+      
+      {/* Panneau du menu */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 md:hidden flex flex-col ${
+        className={`fixed top-0 right-0 z-50 h-[100dvh] w-[85vw] max-w-[320px] bg-white shadow-2xl transform transition-transform duration-300 ease-out md:hidden flex flex-col ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100 bg-white">
+        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100 bg-white shrink-0">
           <span className="font-bold text-slate-900">{isFr ? 'Administration' : 'Admin'}</span>
           
-          {/* Bouton fermer - Hit area 40x40px */}
+          {/* Bouton fermer - Hit area 44x44px */}
           <button
             onClick={() => setMobileOpen(false)}
             className="w-10 h-10 flex items-center justify-center -mr-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95"
@@ -183,19 +197,23 @@ export default function AdminHeader() {
 
         <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#fffafa]">
           {/* Profil */}
-          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-            <span className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+            <span className="w-12 h-12 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold shadow-sm shrink-0">
               {initials}
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
-              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+              <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
+              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-600 border border-red-100">
+                <Shield className="w-2.5 h-2.5" />
+                Admin
+              </span>
             </div>
           </div>
 
           {/* Langue */}
           <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
               {isFr ? 'Langue' : 'Language'}
             </p>
             <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
@@ -222,7 +240,7 @@ export default function AdminHeader() {
           <div className="space-y-2">
             <Link
               href="/"
-              className="flex items-center gap-3 px-3 h-12 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-sm transition-all active:scale-95"
+              className="flex items-center gap-3 px-4 h-12 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-sm transition-all active:scale-95"
             >
               <ExternalLink className="w-4 h-4 text-slate-400" />
               {isFr ? 'Voir le site public' : 'View public site'}
@@ -230,7 +248,8 @@ export default function AdminHeader() {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 p-4 bg-white">
+        {/* Déconnexion */}
+        <div className="border-t border-slate-100 p-5 bg-white shrink-0">
           <button
             onClick={handleSignOut}
             className="w-full flex items-center justify-center gap-2 px-4 h-12 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all active:scale-95"
