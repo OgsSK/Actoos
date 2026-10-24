@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, Shield, ChevronDown, Menu, X } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Menu, X, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
@@ -66,7 +66,7 @@ export default function AdminHeader() {
 
         {/* Logo + titre admin */}
         <div className="flex items-center gap-3 shrink-0">
-          <Link href="/admin" className="flex items-center gap-2.5 group">
+          <Link href="/admin" className="flex items-center gap-2.5 group active:scale-95 transition-transform">
             <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center transition-transform group-hover:scale-105">
               <Shield className="w-4 h-4" />
             </div>
@@ -114,7 +114,7 @@ export default function AdminHeader() {
           <div className="hidden md:block relative ml-2" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-2 p-1 pl-2 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-2 p-1 pl-2.5 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
               aria-label="Menu utilisateur"
             >
               <span className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
@@ -146,13 +146,13 @@ export default function AdminHeader() {
             )}
           </div>
 
-          {/* Menu mobile */}
+          {/* Menu mobile (bouton hamburger) - Hit area 44x44px */}
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            className="md:hidden w-11 h-11 flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95"
             aria-label="Menu"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6" />
           </button>
         </div>
       </div>
@@ -171,9 +171,11 @@ export default function AdminHeader() {
       >
         <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100 bg-white">
           <span className="font-bold text-slate-900">{isFr ? 'Administration' : 'Admin'}</span>
+          
+          {/* Bouton fermer - Hit area 40x40px */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="p-2 -mr-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            className="w-10 h-10 flex items-center justify-center -mr-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -181,7 +183,7 @@ export default function AdminHeader() {
 
         <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#fffafa]">
           {/* Profil */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm">
             <span className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold shadow-sm">
               {initials}
             </span>
@@ -199,7 +201,7 @@ export default function AdminHeader() {
             <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
               <button
                 onClick={() => setLanguage('fr')}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex-1 h-11 rounded-lg text-sm font-semibold transition-all ${
                   language === 'fr' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
                 }`}
               >
@@ -207,7 +209,7 @@ export default function AdminHeader() {
               </button>
               <button
                 onClick={() => setLanguage('en')}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex-1 h-11 rounded-lg text-sm font-semibold transition-all ${
                   language === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
                 }`}
               >
@@ -217,11 +219,12 @@ export default function AdminHeader() {
           </div>
 
           {/* Liens */}
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Link
               href="/"
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all"
+              className="flex items-center gap-3 px-3 h-12 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-sm transition-all active:scale-95"
             >
+              <ExternalLink className="w-4 h-4 text-slate-400" />
               {isFr ? 'Voir le site public' : 'View public site'}
             </Link>
           </div>
@@ -230,7 +233,7 @@ export default function AdminHeader() {
         <div className="border-t border-slate-100 p-4 bg-white">
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 h-12 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all active:scale-95"
           >
             <LogOut className="w-4 h-4" />
             {isFr ? 'Se déconnecter' : 'Sign out'}
