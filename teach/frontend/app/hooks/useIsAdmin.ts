@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 // Admins autorisés par email (fallback rapide en attendant le fix JWT)
 const ADMIN_EMAILS = [
   'contact@actoos.com',
+  'babaalitoure@gmail.com',
 ];
 
 export function useIsAdmin() {
