@@ -419,6 +419,29 @@ function Hero({ cities, subjects, isFr }: { cities: RefCity[]; subjects: RefSubj
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Référence pour le scroll des matières
+  const subjectsScrollRef = useRef<HTMLDivElement>(null);
+  
+  // États pour savoir si on peut scroller à gauche/droite
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (!subjectsScrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = subjectsScrollRef.current;
+    setCanScrollLeft(scrollLeft > 5);
+    setCanScrollRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 5);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(checkScroll, 100);
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [subjects]);
 
   useEffect(() => {
     if (subjects.length <= 1) return;
@@ -461,167 +484,143 @@ function Hero({ cities, subjects, isFr }: { cities: RefCity[]; subjects: RefSubj
     <section className="relative bg-gradient-to-b from-white via-red-50 to-red-100 pb-8 sm:pb-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* MOBILE : titre à gauche + sous-titre + recherche + catégories */}
-        <div className="sm:hidden pt-6 pb-4">
-          <h1 className="text-[2rem] leading-[1.1] font-extrabold tracking-tight text-slate-900 mb-4">
-            {isFr ? (<>Trouvez le <br /> professeur <br /> parfait</>) : (<>Find the <br /> perfect <br /> teacher</>)}
-          </h1>
-          <p className="text-sm text-slate-700 leading-relaxed mb-6">
+        {/* TITRE & SOUS-TITRE (Adaptatif) */}
+        <div className="pt-8 sm:pt-20 lg:pt-28 pb-4">
+          <h1 className="text-[2rem] sm:text-5xl lg:text-[4rem] xl:text-[4.5rem] leading-[1.1] sm:leading-[1.15] font-extrabold tracking-tight text-slate-900 text-center mb-4 sm:mb-16 lg:mb-20">
             {isFr ? (
-              <>Des <strong>enseignants vérifiés</strong>, à domicile ou en ligne. Comparez, échangez, choisissez en confiance.</>
+              <>Trouvez le <br className="sm:hidden" /> professeur <br className="hidden sm:block" /> parfait</>
             ) : (
-              <><strong>Verified teachers</strong>, at home or online. Compare, chat, choose with confidence.</>
+              <>Find the <br className="sm:hidden" /> perfect <br className="hidden sm:block" /> teacher</>
+            )}
+          </h1>
+          
+          <p className="sm:hidden text-sm text-slate-700 leading-relaxed mb-6 text-center">
+            {isFr ? (
+              <>Des <strong>enseignants vérifiés</strong>, à domicile ou en ligne.</>
+            ) : (
+              <><strong>Verified teachers</strong>, at home or online.</>
             )}
           </p>
 
-          <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-lg p-1.5 flex items-center gap-1.5 mb-4">
-            <input
-              type="text"
-              value={keyword}
-              onChange={e => setKeyword(e.target.value)}
-              placeholder={getPlaceholder()}
-              className="flex-1 h-12 bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-800 placeholder:text-slate-400 text-sm px-3"
-            />
-            <button type="submit" className="w-12 h-12 rounded-xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shrink-0 transition-colors active:scale-95" aria-label={isFr ? 'Rechercher' : 'Search'}>
-              <Search className="w-5 h-5" />
-            </button>
-          </form>
-
-          <div className="flex items-center gap-2 mb-6">
-            <MapPin className="w-4 h-4 text-slate-500" />
-            <button type="button" onClick={() => setCityDropdownOpen(v => !v)} className="text-sm text-slate-600 hover:text-red-500 flex items-center gap-1">
-              {cityLabel}
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${cityDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {location && (<button type="button" onClick={() => setLocation('')} className="text-xs text-red-500 underline">{isFr ? 'Effacer' : 'Clear'}</button>)}
-          </div>
-          {cityDropdownOpen && (
-            <div className="relative">
-              <div className="absolute top-0 left-0 right-0 -mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-50 max-h-60 overflow-y-auto">
-                <button type="button" onClick={() => { setLocation(''); setCityDropdownOpen(false); }} className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left ${!location ? 'bg-red-50 text-red-600 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}>
-                  <span>{isFr ? 'Toutes les villes' : 'All cities'}</span>
-                  {!location && <Check className="w-4 h-4 text-red-500" />}
-                </button>
-                {cities.map(city => {
-                  const isSelected = location === city.id;
-                  return (
-                    <button key={city.id} type="button" onClick={() => { setLocation(city.id); setCityDropdownOpen(false); }} className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left border-t border-slate-50 ${isSelected ? 'bg-red-50 text-red-600 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}>
-                      <span className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-slate-400" />{city.name}</span>
-                      {isSelected && <Check className="w-4 h-4 text-red-500" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {subjects.length > 0 && (
-            <div className="flex gap-4 overflow-x-auto -mx-4 px-4 pb-2 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {subjects.slice(0, 8).map(subject => (
-                <Link key={subject.id} href={`/teachers?subject=${subject.id}`} prefetch className="shrink-0 flex flex-col items-center gap-2 min-w-[72px] text-center group">
-                  <div className="w-12 h-12 rounded-full bg-white/70 flex items-center justify-center text-slate-600 group-hover:bg-white transition-colors">
-                    {getSubjectIcon(isFr ? subject.name_fr : subject.name_en)}
-                  </div>
-                  <span className="text-[11px] font-medium text-slate-700 group-hover:text-red-500 whitespace-nowrap max-w-[80px] truncate">
-                    {isFr ? subject.name_fr : subject.name_en}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* DESKTOP : titre plus aéré + barre + catégories intégrées */}
-        <div className="hidden sm:block pt-20 lg:pt-28 pb-4">
-          {/* Titre plus espacé et aéré */}
-          <h1 className="text-5xl lg:text-[4rem] xl:text-[4.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.15] text-center mb-16 lg:mb-20">
-            {isFr ? (<>Trouvez le <br /> professeur parfait</>) : (<>Find the <br /> perfect teacher</>)}
-          </h1>
-
+          {/* ✅ LA BARRE DE RECHERCHE (Parfaitement équilibrée) */}
           <form
             onSubmit={handleSearch}
-            className="bg-white rounded-full p-2 flex items-center gap-2 max-w-3xl mx-auto border border-slate-100 mb-14 lg:mb-16 relative"
-            style={{ boxShadow: '0 8px 32px rgba(239, 68, 68, 0.15), 0 2px 8px rgba(0,0,0,0.04)' }}
+            className="bg-white rounded-2xl sm:rounded-full p-2 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2 w-full max-w-3xl mx-auto border border-slate-100 mb-8 sm:mb-14 lg:mb-16 relative z-40 shadow-[0_8px_32px_rgba(239,68,68,0.12)]"
           >
-            <div className="flex-1 flex items-center px-5">
+            {/* 1. Champ Mot-clé (Ligne 1) */}
+            <div className="flex-1 flex items-center w-full min-w-0 px-3 sm:px-5 h-12">
               <Search className="w-5 h-5 text-red-400 mr-3 shrink-0" strokeWidth={2.2} />
               <input
                 type="text"
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
                 placeholder={getPlaceholder()}
-                className="w-full h-12 bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-800 placeholder:text-slate-400 text-base transition-all duration-300"
+                className="w-full h-full bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-800 placeholder:text-slate-400 text-[16px] sm:text-base transition-all duration-300"
               />
             </div>
 
-            <div className="w-px h-8 bg-slate-200"></div>
+            {/* Séparateur Mobile */}
+            <div className="w-full h-px bg-slate-100 sm:hidden"></div>
 
-            <div ref={cityDropdownRef} className="flex-1 relative">
-              <button
-                type="button"
-                onClick={() => setCityDropdownOpen(v => !v)}
-                className="w-full h-12 flex items-center px-5 gap-3 text-left hover:bg-slate-50 rounded-xl transition-colors"
-              >
-                <MapPin className="w-5 h-5 text-slate-400 shrink-0" />
-                <span className={`flex-1 text-base truncate ${selectedCity ? 'text-slate-800 font-medium' : 'text-slate-400'}`}>{cityLabel}</span>
-                <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${cityDropdownOpen ? 'rotate-180' : ''}`} />
+            {/* Séparateur Desktop */}
+            <div className="hidden sm:block w-px h-8 bg-slate-200 shrink-0"></div>
+
+            {/* 2. Ville & Bouton (Ligne 2) */}
+            <div className="flex items-center w-full sm:w-auto sm:flex-1 gap-2 h-12">
+              
+              {/* Choix de la Ville */}
+              <div ref={cityDropdownRef} className="relative flex-1 min-w-0 h-full">
+                <button
+                  type="button"
+                  onClick={() => setCityDropdownOpen(v => !v)}
+                  className="w-full h-full flex items-center px-3 sm:px-5 gap-2 text-left hover:bg-slate-50 rounded-xl transition-colors overflow-hidden"
+                >
+                  <MapPin className="w-5 h-5 text-slate-400 shrink-0" />
+                  <span className={`flex-1 text-[16px] sm:text-base truncate ${selectedCity ? 'text-slate-800 font-medium' : 'text-slate-400'}`}>
+                    {cityLabel}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${cityDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Menu déroulant des villes */}
+                {cityDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-[100] max-h-60 sm:max-h-72 overflow-y-auto">
+                    <button type="button" onClick={() => { setLocation(''); setCityDropdownOpen(false); }} className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left ${!location ? 'bg-red-50 text-red-600 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}>
+                      <span>{isFr ? 'Toutes les villes' : 'All cities'}</span>
+                      {!location && <Check className="w-4 h-4 text-red-500" />}
+                    </button>
+                    {cities.map(city => {
+                      const isSelected = location === city.id;
+                      return (
+                        <button key={city.id} type="button" onClick={() => { setLocation(city.id); setCityDropdownOpen(false); }} className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left border-t border-slate-50 ${isSelected ? 'bg-red-50 text-red-600 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}>
+                          <span className="flex items-center gap-2 truncate"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />{city.name}</span>
+                          {isSelected && <Check className="w-4 h-4 text-red-500 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Bouton Rechercher */}
+              <button type="submit" className="h-full px-6 sm:px-8 rounded-xl sm:rounded-full bg-red-500 hover:bg-red-600 text-white font-medium text-[16px] sm:text-base transition-colors shrink-0">
+                {isFr ? 'Rechercher' : 'Search'}
               </button>
-
-              {cityDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-50 max-h-72 overflow-y-auto">
-                  <button type="button" onClick={() => { setLocation(''); setCityDropdownOpen(false); }} className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left ${!location ? 'bg-red-50 text-red-600 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}>
-                    <span>{isFr ? 'Toutes les villes' : 'All cities'}</span>
-                    {!location && <Check className="w-4 h-4 text-red-500" />}
-                  </button>
-                  {cities.map(city => {
-                    const isSelected = location === city.id;
-                    return (
-                      <button key={city.id} type="button" onClick={() => { setLocation(city.id); setCityDropdownOpen(false); }} className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left border-t border-slate-50 ${isSelected ? 'bg-red-50 text-red-600 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}>
-                        <span className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-slate-400" />{city.name}</span>
-                        {isSelected && <Check className="w-4 h-4 text-red-500" />}
-                      </button>
-                    );
-                  })}
-                  {cities.length === 0 && (<div className="px-4 py-6 text-center text-sm text-slate-400">{isFr ? 'Aucune ville disponible' : 'No city available'}</div>)}
-                </div>
-              )}
             </div>
-
-            <button type="submit" className="h-12 px-8 rounded-full bg-red-500 hover:bg-red-600 text-white font-medium text-base transition-colors shrink-0">
-              {isFr ? 'Rechercher' : 'Search'}
-            </button>
           </form>
 
+          {/* Catégories (Matières) */}
           {subjects.length > 0 && (
             <div className="relative max-w-5xl mx-auto">
-              <div id="hero-categories-scroll" className="flex items-center justify-center gap-1 overflow-x-auto py-4 px-2 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {subjects.slice(0, 9).map(subject => (
-                  <Link
-                    key={subject.id}
-                    href={`/teachers?subject=${subject.id}`}
-                    prefetch
-                    className="shrink-0 flex flex-col items-center gap-2 min-w-[90px] text-center group py-2 px-3 rounded-2xl hover:bg-white/60 transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-white/50 group-hover:bg-white flex items-center justify-center text-slate-600 group-hover:text-red-500 transition-colors">
-                      {getSubjectIcon(isFr ? subject.name_fr : subject.name_en)}
-                    </div>
-                    <span className="text-xs font-medium text-slate-700 group-hover:text-red-500 whitespace-nowrap">
-                      {isFr ? subject.name_fr : subject.name_en}
-                    </span>
-                  </Link>
-                ))}
+              <div 
+                ref={subjectsScrollRef} 
+                onScroll={checkScroll}
+                className="flex overflow-x-auto py-2 sm:py-4 px-2 [&::-webkit-scrollbar]:hidden" 
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                <div className="flex items-center gap-1 mx-auto px-2 sm:px-4">
+                  {subjects.map(subject => (
+                    <Link
+                      key={subject.id}
+                      href={`/teachers?subject=${subject.id}`}
+                      prefetch
+                      className="shrink-0 flex flex-col items-center gap-1.5 sm:gap-2 min-w-[72px] sm:min-w-[90px] text-center group py-2 px-2 sm:px-3 rounded-2xl hover:bg-white/60 transition-colors"
+                    >
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full sm:rounded-2xl bg-white/70 sm:bg-white/50 group-hover:bg-white flex items-center justify-center text-slate-600 group-hover:text-red-500 transition-colors">
+                        {getSubjectIcon(isFr ? subject.name_fr : subject.name_en)}
+                      </div>
+                      <span className="text-[11px] sm:text-xs font-medium text-slate-700 group-hover:text-red-500 whitespace-nowrap max-w-[75px] sm:max-w-none truncate">
+                        {isFr ? subject.name_fr : subject.name_en}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-              {subjects.length > 9 && (
+              
+              {/* ✅ Flèches cachées sur mobile (hidden sm:flex) */}
+              {canScrollLeft && (
                 <button
                   type="button"
                   onClick={() => {
-                    const el = document.getElementById('hero-categories-scroll');
-                    if (el) el.scrollBy({ left: 400, behavior: 'smooth' });
+                    if (subjectsScrollRef.current) subjectsScrollRef.current.scrollBy({ left: -300, behavior: 'smooth' });
                   }}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors"
-                  aria-label="Défiler"
+                  className="hidden sm:flex absolute -left-3 lg:-left-8 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-slate-200/60 items-center justify-center text-slate-600 hover:text-red-500 hover:scale-105 transition-all z-20"
+                  aria-label="Défiler à gauche"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              )}
+
+              {canScrollRight && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (subjectsScrollRef.current) subjectsScrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+                  }}
+                  className="hidden sm:flex absolute -right-3 lg:-right-8 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-slate-200/60 items-center justify-center text-slate-600 hover:text-red-500 hover:scale-105 transition-all z-20"
+                  aria-label="Défiler à droite"
+                >
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               )}
             </div>
@@ -631,7 +630,6 @@ function Hero({ cities, subjects, isFr }: { cities: RefCity[]; subjects: RefSubj
     </section>
   );
 }
-
 // ═══════════════════════════════════════════════════════════
 // TEACHER CARD
 // ═══════════════════════════════════════════════════════════
