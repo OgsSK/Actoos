@@ -420,12 +420,14 @@ function Hero({ cities, subjects, isFr }: { cities: RefCity[]; subjects: RefSubj
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Référence pour le scroll des matières
+  // Références pour le scroll
   const subjectsScrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // États pour savoir si on peut scroller à gauche/droite
+  // États pour le scroll
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false); // ✅ Nouveau : Savoir si on est en train de scroller
 
   const checkScroll = () => {
     if (!subjectsScrollRef.current) return;
@@ -434,12 +436,26 @@ function Hero({ cities, subjects, isFr }: { cities: RefCity[]; subjects: RefSubj
     setCanScrollRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 5);
   };
 
+  // ✅ Nouveau : Gérer l'apparition/disparition des flèches au scroll
+  const handleScroll = () => {
+    checkScroll();
+    setIsScrolling(true);
+    
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    
+    // On attend 300ms après la fin du scroll pour réafficher les flèches
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 300);
+  };
+
   useEffect(() => {
     const timer = setTimeout(checkScroll, 100);
     window.addEventListener('resize', checkScroll);
     return () => {
       clearTimeout(timer);
       window.removeEventListener('resize', checkScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, [subjects]);
 
@@ -574,7 +590,7 @@ function Hero({ cities, subjects, isFr }: { cities: RefCity[]; subjects: RefSubj
             <div className="relative max-w-5xl mx-auto">
               <div 
                 ref={subjectsScrollRef} 
-                onScroll={checkScroll}
+                onScroll={handleScroll} // ✅ Utilisation de la nouvelle fonction
                 className="flex overflow-x-auto py-2 sm:py-4 px-2 [&::-webkit-scrollbar]:hidden" 
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
@@ -597,27 +613,28 @@ function Hero({ cities, subjects, isFr }: { cities: RefCity[]; subjects: RefSubj
                 </div>
               </div>
               
-              {/* ✅ Flèches cachées sur mobile (hidden sm:flex) */}
-              {canScrollLeft && (
+              {/* ✅ Flèche GAUCHE (Apparaît au bout à gauche, disparaît au scroll) */}
+              {canScrollLeft && !isScrolling && (
                 <button
                   type="button"
                   onClick={() => {
                     if (subjectsScrollRef.current) subjectsScrollRef.current.scrollBy({ left: -300, behavior: 'smooth' });
                   }}
-                  className="hidden sm:flex absolute -left-3 lg:-left-8 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-slate-200/60 items-center justify-center text-slate-600 hover:text-red-500 hover:scale-105 transition-all z-20"
+                  className="flex absolute -left-2 sm:-left-8 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-slate-200/60 items-center justify-center text-slate-600 hover:text-red-500 hover:scale-105 transition-all z-20"
                   aria-label="Défiler à gauche"
                 >
                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               )}
 
-              {canScrollRight && (
+              {/* ✅ Flèche DROITE (Apparaît au bout à droite, disparaît au scroll) */}
+              {canScrollRight && !isScrolling && (
                 <button
                   type="button"
                   onClick={() => {
                     if (subjectsScrollRef.current) subjectsScrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
                   }}
-                  className="hidden sm:flex absolute -right-3 lg:-right-8 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-slate-200/60 items-center justify-center text-slate-600 hover:text-red-500 hover:scale-105 transition-all z-20"
+                  className="flex absolute -right-2 sm:-right-8 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-md shadow-lg border border-slate-200/60 items-center justify-center text-slate-600 hover:text-red-500 hover:scale-105 transition-all z-20"
                   aria-label="Défiler à droite"
                 >
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
