@@ -137,6 +137,7 @@ export function useFeaturedTeachers(limit = 6) {
         `)
         .eq('is_available', true)
         .eq('verification_status', 'verified')
+        .eq('profil_ready', true)                    // ✅ PATCH 1.1
         .not('headline', 'is', null)
         .order('rating_avg', { ascending: false })
         .order('rating_count', { ascending: false })
@@ -204,6 +205,7 @@ export function useTeacherList() {
         `)
         .eq('is_available', true)
         .eq('verification_status', 'verified')
+        .eq('profil_ready', true)                    // ✅ PATCH 1.2
         .not('headline', 'is', null)
         .order('rating_avg', { ascending: false })
         .order('rating_count', { ascending: false })

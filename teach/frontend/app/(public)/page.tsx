@@ -147,7 +147,12 @@ export default function HomePage() {
     let cancelled = false;
     (async () => {
       try {
-        const { data: teachers, error: tErr } = await supabase.from('teacher_profiles').select('id, city_id').eq('verification_status', 'verified').eq('is_available', true);
+        const { data: teachers, error: tErr } = await supabase
+          .from('teacher_profiles')
+          .select('id, city_id')
+          .eq('verification_status', 'verified')
+          .eq('is_available', true)
+          .eq('profil_ready', true);              // ✅ PATCH 3
         if (tErr || !teachers || teachers.length === 0) { if (!cancelled) { setUsedSubjects([]); setUsedCities([]); } return; }
         const teacherIds = teachers.map(t => t.id);
         const cityIds = Array.from(new Set(teachers.map(t => t.city_id).filter((v): v is string => Boolean(v))));

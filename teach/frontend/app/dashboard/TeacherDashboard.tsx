@@ -6,7 +6,7 @@ import {
   Pencil, Eye, Check, BookOpen, GraduationCap, Heart,
   ChevronRight, Clock, AlertCircle, TrendingUp, Lightbulb, Sparkles,
   LayoutDashboard, Users, Home, LogOut, Settings, User, Inbox, UserPlus,
-  Trash2, AlertTriangle,
+  Trash2, AlertTriangle, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -135,12 +135,12 @@ function getTeacherTip(ctx: {
         ? t('Action requise', 'Action needed')
         : t('Priorité', 'Priority'),
       title: isIncomplete
-        ? t('Profil incomplet — validation bloquée', 'Incomplete profile — approval blocked')
+        ? t('Profil incomplet — invisible aux parents', 'Incomplete profile — hidden from parents')
         : t('Vérification en cours', 'Verification in progress'),
       text: isIncomplete
         ? t(
-            `Votre profil est à ${completionPercent}%. Un profil incomplet ne sera pas validé. Complétez les éléments manquants pour permettre la vérification.`,
-            `Your profile is at ${completionPercent}%. An incomplete profile will not be approved. Complete the missing items to allow verification.`,
+            `Votre profil est à ${completionPercent}%. Tant qu'il n'est pas complet, vous n'apparaissez pas dans les recherches des parents.`,
+            `Your profile is at ${completionPercent}%. While incomplete, you don't appear in parents' search results.`,
           )
         : t(
             'Pendant la vérification, complétez votre profil à 100 % : les profils complets passent en tête dès la validation.',
@@ -551,6 +551,7 @@ export default function TeacherDashboard() {
   const initials = ((user?.user_metadata?.first_name?.[0] ?? '') + (user?.user_metadata?.last_name?.[0] ?? '')).toUpperCase() || user?.email?.[0]?.toUpperCase() || '?';
   const status = teacherProfile?.verification_status || 'pending';
   const isVerified = status === 'verified';
+  const profilReady = Boolean(teacherProfile?.profil_ready);
 
   const steps = [
     {
@@ -722,18 +723,18 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          {/* ⚠️ Condition de validation */}
+          {/* ⚠️ Condition de visibilité */}
           <div className="mt-3 pt-3 border-t border-amber-200/60 flex items-start gap-2.5">
             <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
               <AlertCircle className="w-3 h-3 text-amber-700" />
             </div>
             <p className="text-xs sm:text-sm text-amber-900/90 leading-relaxed">
               <span className="font-semibold">
-                {isFr ? 'Profil complet requis. ' : 'Complete profile required. '}
+                {isFr ? 'Visibilité conditionnée. ' : 'Visibility conditioned. '}
               </span>
               {isFr
-                ? 'Un profil incomplet ne sera pas validé. Assurez-vous que tous les éléments ci-dessous sont renseignés avant la fin de la vérification.'
-                : 'An incomplete profile will not be approved. Make sure every item below is filled in before the review ends.'}
+                ? 'Sans tous les éléments renseignés, votre profil restera masqué aux parents même après validation.'
+                : 'Without every item filled in, your profile will stay hidden from parents even after approval.'}
             </p>
           </div>
         </div>
@@ -750,6 +751,61 @@ export default function TeacherDashboard() {
               {isFr ? 'Contactez-nous pour connaître la raison.' : 'Contact us to know why.'}
             </p>
           </div>
+        </div>
+      )}
+
+      {/* STATUT — VALIDÉ MAIS PROFIL INCOMPLET */}
+      {status === 'verified' && !profilReady && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5 shadow-sm mb-6">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-emerald-900">
+                {isFr ? '✅ Profil validé — dernière étape !' : '✅ Profile approved — one last step!'}
+              </p>
+              <p className="text-sm text-emerald-800/80 leading-relaxed mt-0.5">
+                {isFr
+                  ? "Notre équipe a validé votre profil. Il n'apparaît pas encore aux parents : complétez les informations ci-dessous pour être visible."
+                  : 'Our team has approved your profile. It does not appear to parents yet: complete the information below to become visible.'}
+              </p>
+              <a
+                href="/teacher/profile/edit"
+                className="inline-flex items-center gap-1.5 mt-3 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+              >
+                {isFr ? 'Compléter mon profil' : 'Complete my profile'}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STATUT — VALIDÉ ET VISIBLE */}
+      {status === 'verified' && profilReady && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3 shadow-sm mb-6">
+          <div className="w-9 h-9 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-emerald-900">
+              {isFr ? '🎉 Votre profil est visible aux parents' : '🎉 Your profile is visible to parents'}
+            </p>
+            <p className="text-sm text-emerald-800/80 leading-relaxed mt-0.5">
+              {isFr
+                ? 'Vous pouvez recevoir des demandes de cours à tout moment.'
+                : 'You can receive lesson requests at any time.'}
+            </p>
+          </div>
+          <a
+            href={`/teachers/${user.id}`}
+            className="text-xs font-medium text-emerald-700 hover:text-emerald-800 whitespace-nowrap shrink-0"
+          >
+            {isFr ? 'Voir mon profil →' : 'View profile →'}
+          </a>
         </div>
       )}
 
@@ -782,7 +838,7 @@ export default function TeacherDashboard() {
                       <p className="text-sm text-slate-500">{isFr ? 'Complétion du profil' : 'Profile completion'}</p>
                       {status === 'pending' && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                          {isFr ? 'Requis pour validation' : 'Required for approval'}
+                          {isFr ? 'Requis pour être visible' : 'Required to be visible'}
                         </span>
                       )}
                     </div>
@@ -935,7 +991,7 @@ export default function TeacherDashboard() {
           )}
 
           <Card>
-                        <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
+            <CardHeader icon={User} title={isFr ? 'Compte' : 'Account'} />
             <ul className="p-2">
               <QuickAction icon={Settings} label={isFr ? 'Mon compte' : 'My account'} href="/settings" accent="blue" />
               <QuickAction icon={User} label={isFr ? 'Profil enseignant' : 'Teacher profile'} href="/teacher/profile/edit" accent="blue" />

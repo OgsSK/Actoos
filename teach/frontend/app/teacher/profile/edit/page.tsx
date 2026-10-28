@@ -493,11 +493,36 @@ export default function TeacherProfileEditPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
+    // ✅ PATCH — Bio ≥ 20 caractères (requis par le trigger profil_ready)
+    if (!bio.trim() || bio.trim().length < 20) {
+      const len = bio.trim().length;
+      setError(
+        isFr
+          ? `La biographie doit contenir au moins 20 caractères (actuellement : ${len}). Sans cela, votre profil ne sera pas visible des parents.`
+          : `Biography must contain at least 20 characters (currently: ${len}). Without it, your profile won't be visible to parents.`
+      );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (!cityId) {
       setError(isFr ? 'La ville est obligatoire' : 'City is required');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
+    // ✅ PATCH — Photo de profil (requise par le trigger profil_ready)
+    if (!photoUrl) {
+      setError(
+        isFr
+          ? 'Ajoutez une photo de profil pour que votre profil soit visible des parents.'
+          : 'Add a profile photo to make your profile visible to parents.'
+      );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (!rateAmount || parseInt(rateAmount) <= 0) {
       setError(isFr ? 'Le tarif est obligatoire' : 'Rate is required');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -606,17 +631,17 @@ export default function TeacherProfileEditPage() {
   }
   if (!user) return null;
 
+  // ✅ PATCH — Aligné sur le trigger DB recalc_teacher_profil_ready (8 critères)
   const profileCompletion = (() => {
     let s = 0;
-    if (headline) s += 12;
-    if (bio) s += 8;
-    if (rateAmount) s += 12;
+    if (headline.trim()) s += 13;
+    if (bio.trim().length >= 20) s += 13;
+    if (rateAmount && parseInt(rateAmount) > 0) s += 13;
     if (cityId) s += 12;
+    if (teachingMode) s += 12;
+    if (photoUrl) s += 13;
     if (selectedSubjects.length > 0) s += 12;
     if (selectedLevels.length > 0) s += 12;
-    if (photoUrl) s += 8;
-    if (diploma) s += 4;
-    if (contactPhone || contactWhatsapp || contactEmail) s += 20;
     return Math.min(s, 100);
   })();
 
@@ -689,7 +714,7 @@ export default function TeacherProfileEditPage() {
         <section className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 lg:p-8 shadow-sm">
           <SectionTitle
             tag={isFr ? 'Photos' : 'Photos'}
-            hint={isFr ? 'Recommandé' : 'Recommended'}
+            hint={isFr ? 'Photo de profil requise' : 'Profile photo required'}
           />
 
           <div className="relative aspect-[3/1] rounded-xl bg-slate-100 overflow-hidden border-2 border-dashed border-slate-200 group">
@@ -751,7 +776,11 @@ export default function TeacherProfileEditPage() {
           <div className="flex items-start gap-5 mt-6">
             <div className="relative shrink-0">
               <div
-                className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer group/photo hover:border-blue-400 hover:bg-blue-50/40 transition-all"
+                className={`w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer group/photo transition-all ${
+                  !photoUrl
+                    ? 'border-amber-300 hover:border-amber-500 hover:bg-amber-50/40'
+                    : 'border-slate-200 hover:border-blue-400 hover:bg-blue-50/40'
+                }`}
                 onClick={() => photoInputRef.current?.click()}
               >
                 {photoUrl ? (
@@ -781,13 +810,22 @@ export default function TeacherProfileEditPage() {
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-900 mb-1">
-                {isFr ? 'Photo de profil' : 'Profile photo'}
+                {isFr ? 'Photo de profil *' : 'Profile photo *'}
               </p>
               <p className="text-sm text-slate-500 leading-relaxed mb-4 max-w-xs">
                 {isFr
-                  ? 'Visible par les parents. Format carré recommandé.'
-                  : 'Visible by parents. Square format recommended.'}
+                  ? 'Visible par les parents. Obligatoire pour être visible dans les recherches.'
+                  : 'Visible by parents. Required to be visible in search results.'}
               </p>
+
+              {!photoUrl && (
+                <p className="text-xs text-amber-600 mb-3 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  {isFr
+                    ? 'Ajoutez une photo pour que votre profil soit visible.'
+                    : 'Add a photo so your profile can be visible.'}
+                </p>
+              )}
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -903,19 +941,40 @@ export default function TeacherProfileEditPage() {
               />
             </Field>
 
-            <Field label="Bio" hint={`${bio.length}/800`}>
+            {/* ✅ PATCH — Bio avec validation 20 caractères minimum */}
+            <Field
+              label={isFr ? 'Bio *' : 'Bio *'}
+              hint={
+                bio.length === 0 || bio.trim().length >= 20
+                  ? `${bio.length}/800`
+                  : `${20 - bio.trim().length} car. min`
+              }
+            >
               <textarea
                 value={bio}
                 onChange={e => setBio(e.target.value)}
                 rows={5}
                 maxLength={800}
+                minLength={20}
                 placeholder={
                   isFr
-                    ? 'Décrivez votre parcours, votre méthode, ce qui vous distingue.'
-                    : 'Describe your background and method.'
+                    ? 'Décrivez votre parcours, votre méthode, ce qui vous distingue (20 caractères minimum).'
+                    : 'Describe your background and method (min. 20 characters).'
                 }
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all"
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 resize-none transition-all ${
+                  bio.length > 0 && bio.trim().length < 20
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/20'
+                }`}
               />
+              {bio.length > 0 && bio.trim().length < 20 && (
+                <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  {isFr
+                    ? `Encore ${20 - bio.trim().length} caractère${20 - bio.trim().length > 1 ? 's' : ''} minimum pour être visible des parents`
+                    : `${20 - bio.trim().length} more character${20 - bio.trim().length > 1 ? 's' : ''} needed to be visible to parents`}
+                </p>
+              )}
             </Field>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

@@ -282,6 +282,7 @@ function TeachersPageContent() {
           `, { count: 'exact' })
           .eq('is_available', true)
           .eq('verification_status', 'verified')
+          .eq('profil_ready', true)                     /* ✅ PATCH — seuls les profils complets */
           .order('rating_avg', { ascending: false })
           .order('rating_count', { ascending: false })
           .order('created_at', { ascending: false })
