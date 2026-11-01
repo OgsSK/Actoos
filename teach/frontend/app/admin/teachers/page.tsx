@@ -8,7 +8,7 @@ import {
   GraduationCap, Search, ChevronLeft, ChevronRight, Loader2,
   CheckCircle2, Clock, XCircle, Ban, Trash2, Eye, Filter,
   AlertCircle, Mail, X, MapPin, BookOpen, TrendingUp, Heart,
-  Monitor, Home, Star, User, Calendar, CheckSquare, Square,
+  Monitor, Home, Star, User, Calendar, CheckSquare, Square, Send,
 } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +20,7 @@ interface TeacherRow {
   profile_photo_url: string | null;
   verification_status: string | null;
   is_available: boolean | null;
+  profil_ready: boolean | null; // ✅ NOUVEAU
   created_at: string;
   user: {
     first_name: string | null;
@@ -109,14 +110,22 @@ function modeLabel(mode: string | null, isFr: boolean) {
   return m ? (isFr ? m.fr : m.en) : mode;
 }
 
-function StatusBadge({ status, isFr }: { status: string | null; isFr: boolean }) {
+// ✅ StatusBadge enrichi : distingue "Vérifié" et "Validé (invisible)"
+function StatusBadge({
+  status, profilReady, isFr,
+}: { status: string | null; profilReady?: boolean | null; isFr: boolean }) {
   const config = {
-    pending:   { bg: 'bg-amber-50 border-amber-200',   text: 'text-amber-700',   icon: Clock,        labelFr: 'En attente', labelEn: 'Pending' },
-    verified:  { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', icon: CheckCircle2, labelFr: 'Vérifié',    labelEn: 'Verified' },
-    rejected:  { bg: 'bg-red-50 border-red-200',     text: 'text-red-700',     icon: XCircle,      labelFr: 'Refusé',     labelEn: 'Rejected' },
-    suspended: { bg: 'bg-slate-100 border-slate-200',   text: 'text-slate-700',   icon: Ban,          labelFr: 'Suspendu',   labelEn: 'Suspended' },
+    pending:   { bg: 'bg-amber-50 border-amber-200',     text: 'text-amber-700',   icon: Clock,        labelFr: 'En attente',         labelEn: 'Pending' },
+    verified:  { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', icon: CheckCircle2, labelFr: 'Vérifié',            labelEn: 'Verified' },
+    verified_invisible: { bg: 'bg-orange-50 border-orange-200', text: 'text-orange-700', icon: Eye,    labelFr: 'Validé (invisible)', labelEn: 'Approved (invisible)' },
+    rejected:  { bg: 'bg-red-50 border-red-200',         text: 'text-red-700',     icon: XCircle,      labelFr: 'Refusé',             labelEn: 'Rejected' },
+    suspended: { bg: 'bg-slate-100 border-slate-200',    text: 'text-slate-700',   icon: Ban,          labelFr: 'Suspendu',           labelEn: 'Suspended' },
   } as const;
-  const cfg = config[status as keyof typeof config] ?? config.pending;
+
+  const effectiveStatus =
+    status === 'verified' && profilReady === false ? 'verified_invisible' : status;
+
+  const cfg = config[effectiveStatus as keyof typeof config] ?? config.pending;
   const Icon = cfg.icon;
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 sm:px-2.5 rounded-full border ${cfg.bg} ${cfg.text}`}>
@@ -124,6 +133,20 @@ function StatusBadge({ status, isFr }: { status: string | null; isFr: boolean })
       {isFr ? cfg.labelFr : cfg.labelEn}
     </span>
   );
+}
+
+// ✅ Un prof "validé mais invisible" = verified + profil_ready=false + non suspendu
+function isInvisibleVerified(t: TeacherRow): boolean {
+  return (
+    t.verification_status === 'verified' &&
+    t.profil_ready === false &&
+    !t.user?.suspended_at
+  );
+}
+
+// ✅ Un prof "relançable" = pending OU validé-invisible
+function isRemindableRow(t: TeacherRow): boolean {
+  return t.verification_status === 'pending' || isInvisibleVerified(t);
 }
 
 function sendMail(payload: Record<string, any>) {
@@ -172,6 +195,11 @@ function AdminTeachers() {
   const [bulkRejectReason, setBulkRejectReason] = useState('');
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0, action: '' as '' | 'accept' | 'reject' });
 
+  // ✅ États pour les relances (globales et ciblées)
+  const [isRemindingPending, setIsRemindingPending] = useState(false);
+  const [isRemindingVerified, setIsRemindingVerified] = useState(false);
+  const [remindStatus, setRemindStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,7 +216,8 @@ function AdminTeachers() {
       const { data, error } = await supabase
         .from('teacher_profiles')
         .select(`
-          id, headline, profile_photo_url, verification_status, is_available, created_at,
+          id, headline, profile_photo_url, verification_status, is_available, 
+          created_at, profil_ready,
           user:users!teacher_profiles_id_fkey(
             first_name, last_name, email, suspended_at, suspended_reason
           )
@@ -206,6 +235,114 @@ function AdminTeachers() {
     }
   }
 
+  // ✅ Relance des PENDING — avec IDs optionnels (sélection ciblée)
+  async function handleRemindPending(teacherIds?: string[]) {
+    const isSelection = Array.isArray(teacherIds) && teacherIds.length > 0;
+
+    const confirmMsg = isSelection
+      ? (isFr
+          ? `Envoyer un rappel à ${teacherIds!.length} prof(s) EN ATTENTE sélectionné(s) ?`
+          : `Send a reminder to ${teacherIds!.length} selected PENDING teacher(s)?`)
+      : (isFr
+          ? "Envoyer un rappel à TOUS les profs EN ATTENTE pour qu'ils complètent leur profil avant validation ?"
+          : "Send a reminder to ALL PENDING teachers to complete their profile before approval?");
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsRemindingPending(true);
+    setRemindStatus(null);
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'admin-bulk-remind-pending',
+          ...(isSelection && { teacher_ids: teacherIds }),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Erreur serveur');
+
+      setRemindStatus({
+        type: 'success',
+        message: isFr
+          ? `✅ ${data.emails_envoyes} rappel(s) envoyé(s)${isSelection ? ` sur ${teacherIds!.length} sélectionné(s)` : ''}.`
+          : `✅ ${data.emails_envoyes} reminder(s) sent${isSelection ? ` to ${teacherIds!.length} selected` : ''}.`,
+      });
+
+      if (isSelection) {
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          teacherIds!.forEach(id => next.delete(id));
+          return next;
+        });
+      }
+    } catch (err: any) {
+      setRemindStatus({ type: 'error', message: err.message || 'Erreur' });
+    } finally {
+      setIsRemindingPending(false);
+    }
+  }
+
+  // ✅ Relance des VERIFIED invisibles — avec IDs optionnels (sélection ciblée)
+  async function handleRemindVerified(teacherIds?: string[]) {
+    const isSelection = Array.isArray(teacherIds) && teacherIds.length > 0;
+
+    const confirmMsg = isSelection
+      ? (isFr
+          ? `Envoyer un rappel à ${teacherIds!.length} prof(s) VALIDÉS invisibles sélectionné(s) ?`
+          : `Send a reminder to ${teacherIds!.length} selected VERIFIED invisible teacher(s)?`)
+      : (isFr
+          ? "Envoyer un rappel à TOUS les profs VALIDÉS mais invisibles pour qu'ils complètent leur profil ?"
+          : "Send a reminder to ALL VERIFIED but invisible teachers to complete their profile?");
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsRemindingVerified(true);
+    setRemindStatus(null);
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/kalanden-mail`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'admin-bulk-remind-verified',
+          ...(isSelection && { teacher_ids: teacherIds }),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Erreur serveur');
+
+      setRemindStatus({
+        type: 'success',
+        message: isFr
+          ? `✅ ${data.emails_envoyes} email(s) envoyé(s)${isSelection ? ` sur ${teacherIds!.length} sélectionné(s)` : ''}.`
+          : `✅ ${data.emails_envoyes} email(s) sent${isSelection ? ` to ${teacherIds!.length} selected` : ''}.`,
+      });
+
+      if (isSelection) {
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          teacherIds!.forEach(id => next.delete(id));
+          return next;
+        });
+      }
+    } catch (err: any) {
+      setRemindStatus({ type: 'error', message: err.message || 'Erreur' });
+    } finally {
+      setIsRemindingVerified(false);
+    }
+  }
+
   async function openPreview(t: TeacherRow) {
     setPreviewTarget(t);
     setPreviewLoading(true);
@@ -217,7 +354,7 @@ function AdminTeachers() {
           .select(`
             id, headline, bio, hourly_rate, rate_period, teaching_mode,
             profile_photo_url, cover_url, is_verified, experience_years,
-            city_id, rating_avg, rating_count, verification_status, created_at,
+            city_id, rating_avg, rating_count, verification_status, created_at, profil_ready,
             user:users!teacher_profiles_id_fkey(first_name, last_name, email, language),
             city:cities(id, name)
           `)
@@ -268,12 +405,14 @@ function AdminTeachers() {
   const currentPage = Math.min(page, totalPages);
   const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
-  const pendingOnPage = useMemo(
-    () => paginated.filter(t => t.verification_status === 'pending').map(t => t.id),
+  // ✅ Tous les profs relançables sur la page courante (pending + verified invisibles)
+  const actionableOnPage = useMemo(
+    () => paginated.filter(isRemindableRow).map(t => t.id),
     [paginated]
   );
 
-  const allPendingOnPageSelected = pendingOnPage.length > 0 && pendingOnPage.every(id => selectedIds.has(id));
+  const allActionableOnPageSelected =
+    actionableOnPage.length > 0 && actionableOnPage.every(id => selectedIds.has(id));
 
   const counts = useMemo(() => ({
     all: teachers.length,
@@ -282,6 +421,27 @@ function AdminTeachers() {
     rejected: teachers.filter(t => t.verification_status === 'rejected').length,
     suspended: teachers.filter(t => t.verification_status === 'suspended').length,
   }), [teachers]);
+
+  // ✅ Compteurs et IDs de sélection
+  const selectedPendingIds = useMemo(
+    () => Array.from(selectedIds).filter(id => {
+      const t = teachers.find(x => x.id === id);
+      return t?.verification_status === 'pending';
+    }),
+    [selectedIds, teachers]
+  );
+
+  const selectedVerifiedInvisibleIds = useMemo(
+    () => Array.from(selectedIds).filter(id => {
+      const t = teachers.find(x => x.id === id);
+      return t ? isInvisibleVerified(t) : false;
+    }),
+    [selectedIds, teachers]
+  );
+
+  const selectedPendingCount = selectedPendingIds.length;
+  const selectedVerifiedInvisibleCount = selectedVerifiedInvisibleIds.length;
+  const totalSelected = selectedPendingCount + selectedVerifiedInvisibleCount;
 
   function toggleSelect(id: string) {
     setSelectedIds(prev => {
@@ -295,10 +455,10 @@ function AdminTeachers() {
   function toggleSelectAllOnPage() {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (allPendingOnPageSelected) {
-        pendingOnPage.forEach(id => next.delete(id));
+      if (allActionableOnPageSelected) {
+        actionableOnPage.forEach(id => next.delete(id));
       } else {
-        pendingOnPage.forEach(id => next.add(id));
+        actionableOnPage.forEach(id => next.add(id));
       }
       return next;
     });
@@ -354,11 +514,7 @@ function AdminTeachers() {
   }
 
   async function handleBulkAccept() {
-    const ids = Array.from(selectedIds).filter(id => {
-      const t = teachers.find(x => x.id === id);
-      return t?.verification_status === 'pending';
-    });
-
+    const ids = selectedPendingIds;
     if (ids.length === 0) return;
 
     const confirmed = window.confirm(
@@ -406,11 +562,7 @@ function AdminTeachers() {
   }
 
   async function handleBulkReject() {
-    const ids = Array.from(selectedIds).filter(id => {
-      const t = teachers.find(x => x.id === id);
-      return t?.verification_status === 'pending';
-    });
-
+    const ids = selectedPendingIds;
     if (ids.length === 0 || !bulkRejectReason.trim()) return;
 
     setBulkRejectOpen(false);
@@ -543,18 +695,13 @@ function AdminTeachers() {
     { key: 'suspended', labelFr: 'Suspendus',  labelEn: 'Suspended', count: counts.suspended },
   ];
 
-  const pendingSelectedCount = Array.from(selectedIds).filter(id => {
-    const t = teachers.find(x => x.id === id);
-    return t?.verification_status === 'pending';
-  }).length;
-
   return (
     <div className="min-h-screen bg-[#fffafa] text-slate-900 selection:bg-red-100 selection:text-red-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-40 sm:pb-32">
-        
+
         {/* Header */}
         <FadeInSection>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
               <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.16em] text-red-500 mb-1.5 sm:mb-2">
                 {isFr ? 'Gestion' : 'Management'}
@@ -568,8 +715,54 @@ function AdminTeachers() {
                   : `${counts.all} teacher${counts.all !== 1 ? 's' : ''} total`}
               </p>
             </div>
+
+            {/* ✅ Les deux boutons de relance EN MASSE (toujours présents) */}
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              <button
+                onClick={() => handleRemindPending()}
+                disabled={isRemindingPending || isRemindingVerified}
+                className="inline-flex items-center justify-center gap-2 px-4 h-11 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold shadow-sm hover:border-amber-200 hover:text-amber-600 hover:bg-amber-50 transition-all disabled:opacity-50"
+                title={isFr ? "Envoyer un rappel à TOUS les profs en attente" : "Send a reminder to ALL pending teachers"}
+              >
+                {isRemindingPending ? <Loader2 className="w-4 h-4 animate-spin text-amber-500" /> : <Clock className="w-4 h-4 text-amber-500" />}
+                {isFr ? 'Relancer TOUS les "En attente"' : 'Remind ALL "Pending"'}
+              </button>
+
+              <button
+                onClick={() => handleRemindVerified()}
+                disabled={isRemindingPending || isRemindingVerified}
+                className="inline-flex items-center justify-center gap-2 px-4 h-11 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold shadow-sm hover:border-emerald-200 hover:text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-50"
+                title={isFr ? "Envoyer un rappel à TOUS les profs validés invisibles" : "Send a reminder to ALL verified invisible teachers"}
+              >
+                {isRemindingVerified ? <Loader2 className="w-4 h-4 animate-spin text-emerald-500" /> : <Eye className="w-4 h-4 text-emerald-500" />}
+                {isFr ? 'Relancer TOUS les "Validés"' : 'Remind ALL "Verified"'}
+              </button>
+            </div>
           </div>
         </FadeInSection>
+
+        {/* Bandeau de résultat */}
+        {remindStatus && (
+          <FadeInSection>
+            <div className={`mb-6 p-4 rounded-xl border flex items-start gap-3 ${
+              remindStatus.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}>
+              {remindStatus.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />}
+              <div className="flex-1">
+                <p className="text-sm font-medium">{remindStatus.message}</p>
+              </div>
+              <button
+                onClick={() => setRemindStatus(null)}
+                className="p-1 hover:bg-black/5 rounded-lg transition-colors"
+                title={isFr ? 'Fermer' : 'Close'}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </FadeInSection>
+        )}
 
         {/* Filtres & Recherche */}
         <FadeInSection delay={50}>
@@ -607,20 +800,21 @@ function AdminTeachers() {
         </FadeInSection>
 
         {/* Select-all */}
-        {pendingOnPage.length > 0 && (
+        {actionableOnPage.length > 0 && (
           <div className="flex items-center gap-3 mb-4 px-1">
             <button
               onClick={toggleSelectAllOnPage}
               className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-700 hover:text-red-600 transition-colors"
+              title={isFr ? 'Sélectionner / désélectionner tous les profs relançables de cette page' : 'Select / deselect all remindable teachers on this page'}
             >
-              {allPendingOnPageSelected ? (
+              {allActionableOnPageSelected ? (
                 <CheckSquare className="w-4 h-4 text-red-500" />
               ) : (
                 <Square className="w-4 h-4 text-slate-400" />
               )}
               {isFr
-                ? `${allPendingOnPageSelected ? 'Désélectionner' : 'Sélectionner'} les ${pendingOnPage.length} en attente de cette page`
-                : `${allPendingOnPageSelected ? 'Deselect' : 'Select'} ${pendingOnPage.length} pending on this page`}
+                ? `${allActionableOnPageSelected ? 'Désélectionner' : 'Sélectionner'} les ${actionableOnPage.length} profs relançables de cette page`
+                : `${allActionableOnPageSelected ? 'Deselect' : 'Select'} ${actionableOnPage.length} remindable teachers on this page`}
             </button>
           </div>
         )}
@@ -646,30 +840,30 @@ function AdminTeachers() {
               const initials = name.split(' ').map(w => w.charAt(0)).slice(0, 2).join('').toUpperCase();
               const isSuspended = Boolean(t.user?.suspended_at);
               const busy = actionId === t.id;
-              const isPending = t.verification_status === 'pending';
+              const isSelectable = isRemindableRow(t);
               const isSelected = selectedIds.has(t.id);
 
               return (
                 <FadeInSection key={t.id} delay={Math.min(index * 30, 300)}>
                   <div
                     className={`bg-white rounded-2xl sm:rounded-[1.35rem] border p-4 sm:p-5 transition-all duration-300 ${
-                      isSelected && isPending
+                      isSelected && isSelectable
                         ? 'border-red-500 shadow-md ring-2 ring-red-100'
                         : 'border-slate-200 hover:border-red-200 hover:shadow-lg'
                     }`}
                   >
-                    {/* Layout mobile-first : colonne sur mobile, ligne sur desktop */}
                     <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                      
-                      {/* Bloc infos (checkbox + avatar + texte) */}
+
                       <div className="flex items-start gap-3 w-full sm:flex-1 sm:min-w-0">
-                        {/* Checkbox */}
-                        {isPending ? (
+                        {isSelectable ? (
                           <button
                             onClick={() => toggleSelect(t.id)}
                             disabled={bulkAccepting}
                             className="mt-1 shrink-0 disabled:opacity-50 transition-transform active:scale-95"
                             aria-label={isSelected ? 'Désélectionner' : 'Sélectionner'}
+                            title={isSelected
+                              ? (isFr ? 'Désélectionner ce prof' : 'Deselect this teacher')
+                              : (isFr ? 'Sélectionner ce prof' : 'Select this teacher')}
                           >
                             {isSelected ? (
                               <CheckSquare className="w-5 h-5 text-red-500" />
@@ -681,7 +875,6 @@ function AdminTeachers() {
                           <div className="w-5 shrink-0" />
                         )}
 
-                        {/* Avatar */}
                         <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
                           {t.profile_photo_url ? (
                             <img src={t.profile_photo_url} alt="" className="w-full h-full object-cover" />
@@ -690,16 +883,16 @@ function AdminTeachers() {
                           )}
                         </div>
 
-                        {/* Texte */}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <button
                               onClick={() => openPreview(t)}
                               className="font-bold text-slate-900 hover:text-red-500 truncate transition-colors text-left text-sm sm:text-base"
+                              title={isFr ? 'Ouvrir l\'aperçu du profil' : 'Open profile preview'}
                             >
                               {name}
                             </button>
-                            <StatusBadge status={t.verification_status} isFr={isFr} />
+                            <StatusBadge status={t.verification_status} profilReady={t.profil_ready} isFr={isFr} />
                             {isSuspended && (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
                                 <Ban className="w-3 h-3" />
@@ -731,25 +924,24 @@ function AdminTeachers() {
                         </div>
                       </div>
 
-                      {/* Actions (grille 2 colonnes sur mobile, flex sur desktop) */}
                       <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 w-full sm:w-auto shrink-0 mt-1 sm:mt-0">
-                        
-                        {/* Bouton Voir */}
+
                         <button
                           onClick={() => openPreview(t)}
                           className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 sm:bg-transparent sm:hover:bg-slate-100 border border-slate-200 sm:border-transparent transition-colors"
+                          title={isFr ? 'Voir le profil' : 'View profile'}
                         >
                           <Eye className="w-4 h-4" />
                           <span className="sm:hidden">{isFr ? 'Voir' : 'View'}</span>
                         </button>
 
-                        {/* Actions conditionnelles */}
                         {t.verification_status === 'pending' && (
                           <>
                             <button
                               onClick={() => updateStatus(t.id, 'verified')}
                               disabled={busy || bulkAccepting}
                               className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 sm:border-transparent disabled:opacity-50 transition-colors"
+                              title={isFr ? 'Valider ce prof' : 'Approve this teacher'}
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                               <span className="sm:hidden">{isFr ? 'Valider' : 'Approve'}</span>
@@ -758,6 +950,7 @@ function AdminTeachers() {
                               onClick={() => { setRejectTarget(t); setRejectReason(''); }}
                               disabled={busy || bulkAccepting}
                               className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 sm:border-transparent disabled:opacity-50 transition-colors"
+                              title={isFr ? 'Refuser ce prof' : 'Reject this teacher'}
                             >
                               <XCircle className="w-4 h-4" />
                               <span className="sm:hidden">{isFr ? 'Refuser' : 'Reject'}</span>
@@ -777,6 +970,7 @@ function AdminTeachers() {
                               }}
                               disabled={busy}
                               className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 sm:border-transparent disabled:opacity-50 transition-colors"
+                              title={isFr ? 'Repêcher ce prof (valider à nouveau)' : 'Restore this teacher'}
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                               <span className="sm:hidden">{isFr ? 'Valider' : 'Approve'}</span>
@@ -791,6 +985,7 @@ function AdminTeachers() {
                               }}
                               disabled={busy}
                               className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 sm:border-transparent disabled:opacity-50 transition-colors"
+                              title={isFr ? 'Remettre en attente de vérification' : 'Put back to pending'}
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
                               <span className="sm:hidden">{isFr ? 'En attente' : 'Pending'}</span>
@@ -810,6 +1005,7 @@ function AdminTeachers() {
                               }}
                               disabled={busy}
                               className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 sm:border-transparent disabled:opacity-50 transition-colors"
+                              title={isFr ? 'Remettre en attente de vérification' : 'Put back to pending'}
                             >
                               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
                               <span className="sm:hidden">{isFr ? 'En attente' : 'Pending'}</span>
@@ -818,6 +1014,7 @@ function AdminTeachers() {
                               onClick={() => setSuspendTarget(t)}
                               disabled={busy}
                               className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 sm:border-transparent disabled:opacity-50 transition-colors"
+                              title={isFr ? 'Suspendre ce prof' : 'Suspend this teacher'}
                             >
                               <Ban className="w-4 h-4" />
                               <span className="sm:hidden">{isFr ? 'Suspendre' : 'Suspend'}</span>
@@ -830,17 +1027,18 @@ function AdminTeachers() {
                             onClick={() => handleReactivate(t.id)}
                             disabled={busy}
                             className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 sm:border-transparent disabled:opacity-50 transition-colors"
+                            title={isFr ? 'Réactiver ce prof' : 'Reactivate this teacher'}
                           >
                             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                             <span className="sm:hidden">{isFr ? 'Réactiver' : 'Reactivate'}</span>
                           </button>
                         )}
 
-                        {/* Bouton Supprimer */}
                         <button
                           onClick={() => setDeleteTarget(t)}
                           disabled={busy}
                           className="h-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 sm:border-transparent sm:hover:bg-red-50 disabled:opacity-50 transition-colors"
+                          title={isFr ? 'Supprimer ce prof' : 'Delete this teacher'}
                         >
                           <Trash2 className="w-4 h-4" />
                           <span className="sm:hidden">{isFr ? 'Supprimer' : 'Delete'}</span>
@@ -882,7 +1080,7 @@ function AdminTeachers() {
         )}
 
         {/* ═══ BARRE FLOTTANTE ACTIONS GROUPÉES ═══ */}
-        {pendingSelectedCount > 0 && (
+        {totalSelected > 0 && (
           <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               {bulkAccepting ? (
@@ -905,41 +1103,86 @@ function AdminTeachers() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 lg:gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-red-600">{pendingSelectedCount}</span>
+                      <span className="text-sm font-bold text-red-600">{totalSelected}</span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-slate-900 truncate">
                         {isFr
-                          ? `${pendingSelectedCount} prof${pendingSelectedCount > 1 ? 's' : ''} sélectionné${pendingSelectedCount > 1 ? 's' : ''}`
-                          : `${pendingSelectedCount} teacher${pendingSelectedCount > 1 ? 's' : ''} selected`}
+                          ? `${totalSelected} prof${totalSelected > 1 ? 's' : ''} sélectionné${totalSelected > 1 ? 's' : ''}`
+                          : `${totalSelected} teacher${totalSelected > 1 ? 's' : ''} selected`}
                       </p>
-                      <button
-                        onClick={clearSelection}
-                        className="text-xs font-medium text-slate-500 hover:text-red-500 transition-colors"
-                      >
-                        {isFr ? 'Tout désélectionner' : 'Deselect all'}
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+                        {selectedPendingCount > 0 && (
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-500" />
+                            {selectedPendingCount} {isFr ? 'en attente' : 'pending'}
+                          </span>
+                        )}
+                        {selectedPendingCount > 0 && selectedVerifiedInvisibleCount > 0 && <span>·</span>}
+                        {selectedVerifiedInvisibleCount > 0 && (
+                          <span className="inline-flex items-center gap-1">
+                            <Eye className="w-3 h-3 text-orange-500" />
+                            {selectedVerifiedInvisibleCount} {isFr ? `invisible${selectedVerifiedInvisibleCount > 1 ? 's' : ''}` : 'invisible'}
+                          </span>
+                        )}
+                        <span>·</span>
+                        <button
+                          onClick={clearSelection}
+                          className="text-slate-500 hover:text-red-500 transition-colors underline-offset-2 hover:underline"
+                        >
+                          {isFr ? 'Tout désélectionner' : 'Deselect all'}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => { setBulkRejectOpen(true); setBulkRejectReason(''); }}
-                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-11 sm:h-10 rounded-full border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold transition-colors"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      {isFr ? 'Refuser' : 'Reject'}
-                    </button>
-                    <button
-                      onClick={handleBulkAccept}
-                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-11 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors active:scale-95"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      {isFr ? 'Accepter' : 'Approve'}
-                    </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Actions pour les profs EN ATTENTE sélectionnés */}
+                    {selectedPendingCount > 0 && (
+                      <>
+                        <button
+                          onClick={() => handleRemindPending(selectedPendingIds)}
+                          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 h-11 sm:h-10 rounded-full border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 text-sm font-semibold transition-colors"
+                          title={isFr ? 'Relancer les profs en attente sélectionnés' : 'Remind selected pending teachers'}
+                        >
+                          <Clock className="w-4 h-4" />
+                          {isFr ? `Relancer (${selectedPendingCount})` : `Remind (${selectedPendingCount})`}
+                        </button>
+                        <button
+                          onClick={() => { setBulkRejectOpen(true); setBulkRejectReason(''); }}
+                          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 h-11 sm:h-10 rounded-full border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold transition-colors"
+                          title={isFr ? 'Refuser les profs en attente sélectionnés' : 'Reject selected pending teachers'}
+                        >
+                          <XCircle className="w-4 h-4" />
+                          {isFr ? 'Refuser' : 'Reject'}
+                        </button>
+                        <button
+                          onClick={handleBulkAccept}
+                          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 h-11 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-colors active:scale-95"
+                          title={isFr ? 'Accepter les profs en attente sélectionnés' : 'Approve selected pending teachers'}
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          {isFr ? 'Accepter' : 'Approve'}
+                        </button>
+                      </>
+                    )}
+
+                    {/* Action pour les profs VALIDÉS INVISIBLES sélectionnés */}
+                    {selectedVerifiedInvisibleCount > 0 && (
+                      <button
+                        onClick={() => handleRemindVerified(selectedVerifiedInvisibleIds)}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 h-11 sm:h-10 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-semibold transition-colors"
+                        title={isFr ? 'Relancer les profs validés invisibles sélectionnés' : 'Remind selected verified invisible teachers'}
+                      >
+                        <Eye className="w-4 h-4" />
+                        {isFr
+                          ? `Relancer visibilité (${selectedVerifiedInvisibleCount})`
+                          : `Remind visibility (${selectedVerifiedInvisibleCount})`}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -974,6 +1217,7 @@ function AdminTeachers() {
                 <button
                   onClick={() => setPreviewTarget(null)}
                   className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
+                  title={isFr ? 'Fermer' : 'Close'}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1020,7 +1264,11 @@ function AdminTeachers() {
                               <h4 className="text-lg font-bold text-slate-900 truncate">
                                 {[previewTarget.user?.first_name, previewTarget.user?.last_name].filter(Boolean).join(' ') || '—'}
                               </h4>
-                              <StatusBadge status={previewData.profile.verification_status} isFr={isFr} />
+                              <StatusBadge
+                                status={previewData.profile.verification_status}
+                                profilReady={previewData.profile.profil_ready}
+                                isFr={isFr}
+                              />
                             </div>
                             <p className="text-xs text-slate-500 mt-0.5 truncate">
                               {previewTarget.user?.email}
@@ -1257,6 +1505,7 @@ function AdminTeachers() {
                   onClick={() => setRejectTarget(null)}
                   disabled={actionId === rejectTarget.id}
                   className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  title={isFr ? 'Fermer' : 'Close'}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1318,13 +1567,17 @@ function AdminTeachers() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                    {isFr ? `Refuser ${pendingSelectedCount} prof${pendingSelectedCount > 1 ? 's' : ''} ?` : `Reject ${pendingSelectedCount} teacher${pendingSelectedCount > 1 ? 's' : ''}?`}
+                    {isFr ? `Refuser ${selectedPendingCount} prof${selectedPendingCount > 1 ? 's' : ''} ?` : `Reject ${selectedPendingCount} teacher${selectedPendingCount > 1 ? 's' : ''}?`}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                    {isFr ? 'La même raison sera envoyée à tous.' : 'The same reason will be sent to all.'}
+                    {isFr ? 'La même raison sera envoyée à tous les profs EN ATTENTE sélectionnés.' : 'The same reason will be sent to all selected PENDING teachers.'}
                   </p>
                 </div>
-                <button onClick={() => setBulkRejectOpen(false)} className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                <button
+                  onClick={() => setBulkRejectOpen(false)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  title={isFr ? 'Fermer' : 'Close'}
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1342,7 +1595,7 @@ function AdminTeachers() {
                   autoFocus
                 />
                 <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                  {isFr ? `Les ${pendingSelectedCount} profs recevront ce même message par email.` : `All ${pendingSelectedCount} teachers will receive this same message by email.`}
+                  {isFr ? `Les ${selectedPendingCount} profs recevront ce même message par email.` : `All ${selectedPendingCount} teachers will receive this same message by email.`}
                 </p>
               </div>
 
@@ -1359,7 +1612,7 @@ function AdminTeachers() {
                   className="flex-1 h-11 rounded-full bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 transition-colors active:scale-95"
                 >
                   <XCircle className="w-4 h-4" />
-                  {isFr ? `Refuser ${pendingSelectedCount}` : `Reject ${pendingSelectedCount}`}
+                  {isFr ? `Refuser ${selectedPendingCount}` : `Reject ${selectedPendingCount}`}
                 </button>
               </div>
             </div>
@@ -1387,6 +1640,7 @@ function AdminTeachers() {
                   onClick={() => setSuspendTarget(null)}
                   disabled={actionId === suspendTarget.id}
                   className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  title={isFr ? 'Fermer' : 'Close'}
                 >
                   <X className="w-5 h-5" />
                 </button>
