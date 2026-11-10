@@ -194,13 +194,29 @@ export default function Footer() {
 
         {/* ═══ BOTTOM BAR ═══ */}
         <div className="border-t border-white/10 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">
-            © {year} {BRAND.name} — {isFr ? 'Tous droits réservés.' : 'All rights reserved.'}
-          </p>
+          {/* Copyright + produit — même logique que SEIM */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-xs text-slate-500">
+            <p>
+              © {year} {BRAND.name} — {isFr ? 'Tous droits réservés.' : 'All rights reserved.'}
+            </p>
+            <span className="hidden sm:inline text-slate-700">|</span>
+            <p>
+              {isFr ? 'Un produit' : 'An'}{' '}
+              <a
+                href="https://actoos.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-slate-300 hover:text-white transition-colors"
+              >
+                Actoos
+              </a>
+              {isFr ? '' : ' product'}
+            </p>
+          </div>
 
-          <p className="text-xs text-slate-500">
-            {isFr ? 'Un produit' : 'An'}{' '}
-            <span className="text-slate-400 font-medium">Actoos</span>
+          {/* Petit signal discret "powered by" en dessous — optionnel */}
+          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-600 font-mono">
+            {isFr ? 'Écosystème Actoos' : 'Actoos ecosystem'}
           </p>
         </div>
       </div>
